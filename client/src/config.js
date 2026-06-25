@@ -6,3 +6,5 @@ function normalizeBaseUrl(url) {
 
 export const API_BASE = normalizeBaseUrl(process.env.REACT_APP_API_URL || DEFAULT_BACKEND_URL);
 export const SOCKET_URL = API_BASE;
+
+console.log("API_BASE =", API_BASE);
