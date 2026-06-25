@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../api';
 import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
 import TokenPicker from '../home/TokenPicker';
@@ -12,7 +13,7 @@ export default function Lobby({ userId, pushToast, onStart }) {
     const { roomCode, room, connected, act } = useRoom({ userId });
 
     useEffect(() => {
-        fetch('/api/tokens').then(r => r.json()).then(setTokens).catch(() => {});
+        api.tokens().then(setTokens).catch(() => {});
     }, []);
 
     // Promote to game view once host starts.

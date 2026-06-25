@@ -13,7 +13,7 @@ function sessionMiddleware(req, res, next) {
         uid = uuidv4();
         res.cookie(COOKIE, uid, {
             httpOnly: true,
-            sameSite: 'lax',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production',
             maxAge: COOKIE_MAX_AGE,
             path: '/',

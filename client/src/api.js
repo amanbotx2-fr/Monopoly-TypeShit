@@ -1,10 +1,11 @@
 // Thin fetch wrapper for the monopoly REST routes. Socket traffic is handled
-// separately in socket.js. In dev, CRA proxies /api → localhost:5004.
+// separately in socket.js. Deployed clients use REACT_APP_API_URL; local dev
+// falls back to the Node backend on localhost:5004.
 
-const API_BASE = process.env.REACT_APP_API_URL || '';
+import { API_BASE } from './config';
 
 async function req(path, opts = {}) {
-    const res = await fetch(API_BASE + path, {
+    const res = await fetch(`${API_BASE}${path}`, {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
         ...opts,

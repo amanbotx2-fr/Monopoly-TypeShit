@@ -11,16 +11,36 @@ const registerSocketHandlers = require('./socket/handlers');
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5004;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const DEFAULT_CLIENT_URL = 'http://localhost:3000';
+const CLIENT_URL = process.env.CLIENT_URL || DEFAULT_CLIENT_URL;
+const ALLOWED_ORIGINS = CLIENT_URL
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+    // Non-browser requests such as health checks and server-to-server calls do
+    // not send Origin. Browser CORS is still restricted to ALLOWED_ORIGINS.
+    if (!origin) return true;
+    return ALLOWED_ORIGINS.includes(origin);
+}
+
+const corsOptions = {
+    origin(origin, callback) {
+        if (isAllowedOrigin(origin)) return callback(null, true);
+        return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+};
 
 const io = new Server(server, {
-    cors: { origin: CLIENT_URL, credentials: true },
+    cors: corsOptions,
     pingInterval: 10000,
     pingTimeout: 15000,
 });
 
 app.set('trust proxy', 1);
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 app.use(sessionMiddleware);

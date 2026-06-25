@@ -3,8 +3,7 @@
 // can subscribe without stepping on each other.
 
 import { io } from 'socket.io-client';
-
-const WS_URL = process.env.REACT_APP_WS_URL || window.location.origin;
+import { SOCKET_URL } from './config';
 
 let socket = null;
 let currentRoom = null;
@@ -15,7 +14,7 @@ export function connectSocket({ userId, roomCode, username, color, asSpectator }
     if (socket) { socket.disconnect(); socket = null; }
     currentRoom = roomCode;
 
-    socket = io(WS_URL, {
+    socket = io(SOCKET_URL, {
         withCredentials: true,
         transports: ['websocket', 'polling'],
         reconnection: true,
