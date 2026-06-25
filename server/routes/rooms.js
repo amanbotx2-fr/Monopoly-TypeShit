@@ -4,31 +4,110 @@
 
 const express = require('express');
 const router = express.Router();
+const { v4: uuidv4 } = require('uuid');
 const { createRoom, activeRooms, publicView, TOKEN_COLORS } = require('../game/state');
-const { BUILTIN_BOARDS, validateBoard } = require('../game/boards');
+const { BUILTIN_BOARDS, validateBoard, computeGroupSizes } = require('../game/boards');
 const CustomBoard = require('../models/CustomBoard');
+
+function escapeRegExp(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function makeBoardId(name) {
+    const slug = String(name || 'custom-map')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 32) || 'custom-map';
+    return `${slug}-${uuidv4().slice(0, 8)}`;
+}
+
+function normalizeGroupColors(groupColors) {
+    if (!groupColors) return undefined;
+    if (groupColors instanceof Map) return Object.fromEntries(groupColors);
+    return groupColors;
+}
+
+function customBoardView(board) {
+    const b = board?.toObject ? board.toObject() : board;
+    if (!b) return null;
+    return {
+        ...b,
+        groupColors: normalizeGroupColors(b.groupColors),
+        groupSizes: b.groupSizes || computeGroupSizes(b.tiles || []),
+        builtin: false,
+    };
+}
+
+function boardSummary(board, builtin = false) {
+    return {
+        id: board.id,
+        name: board.name,
+        description: board.description || '',
+        authorUsername: board.authorUsername || '',
+        isPublic: builtin ? true : !!board.isPublic,
+        builtin,
+        timesPlayed: board.timesPlayed || 0,
+        updatedAt: board.updatedAt,
+    };
+}
+
+async function findVisibleCustomBoard(id, userId) {
+    const board = await CustomBoard.findOne({
+        id,
+        $or: [{ authorUserId: userId }, { isPublic: true }],
+    }).lean();
+    return customBoardView(board);
+}
+
+async function findOwnedCustomBoard(id, userId) {
+    return CustomBoard.findOne({ id, authorUserId: userId });
+}
 
 // List all built-in + user's own boards + public community boards.
 router.get('/boards', async (req, res) => {
-    const builtin = Object.values(BUILTIN_BOARDS).map(b => ({
-        id: b.id, name: b.name, builtin: true,
-    }));
+    const builtin = Object.values(BUILTIN_BOARDS).map(b => boardSummary(b, true));
+    let mine = [];
     let community = [];
     try {
+        mine = await CustomBoard.find({ authorUserId: req.userId })
+            .select('id name description isPublic authorUsername timesPlayed updatedAt')
+            .sort({ updatedAt: -1 })
+            .lean();
         community = await CustomBoard.find({ isPublic: true })
             .select('id name authorUsername timesPlayed')
+            .where('authorUserId').ne(req.userId)
             .sort({ timesPlayed: -1 })
             .limit(50)
             .lean();
     } catch { /* mongo optional in dev */ }
-    res.json({ builtin, community });
+    res.json({
+        builtin,
+        mine: mine.map(b => boardSummary(b)),
+        community: community.map(b => boardSummary(b)),
+    });
+});
+
+router.get('/boards/my', async (req, res) => {
+    const q = String(req.query.q || '').trim();
+    const query = { authorUserId: req.userId };
+    if (q) query.name = { $regex: escapeRegExp(q), $options: 'i' };
+    try {
+        const boards = await CustomBoard.find(query)
+            .select('id name description isPublic authorUsername timesPlayed createdAt updatedAt')
+            .sort({ updatedAt: -1 })
+            .lean();
+        res.json({ boards: boards.map(b => boardSummary(b)) });
+    } catch (e) {
+        res.status(500).json({ error: 'server' });
+    }
 });
 
 router.get('/boards/:id', async (req, res) => {
     const b = BUILTIN_BOARDS[req.params.id];
-    if (b) return res.json(b);
+    if (b) return res.json({ ...b, builtin: true });
     try {
-        const cb = await CustomBoard.findOne({ id: req.params.id }).lean();
+        const cb = await findVisibleCustomBoard(req.params.id, req.userId);
         if (!cb) return res.status(404).json({ error: 'not-found' });
         res.json(cb);
     } catch (e) {
@@ -37,20 +116,99 @@ router.get('/boards/:id', async (req, res) => {
 });
 
 router.post('/boards', async (req, res) => {
-    const { id, name, tiles, groupColors, description, isPublic } = req.body || {};
-    if (!id || !name) return res.status(400).json({ error: 'missing-fields' });
+    const { name, tiles, groupColors, description, isPublic } = req.body || {};
+    const id = req.body?.id || makeBoardId(name);
+    if (!name) return res.status(400).json({ error: 'missing-fields' });
+    if (BUILTIN_BOARDS[id]) return res.status(409).json({ error: 'built-in-board-readonly' });
     const errs = validateBoard({ tiles });
     if (errs.length) return res.status(400).json({ error: 'invalid-board', details: errs });
     try {
+        const existing = await CustomBoard.findOne({ id }).select('authorUserId');
+        if (existing && existing.authorUserId !== req.userId) {
+            return res.status(403).json({ error: 'not-owner' });
+        }
         const doc = await CustomBoard.findOneAndUpdate(
             { id },
-            {
-                id, name, tiles, groupColors, description, isPublic: !!isPublic,
-                authorUserId: req.userId, updatedAt: new Date(),
+            { $set: {
+                id,
+                name: String(name).slice(0, 80),
+                tiles,
+                groupColors,
+                description: String(description || '').slice(0, 500),
+                isPublic: isPublic !== false,
+                authorUserId: req.userId,
+                authorUsername: req.body?.authorUsername ? String(req.body.authorUsername).slice(0, 40) : undefined,
+                updatedAt: new Date(),
+            }, $setOnInsert: {
+                createdAt: new Date(),
+            },
             },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
-        res.json(doc);
+        res.json(customBoardView(doc));
+    } catch (e) {
+        res.status(500).json({ error: 'server' });
+    }
+});
+
+router.patch('/boards/:id', async (req, res) => {
+    if (BUILTIN_BOARDS[req.params.id]) return res.status(409).json({ error: 'built-in-board-readonly' });
+    try {
+        const doc = await findOwnedCustomBoard(req.params.id, req.userId);
+        if (!doc) return res.status(404).json({ error: 'not-found' });
+
+        const patch = { updatedAt: new Date() };
+        if ('name' in req.body) {
+            const name = String(req.body.name || '').trim();
+            if (!name) return res.status(400).json({ error: 'missing-fields' });
+            patch.name = name.slice(0, 80);
+        }
+        if ('description' in req.body) patch.description = String(req.body.description || '').slice(0, 500);
+        if ('isPublic' in req.body) patch.isPublic = !!req.body.isPublic;
+        if ('groupColors' in req.body) patch.groupColors = req.body.groupColors;
+        if ('tiles' in req.body) {
+            const errs = validateBoard({ tiles: req.body.tiles });
+            if (errs.length) return res.status(400).json({ error: 'invalid-board', details: errs });
+            patch.tiles = req.body.tiles;
+        }
+
+        Object.assign(doc, patch);
+        await doc.save();
+        res.json(customBoardView(doc));
+    } catch (e) {
+        res.status(500).json({ error: 'server' });
+    }
+});
+
+router.delete('/boards/:id', async (req, res) => {
+    if (BUILTIN_BOARDS[req.params.id]) return res.status(409).json({ error: 'built-in-board-readonly' });
+    try {
+        const result = await CustomBoard.deleteOne({ id: req.params.id, authorUserId: req.userId });
+        if (!result.deletedCount) return res.status(404).json({ error: 'not-found' });
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: 'server' });
+    }
+});
+
+router.post('/boards/:id/duplicate', async (req, res) => {
+    try {
+        const builtin = BUILTIN_BOARDS[req.params.id];
+        const source = builtin ? { ...builtin, isPublic: true } : await findVisibleCustomBoard(req.params.id, req.userId);
+        if (!source) return res.status(404).json({ error: 'not-found' });
+        const name = String(req.body?.name || `${source.name} Copy`).slice(0, 80);
+        const doc = await CustomBoard.create({
+            id: makeBoardId(name),
+            name,
+            description: String(req.body?.description ?? source.description ?? '').slice(0, 500),
+            isPublic: req.body?.isPublic === true,
+            authorUserId: req.userId,
+            tiles: JSON.parse(JSON.stringify(source.tiles || [])),
+            groupColors: normalizeGroupColors(source.groupColors),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        res.json(customBoardView(doc));
     } catch (e) {
         res.status(500).json({ error: 'server' });
     }
@@ -64,12 +222,15 @@ router.post('/rooms', async (req, res) => {
     if (!/^[\w .\-]{1,24}$/.test(username)) return res.status(400).json({ error: 'bad-username' });
     if (!TOKEN_COLORS.some(c => c.hex === color || c.id === color)) return res.status(400).json({ error: 'bad-color' });
 
+    const selectedBoardId = customBoardId || boardId || 'world-tour';
     let customBoard = null;
-    if (customBoardId) {
+    if (customBoardId || !BUILTIN_BOARDS[selectedBoardId]) {
         try {
-            customBoard = await CustomBoard.findOne({ id: customBoardId }).lean();
+            customBoard = await findVisibleCustomBoard(selectedBoardId, req.userId);
             if (!customBoard) return res.status(404).json({ error: 'board-not-found' });
-        } catch { /* ignore — fall back to default */ }
+        } catch {
+            return res.status(500).json({ error: 'server' });
+        }
     }
 
     const hex = TOKEN_COLORS.find(c => c.hex === color || c.id === color).hex;
@@ -77,9 +238,12 @@ router.post('/rooms', async (req, res) => {
         hostUserId: req.userId,
         hostUsername: username.trim(),
         hostColor: hex,
-        boardId,
+        boardId: selectedBoardId,
         customBoard,
     });
+    if (customBoard) {
+        CustomBoard.updateOne({ id: customBoard.id }, { $inc: { timesPlayed: 1 } }).catch(() => {});
+    }
     res.json({ roomCode: room.roomCode });
 });
 

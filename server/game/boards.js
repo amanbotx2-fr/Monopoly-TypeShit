@@ -120,14 +120,34 @@ function computeGroupSizes(tiles) {
 // to deal with missing GO / jail / etc.
 function validateBoard(board) {
     const errs = [];
+    const tiles = Array.isArray(board?.tiles) ? board.tiles : [];
     if (!board || !Array.isArray(board.tiles)) errs.push('tiles array missing');
-    if (board?.tiles?.length !== 40) errs.push(`expected 40 tiles, got ${board?.tiles?.length}`);
-    const has = (type) => board.tiles?.some(t => t.type === type);
+    if (tiles.length !== 40) errs.push(`expected 40 tiles, got ${tiles.length}`);
+    const allowedTypes = new Set(['go', 'property', 'station', 'utility', 'tax', 'chance', 'chest', 'jail', 'gotojail', 'parking']);
+    const has = (type) => tiles.some(t => t.type === type);
     if (!has('go')) errs.push('missing GO tile');
     if (!has('jail')) errs.push('missing Jail tile');
     if (!has('gotojail')) errs.push('missing Go To Jail tile');
-    for (let i = 0; i < (board.tiles || []).length; i++) {
-        if (board.tiles[i].pos !== i) errs.push(`tile ${i} has wrong pos ${board.tiles[i].pos}`);
+    if (tiles[0]?.type !== 'go') errs.push('tile 0 must be GO');
+    if (tiles[10]?.type !== 'jail') errs.push('tile 10 must be Jail');
+    if (tiles[30]?.type !== 'gotojail') errs.push('tile 30 must be Go To Jail');
+    for (let i = 0; i < tiles.length; i++) {
+        const tile = tiles[i];
+        if (tile.pos !== i) errs.push(`tile ${i} has wrong pos ${tile.pos}`);
+        if (!allowedTypes.has(tile.type)) errs.push(`tile ${i} has invalid type ${tile.type}`);
+        if (!tile.name || typeof tile.name !== 'string') errs.push(`tile ${i} needs a name`);
+        if (tile.type === 'property') {
+            if (!tile.group) errs.push(`property ${i} needs a group`);
+            if (!Array.isArray(tile.rent) || tile.rent.length !== 6) errs.push(`property ${i} needs six rent values`);
+            if (!Number.isFinite(Number(tile.price))) errs.push(`property ${i} needs a price`);
+            if (!Number.isFinite(Number(tile.houseCost))) errs.push(`property ${i} needs a house cost`);
+        }
+        if ((tile.type === 'station' || tile.type === 'utility') && !Number.isFinite(Number(tile.price))) {
+            errs.push(`${tile.type} ${i} needs a price`);
+        }
+        if (tile.type === 'tax' && !Number.isFinite(Number(tile.amount))) {
+            errs.push(`tax tile ${i} needs an amount`);
+        }
     }
     return errs;
 }

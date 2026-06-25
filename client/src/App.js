@@ -5,6 +5,7 @@ import Home from './components/home/Home';
 import Lobby from './components/lobby/Lobby';
 import Game from './components/game/Game';
 import MapEditor from './components/editor/MapEditor';
+import MyMaps from './components/editor/MyMaps';
 import Toasts from './components/common/Toasts';
 import { onError } from './socket';
 import { installGlobalClickSound, play as playSound } from './sound';
@@ -45,6 +46,8 @@ export default function App() {
                 <Route path="/" element={<Home userId={userId} pushToast={pushToast} />} />
                 <Route path="/r/:code" element={<RoomRouter userId={userId} pushToast={pushToast} />} />
                 <Route path="/editor" element={<MapEditor userId={userId} pushToast={pushToast} />} />
+                <Route path="/editor/:boardId" element={<MapEditor userId={userId} pushToast={pushToast} />} />
+                <Route path="/maps" element={<MyMaps userId={userId} pushToast={pushToast} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toasts toasts={toasts} />

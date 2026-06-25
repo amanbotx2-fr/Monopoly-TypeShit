@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
-import { Dice5, Users, Sparkles, PencilRuler } from 'lucide-react';
+import { Dice5, Users, Sparkles, PencilRuler, FolderOpen } from 'lucide-react';
 import TokenPicker from './TokenPicker';
 import DieFace from '../common/DieFace';
 import useIsMobile from '../../useIsMobile';
@@ -12,7 +12,7 @@ export default function Home({ pushToast }) {
     const [username, setUsername] = useState(() => localStorage.getItem('monopoly.username') || '');
     const [color, setColor] = useState(() => localStorage.getItem('monopoly.color') || '#EF4444');
     const [tokens, setTokens] = useState([]);
-    const [boards, setBoards] = useState({ builtin: [], community: [] });
+    const [boards, setBoards] = useState({ builtin: [], mine: [], community: [] });
     const [boardId, setBoardId] = useState('world-tour');
     const [joinCode, setJoinCode] = useState('');
     const [openRooms, setOpenRooms] = useState([]);
@@ -58,9 +58,14 @@ export default function Home({ pushToast }) {
                             <div style={{ color: 'var(--text-3)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>Aman Kumar</div>
                         </div>
                     </div>
-                    <button className="btn ghost sm" onClick={() => nav('/editor')}>
-                        <PencilRuler size={14} /> Map editor
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <button className="btn ghost sm" onClick={() => nav('/maps')}>
+                            <FolderOpen size={14} /> My maps
+                        </button>
+                        <button className="btn ghost sm" onClick={() => nav('/editor')}>
+                            <PencilRuler size={14} /> Map editor
+                        </button>
+                    </div>
                 </header>
 
                 <div style={{
@@ -95,9 +100,14 @@ export default function Home({ pushToast }) {
                             <optgroup label="Built-in">
                                 {boards.builtin.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                             </optgroup>
+                            {boards.mine?.length > 0 && (
+                                <optgroup label="My Maps">
+                                    {boards.mine.map(b => <option key={b.id} value={b.id}>{b.name}{b.isPublic ? '' : ' (Private)'}</option>)}
+                                </optgroup>
+                            )}
                             {boards.community?.length > 0 && (
                                 <optgroup label="Community">
-                                    {boards.community.map(b => <option key={b.id} value={b.id}>{b.name} — {b.authorUsername}</option>)}
+                                    {boards.community.map(b => <option key={b.id} value={b.id}>{b.name} — {b.authorUsername || 'Community'}</option>)}
                                 </optgroup>
                             )}
                         </select>

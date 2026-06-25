@@ -4,7 +4,7 @@
 // private fields before broadcast.
 
 const { v4: uuidv4 } = require('uuid');
-const { BUILTIN_BOARDS, WORLD_TOUR } = require('./boards');
+const { BUILTIN_BOARDS, WORLD_TOUR, computeGroupSizes } = require('./boards');
 const { newChanceDeck, newChestDeck } = require('./cards');
 
 const activeRooms = new Map();
@@ -132,7 +132,9 @@ function createTileState(tileDef) {
 }
 
 function createRoom({ hostUserId, hostUsername, hostColor, boardId = 'world-tour', customBoard = null }) {
-    const board = customBoard || BUILTIN_BOARDS[boardId];
+    const board = customBoard
+        ? { ...customBoard, groupSizes: customBoard.groupSizes || computeGroupSizes(customBoard.tiles || []) }
+        : BUILTIN_BOARDS[boardId];
     if (!board) throw new Error(`Unknown board: ${boardId}`);
 
     const roomCode = generateRoomCode();
