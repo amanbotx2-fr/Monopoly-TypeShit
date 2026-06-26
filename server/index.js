@@ -55,6 +55,21 @@ app.use('/api', require('./routes/rooms'));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.get('/api/me', (req, res) => res.json({ userId: req.userId }));
 
-registerSocketHandlers(io);
+const roomLifecycle = registerSocketHandlers(io);
 
 server.listen(PORT, () => console.log(`[monopoly] server on ${PORT}`));
+
+let shuttingDown = false;
+function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[monopoly] ${signal} received, cleaning up rooms`);
+    roomLifecycle.shutdown();
+    server.close(() => {
+        mongoose.connection.close(false).finally(() => process.exit(0));
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

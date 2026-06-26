@@ -4,7 +4,7 @@
 // game/*.js so this file stays thin.
 
 const {
-    activeRooms, getRoom, publicView, bumpVersion,
+    activeRooms, getRoom, deleteRoom, publicView, bumpVersion,
     appendChat, appendLog, TOKEN_COLORS,
 } = require('../game/state');
 const engine = require('../game/engine');
@@ -13,21 +13,34 @@ const auction = require('../game/auction');
 const trade = require('../game/trade');
 const GameRoom = require('../models/GameRoom');
 
+const DEFAULT_IDLE_CLEANUP_MS = 15 * 60 * 1000;
 const SAVE_INTERVAL = 30000;
+const IDLE_CLEANUP_MS = positiveInt(process.env.ROOM_IDLE_TIMEOUT_MS, DEFAULT_IDLE_CLEANUP_MS);
 const saveTimers = new Map();
+const idleTimers = new Map();
+let auctionHeartbeat = null;
+
+function positiveInt(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+async function saveRoomSnapshot(room) {
+    try {
+        await GameRoom.findOneAndUpdate(
+            { roomCode: room.roomCode },
+            { roomCode: room.roomCode, hostUserId: room.hostUserId, state: stripTransient(room), lastActivity: new Date() },
+            { upsert: true }
+        );
+    } catch (e) { /* mongo optional in dev */ }
+}
 
 function startAutoSave(roomCode) {
     if (saveTimers.has(roomCode)) return;
     const t = setInterval(async () => {
         const r = getRoom(roomCode);
         if (!r) { clearInterval(t); saveTimers.delete(roomCode); return; }
-        try {
-            await GameRoom.findOneAndUpdate(
-                { roomCode },
-                { roomCode, hostUserId: r.hostUserId, state: stripTransient(r), lastActivity: new Date() },
-                { upsert: true }
-            );
-        } catch (e) { /* mongo optional in dev */ }
+        await saveRoomSnapshot(r);
     }, SAVE_INTERVAL);
     saveTimers.set(roomCode, t);
 }
@@ -43,9 +56,96 @@ function stripTransient(room) {
     };
 }
 
+function cancelIdleCleanup(roomCode) {
+    const t = idleTimers.get(roomCode);
+    if (!t) return;
+    clearTimeout(t);
+    idleTimers.delete(roomCode);
+    const room = getRoom(roomCode);
+    if (room) {
+        room.cleanupAt = null;
+        room.cleanupReason = null;
+        if (room.lifecycle === 'empty-grace') {
+            room.lifecycle = room.ended ? 'finished' : (room.started ? 'in-progress' : 'waiting-for-players');
+        }
+    }
+}
+
+function connectedPlayers(room) {
+    return room.players.filter(p => p.socketId).length;
+}
+
+function scheduleIdleCleanup(io, room, reason = 'idle-timeout') {
+    if (!room || idleTimers.has(room.roomCode)) return;
+    room.lifecycle = 'empty-grace';
+    room.cleanupReason = reason;
+    room.cleanupAt = Date.now() + IDLE_CLEANUP_MS;
+    const t = setTimeout(() => {
+        cleanupRoom(io, room.roomCode, reason);
+    }, IDLE_CLEANUP_MS);
+    idleTimers.set(room.roomCode, t);
+}
+
+function disconnectRoomSockets(io, roomCode, reason) {
+    const socketIds = io.sockets.adapter.rooms.get(roomCode);
+    if (!socketIds) return;
+    for (const socketId of [...socketIds]) {
+        const s = io.sockets.sockets.get(socketId);
+        if (!s) continue;
+        s.data.roomDeleted = true;
+        s.emit('room-closed', { reason });
+        s.leave(roomCode);
+        s.disconnect(true);
+    }
+}
+
+function cleanupRoom(io, roomCode, reason = 'cleanup') {
+    cancelIdleCleanup(roomCode);
+    stopAutoSave(roomCode);
+
+    const room = getRoom(roomCode);
+    if (!room) return false;
+
+    room.lifecycle = 'deleting';
+    room.cleanupReason = reason;
+    room.cleanupAt = null;
+    room.auction = null;
+    room.trades = [];
+    for (const p of room.players) {
+        p.socketId = null;
+        p.connected = false;
+    }
+    room.spectators = [];
+
+    disconnectRoomSockets(io, roomCode, reason);
+    deleteRoom(roomCode);
+    return true;
+}
+
+function setActiveLifecycle(room) {
+    if (!room) return;
+    room.lifecycle = room.ended ? 'finished' : (room.started ? 'in-progress' : 'waiting-for-players');
+    room.cleanupAt = null;
+    room.cleanupReason = null;
+}
+
+function evaluateRoomLifecycle(io, room, reason = 'disconnect') {
+    if (!room || !getRoom(room.roomCode)) return;
+    if (!room.started) {
+        if (connectedPlayers(room) === 0) cleanupRoom(io, room.roomCode, reason);
+        return;
+    }
+    if (connectedPlayers(room) === 0) scheduleIdleCleanup(io, room, reason);
+}
+
 function broadcast(io, room, events = []) {
     bumpVersion(room);
     io.to(room.roomCode).emit('state', { room: publicView(room), events });
+    if (room.ended) {
+        room.lifecycle = 'finished';
+        stopAutoSave(room.roomCode);
+        saveRoomSnapshot(room);
+    }
 }
 
 function sysChat(io, room, text) {
@@ -75,9 +175,15 @@ function identify(socket) {
 
 function onJoin(io, socket, payload) {
     const ident = identify(socket);
-    if (!ident) return socket.emit('error-msg', 'invalid-session');
+    if (!ident) {
+        socket.emit('error-msg', 'invalid-session');
+        socket.disconnect(true);
+        return false;
+    }
     const { room, userId } = ident;
     const { username, color, asSpectator } = payload || {};
+    cancelIdleCleanup(room.roomCode);
+    setActiveLifecycle(room);
 
     socket.join(room.roomCode);
     socket.data.roomCode = room.roomCode;
@@ -89,7 +195,17 @@ function onJoin(io, socket, payload) {
         existing.socketId = socket.id;
         existing.connected = true;
         if (username) existing.username = String(username).slice(0, 24);
-        return broadcast(io, room, [{ type: 'player-reconnect', userId }]);
+        broadcast(io, room, [{ type: 'player-reconnect', userId }]);
+        return true;
+    }
+    const existingSpectator = room.spectators.find(s => s.userId === userId);
+    if (existingSpectator) {
+        replaceExistingSocket(io, socket, existingSpectator.socketId);
+        existingSpectator.socketId = socket.id;
+        if (username) existingSpectator.username = String(username).slice(0, 24);
+        broadcast(io, room, [{ type: 'spectator-join', userId }]);
+        evaluateRoomLifecycle(io, room, 'playerless-spectator');
+        return true;
     }
     if (asSpectator || room.started) {
         const spec = room.spectators.find(s => s.userId === userId);
@@ -100,9 +216,15 @@ function onJoin(io, socket, payload) {
         else {
             room.spectators.push({ userId, username: (username || 'Spectator').slice(0, 24), socketId: socket.id });
         }
-        return broadcast(io, room, [{ type: 'spectator-join', userId }]);
+        broadcast(io, room, [{ type: 'spectator-join', userId }]);
+        evaluateRoomLifecycle(io, room, 'playerless-spectator');
+        return true;
     }
-    if (room.players.length >= 8) return socket.emit('error-msg', 'room-full');
+    if (room.players.length >= 8) {
+        socket.emit('error-msg', 'room-full');
+        socket.disconnect(true);
+        return false;
+    }
 
     // Color conflict → auto-pick next free color.
     let hex = color || TOKEN_COLORS[room.players.length].hex;
@@ -123,6 +245,7 @@ function onJoin(io, socket, payload) {
     room.players.push(p);
     sysChat(io, room, `${p.username} joined`);
     broadcast(io, room, [{ type: 'player-join', userId }]);
+    return true;
 }
 
 function requirePlayer(room, userId) {
@@ -213,6 +336,9 @@ const handlers = {
         room.turnIndex = 0;
         room.turnPhase = 'awaiting-roll';
         room.turnStartedAt = Date.now();
+        room.lifecycle = 'in-progress';
+        room.cleanupAt = null;
+        room.cleanupReason = null;
         appendLog(room, { kind: 'game-start' });
         // First turn-start doesn't come through endTurn, so log it here.
         appendLog(room, { kind: 'turn-start', userId: room.players[0].userId });
@@ -370,10 +496,22 @@ function doPropAction(io, socket, getFn, pos) {
     broadcast(io, room, r.events);
 }
 
+function shutdownLifecycle(io) {
+    if (auctionHeartbeat) {
+        clearInterval(auctionHeartbeat);
+        auctionHeartbeat = null;
+    }
+    for (const roomCode of [...activeRooms.keys()]) {
+        cleanupRoom(io, roomCode, 'server-shutdown');
+    }
+    for (const roomCode of [...saveTimers.keys()]) stopAutoSave(roomCode);
+    for (const roomCode of [...idleTimers.keys()]) cancelIdleCleanup(roomCode);
+}
+
 function registerSocketHandlers(io) {
     // Heartbeat for auction timers. Runs every second across all rooms, only
     // checks rooms that actually have an open auction.
-    setInterval(() => {
+    auctionHeartbeat = setInterval(() => {
         for (const room of activeRooms.values()) {
             if (!room.auction) continue;
             const r = auction.maybeCloseOnTimeout(room);
@@ -382,7 +520,7 @@ function registerSocketHandlers(io) {
     }, 1000);
 
     io.on('connection', (socket) => {
-        onJoin(io, socket, socket.handshake.auth);
+        if (!onJoin(io, socket, socket.handshake.auth)) return;
 
         socket.on('chat',          (p) => safe(() => handlers['chat'](io, socket, p), socket));
         socket.on('set-color',     (p) => safe(() => handlers['set-color'](io, socket, p), socket));
@@ -410,16 +548,34 @@ function registerSocketHandlers(io) {
         socket.on('bankrupt',      (p) => safe(() => handlers['bankrupt'](io, socket, p), socket));
 
         socket.on('disconnect', () => {
-            if (socket.data.replacedBy) return;
+            if (socket.data.replacedBy || socket.data.roomDeleted) return;
             const room = getRoom(socket.data.roomCode);
             if (!room) return;
             const p = room.players.find(pl => pl.socketId === socket.id);
             if (p) { p.connected = false; p.socketId = null; }
             const s = room.spectators.find(sp => sp.socketId === socket.id);
             if (s) s.socketId = null;
+
+            if (!room.started && socket.data.userId === room.hostUserId) {
+                cleanupRoom(io, room.roomCode, 'host-disconnect-before-start');
+                return;
+            }
+
             broadcast(io, room, [{ type: 'player-disconnect', userId: socket.data.userId }]);
+            evaluateRoomLifecycle(io, room, 'idle-disconnect');
         });
     });
+
+    return {
+        cleanupRoom: (roomCode, reason) => cleanupRoom(io, roomCode, reason),
+        shutdown: () => shutdownLifecycle(io),
+        stats: () => ({
+            activeRooms: activeRooms.size,
+            saveTimers: saveTimers.size,
+            idleTimers: idleTimers.size,
+            auctionHeartbeat: auctionHeartbeat ? 1 : 0,
+        }),
+    };
 }
 
 function safe(fn, socket) {

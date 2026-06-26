@@ -188,6 +188,9 @@ function createRoom({ hostUserId, hostUsername, hostColor, boardId = 'world-tour
         started: false,
         ended: false,
         winnerUserId: null,
+        lifecycle: 'waiting-for-players',
+        cleanupAt: null,
+        cleanupReason: null,
         createdAt: Date.now(),
         lastActivity: Date.now(),
         // A monotonic version number so clients can detect missed deltas and
