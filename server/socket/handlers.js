@@ -12,18 +12,58 @@ const property = require('../game/property');
 const auction = require('../game/auction');
 const trade = require('../game/trade');
 const GameRoom = require('../models/GameRoom');
+const validation = require('../validation/payloads');
+const { socketRateLimit, positiveInt } = require('../abuse/rateLimit');
+const { clearPendingRoomCleanup, shutdownPendingRoomCleanup, pendingRoomStats } = require('../abuse/pendingRooms');
 
 const DEFAULT_IDLE_CLEANUP_MS = 15 * 60 * 1000;
 const SAVE_INTERVAL = 30000;
 const IDLE_CLEANUP_MS = positiveInt(process.env.ROOM_IDLE_TIMEOUT_MS, DEFAULT_IDLE_CLEANUP_MS);
+const SOCKET_LIMITS = {
+    default: {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_DEFAULT_PER_10_SEC, 120),
+        windowMs: 10000,
+    },
+    chat: {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_CHAT_PER_10_SEC, 8),
+        windowMs: 10000,
+    },
+    'trade-propose': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_TRADE_PROPOSE_PER_MIN, 10),
+        windowMs: 60000,
+    },
+    'trade-update': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_TRADE_UPDATE_PER_10_SEC, 20),
+        windowMs: 10000,
+    },
+    'trade-msg': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_TRADE_MSG_PER_10_SEC, 10),
+        windowMs: 10000,
+    },
+    'auction-bid': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_AUCTION_BID_PER_10_SEC, 20),
+        windowMs: 10000,
+    },
+    'auction-pass': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_AUCTION_PASS_PER_10_SEC, 10),
+        windowMs: 10000,
+    },
+    'set-username': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_USERNAME_PER_MIN, 6),
+        windowMs: 60000,
+    },
+    'set-color': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_COLOR_PER_MIN, 12),
+        windowMs: 60000,
+    },
+    'update-rules': {
+        limit: positiveInt(process.env.RATE_LIMIT_SOCKET_RULES_PER_10_SEC, 20),
+        windowMs: 10000,
+    },
+};
 const saveTimers = new Map();
 const idleTimers = new Map();
 let auctionHeartbeat = null;
-
-function positiveInt(value, fallback) {
-    const n = Number(value);
-    return Number.isFinite(n) && n > 0 ? n : fallback;
-}
 
 async function saveRoomSnapshot(room) {
     try {
@@ -100,6 +140,7 @@ function disconnectRoomSockets(io, roomCode, reason) {
 }
 
 function cleanupRoom(io, roomCode, reason = 'cleanup') {
+    clearPendingRoomCleanup(roomCode);
     cancelIdleCleanup(roomCode);
     stopAutoSave(roomCode);
 
@@ -153,6 +194,134 @@ function sysChat(io, room, text) {
     io.to(room.roomCode).emit('chat', msg);
 }
 
+function emitValidationError(socket, event, result) {
+    console.warn('[validation]', {
+        event,
+        socketId: socket.id,
+        userId: socket.data.userId,
+        roomCode: socket.data.roomCode,
+        code: result.error,
+        details: result.details,
+    });
+    socket.emit('validation-error', {
+        event,
+        error: 'validation',
+        code: result.error,
+        message: result.message,
+        details: result.details,
+    });
+    socket.emit('error-msg', result.message || result.error);
+    return false;
+}
+
+function emitRateLimitError(socket, event, payload) {
+    socket.emit('rate-limit', { event, ...payload });
+    socket.emit('error-msg', 'rate-limited');
+    return false;
+}
+
+function checkSocketEventRate(socket, event) {
+    return socketRateLimit(socket, event, SOCKET_LIMITS[event] || SOCKET_LIMITS.default);
+}
+
+function validatePayloadArgs(socket, event, args, validator) {
+    const payload = validation.oneObjectPayload(args, event);
+    if (!payload.ok) return payload;
+    return validator(payload.value, socket);
+}
+
+function bindPayloadEvent(socket, event, validator, handler) {
+    socket.on(event, (...args) => safe(() => {
+        const rate = checkSocketEventRate(socket, event);
+        if (!rate.ok) return emitRateLimitError(socket, event, rate.payload);
+        const result = validatePayloadArgs(socket, event, args, validator);
+        if (!result.ok) return emitValidationError(socket, event, result);
+        handler(result.value);
+    }, socket));
+}
+
+function bindNoPayloadEvent(socket, event, handler) {
+    socket.on(event, (...args) => safe(() => {
+        const rate = checkSocketEventRate(socket, event);
+        if (!rate.ok) return emitRateLimitError(socket, event, rate.payload);
+        const result = validation.noPayload(args, event);
+        if (!result.ok) return emitValidationError(socket, event, result);
+        handler();
+    }, socket));
+}
+
+function roomForSocket(socket) {
+    const room = getRoom(socket.data.roomCode);
+    if (!room) return validation.fail('room-not-found', 'room not found');
+    return validation.ok(room);
+}
+
+function activePlayerForSocket(socket, room) {
+    const player = requirePlayer(room, socket.data.userId);
+    if (!player) return validation.fail('bad-player', 'socket is not an active player in this room');
+    return validation.ok(player);
+}
+
+function playerForSocket(socket, room) {
+    const player = room.players.find(p => p.userId === socket.data.userId);
+    if (!player) return validation.fail('bad-player', 'socket is not a player in this room');
+    return validation.ok(player);
+}
+
+function validateAuctionBidEvent(payload, socket) {
+    const room = roomForSocket(socket);
+    if (!room.ok) return room;
+    const player = activePlayerForSocket(socket, room.value);
+    if (!player.ok) return player;
+    return validation.validateAuctionBidPayload(payload, player.value, room.value);
+}
+
+function validateTradeEvent(payload, socket, options) {
+    const room = roomForSocket(socket);
+    if (!room.ok) return room;
+    const player = activePlayerForSocket(socket, room.value);
+    if (!player.ok) return player;
+    return validation.validateTradePayload(payload, room.value, player.value, options);
+}
+
+function validateTradeActionEvent(payload, socket, label) {
+    const room = roomForSocket(socket);
+    if (!room.ok) return room;
+    const player = activePlayerForSocket(socket, room.value);
+    if (!player.ok) return player;
+    const id = validation.validateTradeIdPayload(payload, label);
+    if (!id.ok) return id;
+    const tr = room.value.trades.find(t => t.id === id.value.tradeId);
+    if (!tr || tr.status !== 'open') return validation.fail('bad-trade-id', 'trade is not open');
+    if (player.value.userId !== tr.fromUserId && player.value.userId !== tr.toUserId) {
+        return validation.fail('bad-trade-party', 'actor is not part of this trade');
+    }
+    return id;
+}
+
+function validateTradeMessageEvent(payload, socket) {
+    const room = roomForSocket(socket);
+    if (!room.ok) return room;
+    const player = activePlayerForSocket(socket, room.value);
+    if (!player.ok) return player;
+    const msg = validation.validateTradeMsgPayload(payload);
+    if (!msg.ok) return msg;
+    const tr = room.value.trades.find(t => t.id === msg.value.tradeId);
+    if (!tr || tr.status !== 'open') return validation.fail('bad-trade-id', 'trade is not open');
+    if (player.value.userId !== tr.fromUserId && player.value.userId !== tr.toUserId) {
+        return validation.fail('bad-trade-party', 'actor is not part of this trade');
+    }
+    return msg;
+}
+
+function validateBankruptEvent(payload, socket) {
+    const room = roomForSocket(socket);
+    if (!room.ok) return room;
+    const player = playerForSocket(socket, room.value);
+    if (!player.ok) return player;
+    return validation.validateBankruptPayload(payload, room.value, player.value);
+}
+
 function replaceExistingSocket(io, socket, oldSocketId) {
     if (!oldSocketId || oldSocketId === socket.id) return;
     const oldSocket = io.sockets.sockets.get(oldSocketId);
@@ -163,25 +332,31 @@ function replaceExistingSocket(io, socket, oldSocketId) {
 
 // Room metadata comes from the client, but identity comes only from the
 // express-session-backed Socket.IO middleware.
-function identify(socket) {
-    const auth = socket.handshake.auth || {};
+function identify(socket, auth) {
     const { roomCode } = auth;
     const userId = socket.data.userId;
     if (!userId || !roomCode) return null;
-    const room = getRoom(String(roomCode).toUpperCase());
+    const room = getRoom(roomCode);
     if (!room) return null;
     return { room, userId };
 }
 
 function onJoin(io, socket, payload) {
-    const ident = identify(socket);
+    const auth = validation.validateSocketAuth(payload, TOKEN_COLORS);
+    if (!auth.ok) {
+        emitValidationError(socket, 'connection', auth);
+        socket.disconnect(true);
+        return false;
+    }
+    const ident = identify(socket, auth.value);
     if (!ident) {
         socket.emit('error-msg', 'invalid-session');
         socket.disconnect(true);
         return false;
     }
     const { room, userId } = ident;
-    const { username, color, asSpectator } = payload || {};
+    const { username, color, asSpectator } = auth.value;
+    if (userId === room.hostUserId) clearPendingRoomCleanup(room.roomCode);
     cancelIdleCleanup(room.roomCode);
     setActiveLifecycle(room);
 
@@ -194,7 +369,7 @@ function onJoin(io, socket, payload) {
         replaceExistingSocket(io, socket, existing.socketId);
         existing.socketId = socket.id;
         existing.connected = true;
-        if (username) existing.username = String(username).slice(0, 24);
+        if (username) existing.username = username;
         broadcast(io, room, [{ type: 'player-reconnect', userId }]);
         return true;
     }
@@ -202,7 +377,7 @@ function onJoin(io, socket, payload) {
     if (existingSpectator) {
         replaceExistingSocket(io, socket, existingSpectator.socketId);
         existingSpectator.socketId = socket.id;
-        if (username) existingSpectator.username = String(username).slice(0, 24);
+        if (username) existingSpectator.username = username;
         broadcast(io, room, [{ type: 'spectator-join', userId }]);
         evaluateRoomLifecycle(io, room, 'playerless-spectator');
         return true;
@@ -273,10 +448,8 @@ const handlers = {
         if (!room || room.started) return;
         const p = room.players.find(pl => pl.userId === socket.data.userId);
         if (!p) return;
-        const hex = TOKEN_COLORS.find(c => c.hex === color || c.id === color)?.hex;
-        if (!hex) return;
-        if (room.players.some(x => x !== p && x.color === hex)) return socket.emit('error-msg', 'color-taken');
-        p.color = hex;
+        if (room.players.some(x => x !== p && x.color === color)) return socket.emit('error-msg', 'color-taken');
+        p.color = color;
         broadcast(io, room, [{ type: 'player-color', userId: p.userId }]);
     },
 
@@ -286,7 +459,7 @@ const handlers = {
         const p = room.players.find(pl => pl.userId === socket.data.userId)
                || room.spectators.find(s => s.userId === socket.data.userId);
         if (!p) return;
-        p.username = String(username).slice(0, 24);
+        p.username = username;
         broadcast(io, room, [{ type: 'player-rename', userId: p.userId }]);
     },
 
@@ -414,7 +587,7 @@ const handlers = {
         if (!room) return;
         const p = requirePlayer(room, socket.data.userId);
         if (!p) return;
-        const r = auction.placeBid(room, p, Number(amount));
+        const r = auction.placeBid(room, p, amount);
         if (!r.ok) return socket.emit('error-msg', r.error);
         broadcast(io, room, r.events);
     },
@@ -479,7 +652,8 @@ const handlers = {
         if (!room) return;
         const p = room.players.find(pl => pl.userId === socket.data.userId);
         if (!p) return;
-        const r = engine.declareBankruptcy(room, p, creditorUserId || null);
+        const r = engine.declareBankruptcy(room, p, creditorUserId);
+        if (r.ok) room.pendingDebt = null;
         if (!r.ok) return socket.emit('error-msg', r.error);
         broadcast(io, room, r.events);
     },
@@ -491,7 +665,7 @@ function doPropAction(io, socket, getFn, pos) {
     const p = room.players.find(pl => pl.userId === socket.data.userId);
     if (!p) return;
     const action = getFn(p);
-    const r = action(room, p, Number(pos));
+    const r = action(room, p, pos);
     if (!r.ok) return socket.emit('error-msg', r.error);
     broadcast(io, room, r.events);
 }
@@ -501,6 +675,7 @@ function shutdownLifecycle(io) {
         clearInterval(auctionHeartbeat);
         auctionHeartbeat = null;
     }
+    shutdownPendingRoomCleanup();
     for (const roomCode of [...activeRooms.keys()]) {
         cleanupRoom(io, roomCode, 'server-shutdown');
     }
@@ -522,30 +697,34 @@ function registerSocketHandlers(io) {
     io.on('connection', (socket) => {
         if (!onJoin(io, socket, socket.handshake.auth)) return;
 
-        socket.on('chat',          (p) => safe(() => handlers['chat'](io, socket, p), socket));
-        socket.on('set-color',     (p) => safe(() => handlers['set-color'](io, socket, p), socket));
-        socket.on('set-username',  (p) => safe(() => handlers['set-username'](io, socket, p), socket));
-        socket.on('update-rules',  (p) => safe(() => handlers['update-rules'](io, socket, p), socket));
-        socket.on('kick',          (p) => safe(() => handlers['kick'](io, socket, p), socket));
-        socket.on('start-game',    ()  => safe(() => handlers['start-game'](io, socket), socket));
-        socket.on('roll',          ()  => safe(() => handlers['roll'](io, socket), socket));
-        socket.on('buy',           ()  => safe(() => handlers['buy'](io, socket), socket));
-        socket.on('decline-buy',   ()  => safe(() => handlers['decline-buy'](io, socket), socket));
-        socket.on('end-turn',      ()  => safe(() => handlers['end-turn'](io, socket), socket));
-        socket.on('jail-pay',      ()  => safe(() => handlers['jail-pay'](io, socket), socket));
-        socket.on('jail-card',     ()  => safe(() => handlers['jail-card'](io, socket), socket));
-        socket.on('mortgage',      (p) => safe(() => handlers['mortgage'](io, socket, p), socket));
-        socket.on('unmortgage',    (p) => safe(() => handlers['unmortgage'](io, socket, p), socket));
-        socket.on('build',         (p) => safe(() => handlers['build'](io, socket, p), socket));
-        socket.on('demolish',      (p) => safe(() => handlers['demolish'](io, socket, p), socket));
-        socket.on('auction-bid',   (p) => safe(() => handlers['auction-bid'](io, socket, p), socket));
-        socket.on('auction-pass',  ()  => safe(() => handlers['auction-pass'](io, socket), socket));
-        socket.on('trade-propose', (p) => safe(() => handlers['trade-propose'](io, socket, p), socket));
-        socket.on('trade-update',  (p) => safe(() => handlers['trade-update'](io, socket, p), socket));
-        socket.on('trade-accept',  (p) => safe(() => handlers['trade-accept'](io, socket, p), socket));
-        socket.on('trade-reject',  (p) => safe(() => handlers['trade-reject'](io, socket, p), socket));
-        socket.on('trade-msg',     (p) => safe(() => handlers['trade-msg'](io, socket, p), socket));
-        socket.on('bankrupt',      (p) => safe(() => handlers['bankrupt'](io, socket, p), socket));
+        bindPayloadEvent(socket, 'chat',          validation.validateChatPayload, p => handlers['chat'](io, socket, p));
+        bindPayloadEvent(socket, 'set-color',     p => validation.validateColorPayload(p, TOKEN_COLORS), p => handlers['set-color'](io, socket, p));
+        bindPayloadEvent(socket, 'set-username',  validation.validateUsernamePayload, p => handlers['set-username'](io, socket, p));
+        bindPayloadEvent(socket, 'update-rules',  validation.validateRulesPayload, p => handlers['update-rules'](io, socket, p));
+        bindPayloadEvent(socket, 'kick',          p => {
+            const room = roomForSocket(socket);
+            if (!room.ok) return room;
+            return validation.validateKickPayload(p, room.value);
+        }, p => handlers['kick'](io, socket, p));
+        bindNoPayloadEvent(socket, 'start-game',    () => handlers['start-game'](io, socket));
+        bindNoPayloadEvent(socket, 'roll',          () => handlers['roll'](io, socket));
+        bindNoPayloadEvent(socket, 'buy',           () => handlers['buy'](io, socket));
+        bindNoPayloadEvent(socket, 'decline-buy',   () => handlers['decline-buy'](io, socket));
+        bindNoPayloadEvent(socket, 'end-turn',      () => handlers['end-turn'](io, socket));
+        bindNoPayloadEvent(socket, 'jail-pay',      () => handlers['jail-pay'](io, socket));
+        bindNoPayloadEvent(socket, 'jail-card',     () => handlers['jail-card'](io, socket));
+        bindPayloadEvent(socket, 'mortgage',      p => validation.validatePosPayload(p, 'mortgage'), p => handlers['mortgage'](io, socket, p));
+        bindPayloadEvent(socket, 'unmortgage',    p => validation.validatePosPayload(p, 'unmortgage'), p => handlers['unmortgage'](io, socket, p));
+        bindPayloadEvent(socket, 'build',         p => validation.validatePosPayload(p, 'build'), p => handlers['build'](io, socket, p));
+        bindPayloadEvent(socket, 'demolish',      p => validation.validatePosPayload(p, 'demolish'), p => handlers['demolish'](io, socket, p));
+        bindPayloadEvent(socket, 'auction-bid',   (p) => validateAuctionBidEvent(p, socket), p => handlers['auction-bid'](io, socket, p));
+        bindNoPayloadEvent(socket, 'auction-pass',  () => handlers['auction-pass'](io, socket));
+        bindPayloadEvent(socket, 'trade-propose', p => validateTradeEvent(p, socket, { requireRecipient: true }), p => handlers['trade-propose'](io, socket, p));
+        bindPayloadEvent(socket, 'trade-update',  p => validateTradeEvent(p, socket, { requireRecipient: false }), p => handlers['trade-update'](io, socket, p));
+        bindPayloadEvent(socket, 'trade-accept',  p => validateTradeActionEvent(p, socket, 'trade-accept'), p => handlers['trade-accept'](io, socket, p));
+        bindPayloadEvent(socket, 'trade-reject',  p => validateTradeActionEvent(p, socket, 'trade-reject'), p => handlers['trade-reject'](io, socket, p));
+        bindPayloadEvent(socket, 'trade-msg',     p => validateTradeMessageEvent(p, socket), p => handlers['trade-msg'](io, socket, p));
+        bindPayloadEvent(socket, 'bankrupt',      p => validateBankruptEvent(p, socket), p => handlers['bankrupt'](io, socket, p));
 
         socket.on('disconnect', () => {
             if (socket.data.replacedBy || socket.data.roomDeleted) return;
@@ -573,6 +752,7 @@ function registerSocketHandlers(io) {
             activeRooms: activeRooms.size,
             saveTimers: saveTimers.size,
             idleTimers: idleTimers.size,
+            ...pendingRoomStats(),
             auctionHeartbeat: auctionHeartbeat ? 1 : 0,
         }),
     };

@@ -7,6 +7,8 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { sessionMiddleware, sessionParser, socketSessionMiddleware } = require('./middleware/session');
 const registerSocketHandlers = require('./socket/handlers');
+const { positiveInt, socketConnectionRateLimit } = require('./abuse/rateLimit');
+const { configurePendingRoomCleanup, shutdownPendingRoomCleanup } = require('./abuse/pendingRooms');
 
 const app = express();
 const server = http.createServer(app);
@@ -42,10 +44,41 @@ const io = new Server(server, {
 app.set('trust proxy', 1);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
+app.use((err, req, res, next) => {
+    if (err?.type === 'entity.too.large') {
+        console.warn('[validation]', {
+            route: `${req.method} ${req.originalUrl}`,
+            code: 'payload-too-large',
+            details: err.message,
+        });
+        return res.status(413).json({
+            error: 'validation',
+            code: 'payload-too-large',
+            message: 'Payload is too large',
+        });
+    }
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        console.warn('[validation]', {
+            route: `${req.method} ${req.originalUrl}`,
+            code: 'invalid-json',
+            details: err.message,
+        });
+        return res.status(400).json({
+            error: 'validation',
+            code: 'invalid-json',
+            message: 'Malformed JSON body',
+        });
+    }
+    return next(err);
+});
 app.use(cookieParser());
 app.use(sessionMiddleware);
 io.engine.use(sessionParser);
 io.use(socketSessionMiddleware);
+io.use(socketConnectionRateLimit('socket-connect', {
+    limit: positiveInt(process.env.RATE_LIMIT_SOCKET_CONNECT_PER_MIN, 30),
+    windowMs: 60 * 1000,
+}));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monopoly')
     .then(() => console.log('[mongo] connected'))
@@ -56,6 +89,7 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.get('/api/me', (req, res) => res.json({ userId: req.userId }));
 
 const roomLifecycle = registerSocketHandlers(io);
+configurePendingRoomCleanup(roomLifecycle.cleanupRoom);
 
 server.listen(PORT, () => console.log(`[monopoly] server on ${PORT}`));
 
@@ -64,6 +98,7 @@ function shutdown(signal) {
     if (shuttingDown) return;
     shuttingDown = true;
     console.log(`[monopoly] ${signal} received, cleaning up rooms`);
+    shutdownPendingRoomCleanup();
     roomLifecycle.shutdown();
     server.close(() => {
         mongoose.connection.close(false).finally(() => process.exit(0));

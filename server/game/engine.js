@@ -159,6 +159,7 @@ function resolveLanding(room, player, diceRoll, { chainedFromCard = false } = {}
     const events = [];
     const def = tileDef(room, player.position);
     const st  = tileSt(room, player.position);
+    if (room.turnPhase !== 'resolving') room.pendingDebt = null;
 
     // Log the landing itself — card text / buy / rent / tax follow as sub-entries.
     if (!chainedFromCard) appendLog(room, { kind: 'land', userId: player.userId, pos: player.position, tileType: def.type, tileName: def.name });
@@ -198,6 +199,7 @@ function resolveLanding(room, player, diceRoll, { chainedFromCard = false } = {}
                     // a "you owe $N" banner on the client and block turn end
                     // until resolved.
                     room.turnPhase = 'resolving';
+                    room.pendingDebt = { userId: player.userId, creditor: owner.userId, amount: rent };
                     events.push({ type: 'debt', userId: player.userId, creditor: owner.userId, amount: rent });
                     return events;
                 }
@@ -212,6 +214,7 @@ function resolveLanding(room, player, diceRoll, { chainedFromCard = false } = {}
             events.push(...r.events);
             if (!r.ok) {
                 room.turnPhase = 'resolving';
+                room.pendingDebt = { userId: player.userId, creditor: 'bank', amount: def.amount };
                 events.push({ type: 'debt', userId: player.userId, creditor: 'bank', amount: def.amount });
                 return events;
             }
@@ -508,6 +511,7 @@ function endTurn(room, player) {
     }
     // Owed-money debts must be resolved first.
     if (room.turnPhase === 'resolving') return { ok: false, error: 'resolve-debt-first' };
+    room.pendingDebt = null;
 
     player.hasRolled = false;
     player.doublesThisTurn = 0;
@@ -569,6 +573,7 @@ function declareBankruptcy(room, player, creditorUserId = null) {
     }
     player.cash = 0;
     player.bankrupt = true;
+    room.pendingDebt = null;
 
     // Any "jail free" cards go back to the bottom of their decks.
     const lg = room.jailFreeLedger[player.userId];

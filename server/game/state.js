@@ -175,6 +175,7 @@ function createRoom({ hostUserId, hostUsername, hostColor, boardId = 'world-tour
 
         auction: null,                   // active auction { propertyPos, bids, currentBid, endsAt }
         trades: [],                      // active trade proposals { id, from, to, offer, request, status }
+        pendingDebt: null,               // server-only debt metadata while turnPhase === resolving
         parkingPot: 0,
 
         rules,

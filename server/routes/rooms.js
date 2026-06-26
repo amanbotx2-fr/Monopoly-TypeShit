@@ -8,6 +8,56 @@ const { v4: uuidv4 } = require('uuid');
 const { createRoom, activeRooms, publicView, TOKEN_COLORS } = require('../game/state');
 const { BUILTIN_BOARDS, validateBoard, computeGroupSizes } = require('../game/boards');
 const CustomBoard = require('../models/CustomBoard');
+const validation = require('../validation/payloads');
+const {
+    positiveInt,
+    rateLimitMiddleware,
+    httpSessionKey,
+    httpIpKey,
+    httpSessionId,
+    httpIpKey: requestIpKey,
+    abuseLog,
+} = require('../abuse/rateLimit');
+const { schedulePendingRoomCleanup } = require('../abuse/pendingRooms');
+
+const MINUTE = 60 * 1000;
+const REST_LIMITS = {
+    roomCreateSession: {
+        limit: positiveInt(process.env.RATE_LIMIT_ROOM_CREATE_SESSION_PER_MIN, 5),
+        windowMs: MINUTE,
+    },
+    roomCreateIp: {
+        limit: positiveInt(process.env.RATE_LIMIT_ROOM_CREATE_IP_PER_10_MIN, 30),
+        windowMs: 10 * MINUTE,
+    },
+    boardMutation: {
+        limit: positiveInt(process.env.RATE_LIMIT_BOARD_MUTATE_PER_MIN, 30),
+        windowMs: MINUTE,
+    },
+    lookup: {
+        limit: positiveInt(process.env.RATE_LIMIT_LOOKUP_PER_MIN, 180),
+        windowMs: MINUTE,
+    },
+    pendingRoomsPerSession: positiveInt(process.env.PENDING_ROOMS_PER_SESSION, 2),
+    maxActiveRooms: positiveInt(process.env.MAX_ACTIVE_ROOMS, 200),
+};
+
+const roomCreateSessionLimit = rateLimitMiddleware('room-create-session', {
+    ...REST_LIMITS.roomCreateSession,
+    key: httpSessionKey,
+});
+const roomCreateIpLimit = rateLimitMiddleware('room-create-ip', {
+    ...REST_LIMITS.roomCreateIp,
+    key: httpIpKey,
+});
+const boardMutationLimit = rateLimitMiddleware('board-mutation', {
+    ...REST_LIMITS.boardMutation,
+    key: httpSessionKey,
+});
+const lookupLimit = rateLimitMiddleware('lookup', {
+    ...REST_LIMITS.lookup,
+    key: httpSessionKey,
+});
 
 function escapeRegExp(s) {
     return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -26,6 +76,63 @@ function normalizeGroupColors(groupColors) {
     if (!groupColors) return undefined;
     if (groupColors instanceof Map) return Object.fromEntries(groupColors);
     return groupColors;
+}
+
+function validationError(res, req, result) {
+    console.warn('[validation]', {
+        route: `${req.method} ${req.originalUrl}`,
+        code: result.error,
+        details: result.details,
+    });
+    return res.status(400).json({
+        error: 'validation',
+        code: result.error,
+        message: result.message,
+        details: result.details,
+    });
+}
+
+function hostHasConnected(room) {
+    return !!room.players?.some(p => p.userId === room.hostUserId && p.socketId);
+}
+
+function rateLimitError(res, req, code, message, details) {
+    abuseLog({
+        kind: 'http-rate-limit',
+        sessionId: httpSessionId(req),
+        socketId: null,
+        event: `${req.method} ${req.originalUrl}`,
+        roomCode: null,
+        limitName: code,
+        ip: requestIpKey(req),
+        retryAfterMs: 0,
+    });
+    return res.status(429).json({
+        error: 'rate-limited',
+        code,
+        message,
+        details,
+    });
+}
+
+function enforceRoomCreationCapacity(req, res, next) {
+    if (activeRooms.size >= REST_LIMITS.maxActiveRooms) {
+        return rateLimitError(res, req, 'active-room-capacity', 'Too many active rooms');
+    }
+    let pending = 0;
+    for (const room of activeRooms.values()) {
+        if (room.hostUserId !== req.userId) continue;
+        if (room.started) continue;
+        if (hostHasConnected(room)) continue;
+        pending += 1;
+    }
+    if (pending >= REST_LIMITS.pendingRoomsPerSession) {
+        return rateLimitError(res, req, 'pending-room-limit', 'Too many rooms are waiting for host connection', {
+            pending,
+            limit: REST_LIMITS.pendingRoomsPerSession,
+        });
+    }
+    return next();
 }
 
 function customBoardView(board) {
@@ -65,7 +172,7 @@ async function findOwnedCustomBoard(id, userId) {
 }
 
 // List all built-in + user's own boards + public community boards.
-router.get('/boards', async (req, res) => {
+router.get('/boards', lookupLimit, async (req, res) => {
     const builtin = Object.values(BUILTIN_BOARDS).map(b => boardSummary(b, true));
     let mine = [];
     let community = [];
@@ -88,8 +195,10 @@ router.get('/boards', async (req, res) => {
     });
 });
 
-router.get('/boards/my', async (req, res) => {
-    const q = String(req.query.q || '').trim();
+router.get('/boards/my', lookupLimit, async (req, res) => {
+    const qResult = validation.validateQueryText(req.query.q);
+    if (!qResult.ok) return validationError(res, req, qResult);
+    const q = qResult.value;
     const query = { authorUserId: req.userId };
     if (q) query.name = { $regex: escapeRegExp(q), $options: 'i' };
     try {
@@ -103,11 +212,13 @@ router.get('/boards/my', async (req, res) => {
     }
 });
 
-router.get('/boards/:id', async (req, res) => {
-    const b = BUILTIN_BOARDS[req.params.id];
+router.get('/boards/:id', lookupLimit, async (req, res) => {
+    const id = validation.boardId(req.params.id, 'id');
+    if (!id.ok) return validationError(res, req, id);
+    const b = BUILTIN_BOARDS[id.value];
     if (b) return res.json({ ...b, builtin: true });
     try {
-        const cb = await findVisibleCustomBoard(req.params.id, req.userId);
+        const cb = await findVisibleCustomBoard(id.value, req.userId);
         if (!cb) return res.status(404).json({ error: 'not-found' });
         res.json(cb);
     } catch (e) {
@@ -115,10 +226,11 @@ router.get('/boards/:id', async (req, res) => {
     }
 });
 
-router.post('/boards', async (req, res) => {
-    const { name, tiles, groupColors, description, isPublic } = req.body || {};
-    const id = req.body?.id || makeBoardId(name);
-    if (!name) return res.status(400).json({ error: 'missing-fields' });
+router.post('/boards', boardMutationLimit, async (req, res) => {
+    const body = validation.validateCreateBoardBody(req.body);
+    if (!body.ok) return validationError(res, req, body);
+    const { name, tiles, groupColors, description, isPublic, authorUsername } = body.value;
+    const id = body.value.id || makeBoardId(name);
     if (BUILTIN_BOARDS[id]) return res.status(409).json({ error: 'built-in-board-readonly' });
     const errs = validateBoard({ tiles });
     if (errs.length) return res.status(400).json({ error: 'invalid-board', details: errs });
@@ -131,13 +243,13 @@ router.post('/boards', async (req, res) => {
             { id },
             { $set: {
                 id,
-                name: String(name).slice(0, 80),
+                name,
                 tiles,
                 groupColors,
-                description: String(description || '').slice(0, 500),
+                description,
                 isPublic: isPublic !== false,
                 authorUserId: req.userId,
-                authorUsername: req.body?.authorUsername ? String(req.body.authorUsername).slice(0, 40) : undefined,
+                authorUsername,
                 updatedAt: new Date(),
             }, $setOnInsert: {
                 createdAt: new Date(),
@@ -151,25 +263,20 @@ router.post('/boards', async (req, res) => {
     }
 });
 
-router.patch('/boards/:id', async (req, res) => {
-    if (BUILTIN_BOARDS[req.params.id]) return res.status(409).json({ error: 'built-in-board-readonly' });
+router.patch('/boards/:id', boardMutationLimit, async (req, res) => {
+    const id = validation.boardId(req.params.id, 'id');
+    if (!id.ok) return validationError(res, req, id);
+    const body = validation.validatePatchBoardBody(req.body);
+    if (!body.ok) return validationError(res, req, body);
+    if (BUILTIN_BOARDS[id.value]) return res.status(409).json({ error: 'built-in-board-readonly' });
     try {
-        const doc = await findOwnedCustomBoard(req.params.id, req.userId);
+        const doc = await findOwnedCustomBoard(id.value, req.userId);
         if (!doc) return res.status(404).json({ error: 'not-found' });
 
-        const patch = { updatedAt: new Date() };
-        if ('name' in req.body) {
-            const name = String(req.body.name || '').trim();
-            if (!name) return res.status(400).json({ error: 'missing-fields' });
-            patch.name = name.slice(0, 80);
-        }
-        if ('description' in req.body) patch.description = String(req.body.description || '').slice(0, 500);
-        if ('isPublic' in req.body) patch.isPublic = !!req.body.isPublic;
-        if ('groupColors' in req.body) patch.groupColors = req.body.groupColors;
-        if ('tiles' in req.body) {
-            const errs = validateBoard({ tiles: req.body.tiles });
+        const patch = { ...body.value, updatedAt: new Date() };
+        if ('tiles' in body.value) {
+            const errs = validateBoard({ tiles: body.value.tiles });
             if (errs.length) return res.status(400).json({ error: 'invalid-board', details: errs });
-            patch.tiles = req.body.tiles;
         }
 
         Object.assign(doc, patch);
@@ -180,10 +287,12 @@ router.patch('/boards/:id', async (req, res) => {
     }
 });
 
-router.delete('/boards/:id', async (req, res) => {
-    if (BUILTIN_BOARDS[req.params.id]) return res.status(409).json({ error: 'built-in-board-readonly' });
+router.delete('/boards/:id', boardMutationLimit, async (req, res) => {
+    const id = validation.boardId(req.params.id, 'id');
+    if (!id.ok) return validationError(res, req, id);
+    if (BUILTIN_BOARDS[id.value]) return res.status(409).json({ error: 'built-in-board-readonly' });
     try {
-        const result = await CustomBoard.deleteOne({ id: req.params.id, authorUserId: req.userId });
+        const result = await CustomBoard.deleteOne({ id: id.value, authorUserId: req.userId });
         if (!result.deletedCount) return res.status(404).json({ error: 'not-found' });
         res.json({ ok: true });
     } catch (e) {
@@ -191,17 +300,21 @@ router.delete('/boards/:id', async (req, res) => {
     }
 });
 
-router.post('/boards/:id/duplicate', async (req, res) => {
+router.post('/boards/:id/duplicate', boardMutationLimit, async (req, res) => {
+    const id = validation.boardId(req.params.id, 'id');
+    if (!id.ok) return validationError(res, req, id);
+    const body = validation.validateDuplicateBoardBody(req.body);
+    if (!body.ok) return validationError(res, req, body);
     try {
-        const builtin = BUILTIN_BOARDS[req.params.id];
-        const source = builtin ? { ...builtin, isPublic: true } : await findVisibleCustomBoard(req.params.id, req.userId);
+        const builtin = BUILTIN_BOARDS[id.value];
+        const source = builtin ? { ...builtin, isPublic: true } : await findVisibleCustomBoard(id.value, req.userId);
         if (!source) return res.status(404).json({ error: 'not-found' });
-        const name = String(req.body?.name || `${source.name} Copy`).slice(0, 80);
+        const name = (body.value.name || `${source.name} Copy`).slice(0, 80);
         const doc = await CustomBoard.create({
             id: makeBoardId(name),
             name,
-            description: String(req.body?.description ?? source.description ?? '').slice(0, 500),
-            isPublic: req.body?.isPublic === true,
+            description: 'description' in body.value ? body.value.description : (source.description || ''),
+            isPublic: body.value.isPublic === true,
             authorUserId: req.userId,
             tiles: JSON.parse(JSON.stringify(source.tiles || [])),
             groupColors: normalizeGroupColors(source.groupColors),
@@ -216,13 +329,12 @@ router.post('/boards/:id/duplicate', async (req, res) => {
 
 // Create a new room. Body: { username, color, boardId }. Host becomes
 // player 0; others join via socket.
-router.post('/rooms', async (req, res) => {
-    const { username, color, boardId = 'world-tour', customBoardId } = req.body || {};
-    if (!username || !color) return res.status(400).json({ error: 'missing-fields' });
-    if (!/^[\w .\-]{1,24}$/.test(username)) return res.status(400).json({ error: 'bad-username' });
-    if (!TOKEN_COLORS.some(c => c.hex === color || c.id === color)) return res.status(400).json({ error: 'bad-color' });
+router.post('/rooms', roomCreateSessionLimit, roomCreateIpLimit, enforceRoomCreationCapacity, async (req, res) => {
+    const body = validation.validateCreateRoomBody(req.body, TOKEN_COLORS);
+    if (!body.ok) return validationError(res, req, body);
+    const { username, color, boardId, customBoardId } = body.value;
 
-    const selectedBoardId = customBoardId || boardId || 'world-tour';
+    const selectedBoardId = customBoardId || boardId;
     let customBoard = null;
     if (customBoardId || !BUILTIN_BOARDS[selectedBoardId]) {
         try {
@@ -233,22 +345,24 @@ router.post('/rooms', async (req, res) => {
         }
     }
 
-    const hex = TOKEN_COLORS.find(c => c.hex === color || c.id === color).hex;
     const room = createRoom({
         hostUserId: req.userId,
-        hostUsername: username.trim(),
-        hostColor: hex,
+        hostUsername: username,
+        hostColor: color,
         boardId: selectedBoardId,
         customBoard,
     });
+    schedulePendingRoomCleanup(room);
     if (customBoard) {
         CustomBoard.updateOne({ id: customBoard.id }, { $inc: { timesPlayed: 1 } }).catch(() => {});
     }
     res.json({ roomCode: room.roomCode });
 });
 
-router.get('/rooms/:code', (req, res) => {
-    const r = activeRooms.get(req.params.code.toUpperCase());
+router.get('/rooms/:code', lookupLimit, (req, res) => {
+    const code = validation.roomCode(req.params.code);
+    if (!code.ok) return validationError(res, req, code);
+    const r = activeRooms.get(code.value);
     if (!r) return res.status(404).json({ error: 'not-found' });
     // Lightweight preview — don't leak the whole state.
     res.json({
@@ -260,7 +374,7 @@ router.get('/rooms/:code', (req, res) => {
     });
 });
 
-router.get('/rooms', (req, res) => {
+router.get('/rooms', lookupLimit, (req, res) => {
     // Public list: rooms that haven't started and have headroom. Handy for a
     // "quick join" browser view — skip rooms with zero activity in 5 minutes.
     const now = Date.now();
