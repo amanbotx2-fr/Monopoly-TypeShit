@@ -1,4 +1,4 @@
-// Socket.io client singleton keyed by (roomCode, userId). Reconnects with
+// Socket.io client singleton keyed by roomCode. Reconnects with
 // backoff; all inbound events feed a listener map so multiple components
 // can subscribe without stepping on each other.
 
@@ -9,7 +9,7 @@ let socket = null;
 let currentRoom = null;
 const listeners = { state: new Set(), chat: new Set(), error: new Set() };
 
-export function connectSocket({ userId, roomCode, username, color, asSpectator }) {
+export function connectSocket({ roomCode, username, color, asSpectator }) {
     if (socket && currentRoom === roomCode) return socket;
     if (socket) { socket.disconnect(); socket = null; }
     currentRoom = roomCode;
@@ -20,7 +20,7 @@ export function connectSocket({ userId, roomCode, username, color, asSpectator }
         reconnection: true,
         reconnectionDelay: 500,
         reconnectionDelayMax: 5000,
-        auth: { userId, roomCode, username, color, asSpectator: !!asSpectator },
+        auth: { roomCode, username, color, asSpectator: !!asSpectator },
     });
 
     socket.on('state',      (p) => listeners.state.forEach(fn => fn(p)));

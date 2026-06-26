@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { sessionMiddleware } = require('./middleware/session');
+const { sessionMiddleware, sessionParser, socketSessionMiddleware } = require('./middleware/session');
 const registerSocketHandlers = require('./socket/handlers');
 
 const app = express();
@@ -44,6 +44,8 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 app.use(cookieParser());
 app.use(sessionMiddleware);
+io.engine.use(sessionParser);
+io.use(socketSessionMiddleware);
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monopoly')
     .then(() => console.log('[mongo] connected'))

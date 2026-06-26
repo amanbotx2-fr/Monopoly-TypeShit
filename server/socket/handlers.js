@@ -3,7 +3,6 @@
 // the resulting delta + events to the whole room. We keep logic in
 // game/*.js so this file stays thin.
 
-const { v4: uuidv4 } = require('uuid');
 const {
     activeRooms, getRoom, publicView, bumpVersion,
     appendChat, appendLog, TOKEN_COLORS,
@@ -54,11 +53,20 @@ function sysChat(io, room, text) {
     io.to(room.roomCode).emit('chat', msg);
 }
 
-// Per-socket auth payload sent by client on connect: { userId, roomCode, username, color }.
-// We trust userId because it comes from an httpOnly cookie the HTTP layer set.
+function replaceExistingSocket(io, socket, oldSocketId) {
+    if (!oldSocketId || oldSocketId === socket.id) return;
+    const oldSocket = io.sockets.sockets.get(oldSocketId);
+    if (!oldSocket) return;
+    oldSocket.data.replacedBy = socket.id;
+    oldSocket.disconnect(true);
+}
+
+// Room metadata comes from the client, but identity comes only from the
+// express-session-backed Socket.IO middleware.
 function identify(socket) {
     const auth = socket.handshake.auth || {};
-    const { userId, roomCode } = auth;
+    const { roomCode } = auth;
+    const userId = socket.data.userId;
     if (!userId || !roomCode) return null;
     const room = getRoom(String(roomCode).toUpperCase());
     if (!room) return null;
@@ -77,6 +85,7 @@ function onJoin(io, socket, payload) {
 
     const existing = room.players.find(p => p.userId === userId);
     if (existing) {
+        replaceExistingSocket(io, socket, existing.socketId);
         existing.socketId = socket.id;
         existing.connected = true;
         if (username) existing.username = String(username).slice(0, 24);
@@ -84,7 +93,10 @@ function onJoin(io, socket, payload) {
     }
     if (asSpectator || room.started) {
         const spec = room.spectators.find(s => s.userId === userId);
-        if (spec) { spec.socketId = socket.id; }
+        if (spec) {
+            replaceExistingSocket(io, socket, spec.socketId);
+            spec.socketId = socket.id;
+        }
         else {
             room.spectators.push({ userId, username: (username || 'Spectator').slice(0, 24), socketId: socket.id });
         }
@@ -398,10 +410,13 @@ function registerSocketHandlers(io) {
         socket.on('bankrupt',      (p) => safe(() => handlers['bankrupt'](io, socket, p), socket));
 
         socket.on('disconnect', () => {
+            if (socket.data.replacedBy) return;
             const room = getRoom(socket.data.roomCode);
             if (!room) return;
             const p = room.players.find(pl => pl.socketId === socket.id);
             if (p) { p.connected = false; p.socketId = null; }
+            const s = room.spectators.find(sp => sp.socketId === socket.id);
+            if (s) s.socketId = null;
             broadcast(io, room, [{ type: 'player-disconnect', userId: socket.data.userId }]);
         });
     });
