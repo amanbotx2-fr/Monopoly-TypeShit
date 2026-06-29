@@ -13,21 +13,20 @@ export default function CardModal({ deck, text, onClose }) {
 
     return (
         <Overlay onClose={onClose}>
-            <div className="fade-in" style={{
+            <div className="modal-panel fade-in" style={{
                 width: 320, padding: 24, borderRadius: 'var(--radius-lg)',
-                background: 'var(--surface)', border: `2px solid ${isChance ? 'var(--warning)' : 'var(--accent-2)'}`,
-                boxShadow: 'var(--shadow-lg)',
+                border: `1px solid ${isChance ? 'var(--warning)' : 'var(--accent-2)'}`,
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                     <Icon size={22} color={isChance ? 'var(--warning)' : 'var(--accent-2)'} />
-                    <div style={{ fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: 16, textTransform: 'uppercase' }}>
                         {isChance ? 'Chance' : 'Community Chest'}
                     </div>
                 </div>
                 <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text)', minHeight: 50 }}>
                     {text}
                 </div>
-                <div style={{ marginTop: 14, fontSize: 11, color: 'var(--text-4)', textAlign: 'right' }}>click to dismiss</div>
+                <div style={{ marginTop: 14, fontSize: 11, color: 'var(--text-4)', textAlign: 'right' }}>Click to dismiss</div>
             </div>
         </Overlay>
     );

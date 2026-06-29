@@ -42,7 +42,7 @@ export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose })
                 X in the panel header handles closing. */}
             {!open && (
                 <button
-                    className="btn"
+                    className="btn floating-button"
                     onClick={onOpen}
                     style={{
                         position: 'fixed', right: 16, bottom: 16, zIndex: 80,
@@ -81,16 +81,16 @@ export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose })
                     <div className="slide-in-right" style={{
                         position: 'fixed', right: 0, top: 0, bottom: 0, zIndex: 75,
                         width: 360, maxWidth: '90vw',
-                        background: 'var(--surface)',
+                        background: 'var(--surface-elevated)',
                         borderLeft: '1px solid var(--border)',
                         boxShadow: 'var(--shadow-lg)',
                         display: 'flex', flexDirection: 'column',
                     }}>
-                        <div style={{ padding: 14, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div className="modal-header" style={{ padding: 14 }}>
                             <MessageSquare size={14} color="var(--accent)" />
-                            <div style={{ fontWeight: 700, fontSize: 14 }}>Chat</div>
+                            <div className="modal-title" style={{ fontSize: 14 }}>Chat</div>
                             <div style={{ flex: 1 }} />
-                            <button className="btn sm ghost" onClick={onClose}><X size={14} /></button>
+                            <button className="btn sm icon ghost" onClick={onClose} aria-label="Close chat"><X size={14} /></button>
                         </div>
                         <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {chat.length === 0 && (
@@ -117,6 +117,7 @@ export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose })
                                 autoFocus
                                 style={{ flex: 1, fontSize: 13 }}
                                 placeholder="Say something…"
+                                aria-label="Chat message"
                                 value={text}
                                 onChange={e => setText(e.target.value.slice(0, 500))}
                             />

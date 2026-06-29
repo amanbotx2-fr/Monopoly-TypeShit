@@ -41,5 +41,6 @@ export function onError(fn)  { listeners.error.add(fn);  return () => listeners.
 
 export function emit(event, payload) {
     if (!socket) return;
-    socket.emit(event, payload);
+    if (payload === undefined) socket.emit(event);
+    else socket.emit(event, payload);
 }

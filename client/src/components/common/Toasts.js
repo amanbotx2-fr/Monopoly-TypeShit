@@ -14,16 +14,16 @@ export default function Toasts({ toasts }) {
         }}>
             {toasts.map(t => (
                 <div key={t.id} className="slide-up" style={{
-                    padding: '10px 14px',
+                    padding: '11px 14px',
                     background: 'var(--surface-2)',
                     border: `1px solid ${KIND_COLORS[t.kind] || 'var(--border)'}`,
-                    borderLeftWidth: 3,
                     borderRadius: 'var(--radius)',
                     color: 'var(--text)',
                     fontSize: 13,
                     fontWeight: 500,
                     boxShadow: 'var(--shadow-lg)',
                     maxWidth: 360,
+                    outline: `1px solid color-mix(in oklch, ${KIND_COLORS[t.kind] || 'var(--border)'} 24%, transparent)`,
                 }}>{t.text}</div>
             ))}
         </div>

@@ -57,7 +57,7 @@ function LogRow({ e, nameOf, tile }) {
         case 'trade-executed':body = <><b style={{ color: 'var(--success)' }}>Trade completed.</b></>; break;
         case 'trade-close':   body = <>Trade {e.status}.</>; break;
         case 'bankrupt':      body = <><span style={{ color: 'var(--danger)', fontWeight: 700 }}>{nameOf(e.userId)} went bankrupt</span>{e.creditor ? <> to {nameOf(e.creditor)}</> : ''}.</>; break;
-        case 'victory':       body = <><b style={{ color: 'var(--success)' }}>🏆 {nameOf(e.userId)} wins!</b></>; break;
+        case 'victory':       body = <><b style={{ color: 'var(--success)' }}>{nameOf(e.userId)} wins.</b></>; break;
         default: body = <em style={{ color: 'var(--text-4)' }}>{e.kind}</em>;
     }
     return <div>{body}</div>;

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
+import BrandLogo from '../common/BrandLogo';
 import { ArrowLeft, Copy, Edit3, Eye, EyeOff, Loader2, Plus, Search, Trash2, Check, X } from 'lucide-react';
 
 export default function MyMaps({ pushToast }) {
@@ -65,14 +66,15 @@ export default function MyMaps({ pushToast }) {
     }
 
     return (
-        <div className="grid-bg" style={{ flex: 1, overflow: 'auto' }}>
-            <div style={{ maxWidth: 1120, margin: '0 auto', padding: '28px 20px 48px' }}>
-                <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, flexWrap: 'wrap' }}>
+        <div className="app-page grid-bg">
+            <div className="page-shell">
+                <header className="topbar" style={{ marginBottom: 22, flexWrap: 'wrap' }}>
                     <button className="btn ghost sm" onClick={() => nav('/')}>
                         <ArrowLeft size={14} /> Home
                     </button>
+                    <BrandLogo size={30} showText={false} />
                     <div>
-                        <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: -0.5 }}>My Maps</div>
+                        <div className="brand-title" style={{ fontSize: 30 }}>My Maps</div>
                         <div style={{ color: 'var(--text-3)', fontSize: 13 }}>Manage custom boards saved on this browser identity.</div>
                     </div>
                     <div style={{ flex: 1 }} />
@@ -81,13 +83,13 @@ export default function MyMaps({ pushToast }) {
                     </button>
                 </header>
 
-                <div className="card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className="card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <Search size={16} color="var(--text-3)" />
                     <input
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search maps"
-                        style={{ flex: 1, fontSize: 14 }}
+                        style={{ flex: 1, minWidth: 220, fontSize: 14 }}
                     />
                     <button className="btn sm" onClick={loadMaps} disabled={loading}>
                         {loading ? <Loader2 size={13} /> : null} Refresh
@@ -95,14 +97,16 @@ export default function MyMaps({ pushToast }) {
                 </div>
 
                 {loading && (
-                    <div className="card" style={{ color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="card status-line">
+                        <BrandLogo size={24} showText={false} />
                         <Loader2 size={16} /> Loading maps...
                     </div>
                 )}
 
                 {!loading && filtered.length === 0 && (
-                    <div className="card" style={{ textAlign: 'center', color: 'var(--text-3)' }}>
-                        No maps found.
+                    <div className="card empty-state" style={{ display: 'grid', justifyItems: 'center', gap: 10 }}>
+                        <BrandLogo size={28} showText={false} />
+                        <div>No maps found.</div>
                     </div>
                 )}
 
@@ -111,13 +115,13 @@ export default function MyMaps({ pushToast }) {
                         {filtered.map(map => (
                             <div key={map.id} className="card" style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'minmax(0, 1fr) auto',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                                 gap: 14,
                                 alignItems: 'center',
                             }}>
                                 <div style={{ minWidth: 0 }}>
                                     {renamingId === map.id ? (
-                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
                                             <input
                                                 value={renameValue}
                                                 onChange={e => setRenameValue(e.target.value.slice(0, 80))}
@@ -143,7 +147,7 @@ export default function MyMaps({ pushToast }) {
                                     {map.description && (
                                         <div style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 4 }}>{map.description}</div>
                                     )}
-                                    <div className="mono" style={{ color: 'var(--text-4)', fontSize: 11, marginTop: 8 }}>
+                                    <div className="mono" style={{ color: 'var(--text-4)', fontSize: 11, marginTop: 8, overflowWrap: 'anywhere' }}>
                                         {map.id} - played {map.timesPlayed || 0} times
                                     </div>
                                 </div>

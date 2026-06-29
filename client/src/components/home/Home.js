@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
-import { Dice5, Users, Sparkles, PencilRuler, FolderOpen } from 'lucide-react';
+import { Users, Map, PencilRuler, FolderOpen, ArrowRight, ShieldCheck, PlayCircle } from 'lucide-react';
 import TokenPicker from './TokenPicker';
-import DieFace from '../common/DieFace';
+import BrandLogo from '../common/BrandLogo';
 import useIsMobile from '../../useIsMobile';
 
 export default function Home({ pushToast }) {
@@ -47,18 +47,14 @@ export default function Home({ pushToast }) {
         nav(`/r/${trimmed}`);
     }
 
+    const boardCount = (boards.builtin?.length || 0) + (boards.mine?.length || 0) + (boards.community?.length || 0);
+
     return (
-        <div className="grid-bg" style={{ flex: 1, overflowY: 'auto', minHeight: '100%' }}>
-            <div style={{ maxWidth: 1120, margin: '0 auto', padding: isMobile ? '24px 14px' : '48px 24px' }}>
-                <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 24 : 48 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <DieFace value={5} size={44} />
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }}>Monopoly</div>
-                            <div style={{ color: 'var(--text-3)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>Aman Kumar</div>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div className="app-page grid-bg">
+            <div className="page-shell">
+                <header className="topbar">
+                    <BrandLogo size={isMobile ? 28 : 36} />
+                    <div className="cluster" style={{ justifyContent: 'flex-end' }}>
                         <button className="btn ghost sm" onClick={() => nav('/maps')}>
                             <FolderOpen size={14} /> My maps
                         </button>
@@ -70,33 +66,35 @@ export default function Home({ pushToast }) {
 
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : 'minmax(320px, 1fr) minmax(280px, 420px)',
-                    gap: isMobile ? 16 : 32,
+                    gridTemplateColumns: isMobile ? '1fr' : 'minmax(360px, 1fr) minmax(300px, 420px)',
+                    gap: isMobile ? 16 : 24,
                     alignItems: 'start',
                 }}>
-                    {/* ─── Create / join panel ─────────────────────────────────── */}
-                    <div className="card" style={{ padding: isMobile ? 20 : 32 }}>
-                        <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5, marginBottom: 4 }}>
-                            Roll the dice.
+                    <div className="card" style={{ padding: isMobile ? 20 : 28 }}>
+                        <div className="cluster" style={{ marginBottom: 18 }}>
+                            <span className="chip"><ShieldCheck size={13} /> Guest session</span>
+                            <span className="chip"><Map size={13} /> {boardCount || '...'} boards</span>
                         </div>
-                        <div style={{ color: 'var(--text-3)', marginBottom: 28 }}>
-                            No accounts. Pick a name, pick a color, start a game.
+                        <h1 className="page-title" style={{ marginBottom: 10 }}>Play MONOPOLY</h1>
+                        <div className="muted" style={{ marginBottom: 26, lineHeight: 1.5 }}>
+                            Create a room, choose a board, and bring players in with a code.
                         </div>
 
-                        <label style={labelStyle}>Your name</label>
+                        <label className="field">Player name</label>
                         <input
                             style={{ ...inputStyle, marginBottom: 16 }}
-                            placeholder="e.g. Aman"
+                            placeholder="e.g. Strategist"
+                            aria-label="Player name"
                             value={username}
                             onChange={e => setUsername(e.target.value.slice(0, 24))}
                             onBlur={persist}
                         />
 
-                        <label style={labelStyle}>Color</label>
+                        <label className="field">Token color</label>
                         <TokenPicker tokens={tokens} value={color} onChange={setColor} />
 
-                        <label style={{ ...labelStyle, marginTop: 16 }}>Board</label>
-                        <select style={{ ...inputStyle, width: '100%' }} value={boardId} onChange={e => setBoardId(e.target.value)}>
+                        <label className="field" style={{ marginTop: 16 }}>Board</label>
+                        <select aria-label="Board" style={{ ...inputStyle, width: '100%' }} value={boardId} onChange={e => setBoardId(e.target.value)}>
                             <optgroup label="Built-in">
                                 {boards.builtin.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                             </optgroup>
@@ -114,35 +112,41 @@ export default function Home({ pushToast }) {
 
                         <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
                             <button className="btn primary lg" onClick={create} style={{ flex: 1 }}>
-                                <Dice5 size={18} /> Create room
+                                <PlayCircle size={18} /> Create room
                             </button>
                         </div>
 
-                        <div style={{ height: 1, background: 'var(--border)', margin: '28px 0' }} />
+                        <div className="divider" />
 
-                        <label style={labelStyle}>Join with a code</label>
+                        <label className="field">Join with a code</label>
                         <div style={{ display: 'flex', gap: 8 }}>
                             <input
-                                style={{ ...inputStyle, flex: 1, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: 2 }}
+                                style={{ ...inputStyle, flex: 1, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}
                                 placeholder="XYZABC"
+                                aria-label="Room code"
                                 maxLength={6}
                                 value={joinCode}
                                 onChange={e => setJoinCode(e.target.value.toUpperCase())}
                                 onKeyDown={e => e.key === 'Enter' && join()}
                             />
-                            <button className="btn" onClick={() => join()}>Join</button>
+                            <button className="btn" onClick={() => join()}>
+                                Join <ArrowRight size={14} />
+                            </button>
                         </div>
                     </div>
 
-                    {/* ─── Open rooms + hints ──────────────────────────────────── */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div className="card">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                            <div className="section-title" style={{ marginBottom: 14 }}>
                                 <Users size={14} color="var(--text-3)" />
-                                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Open rooms</div>
+                                Public rooms
+                                <span className="chip count">{openRooms.length}</span>
                             </div>
                             {openRooms.length === 0 && (
-                                <div style={{ color: 'var(--text-3)', fontSize: 13 }}>Nothing public right now. Create one.</div>
+                                <div className="empty-state" style={{ display: 'grid', justifyItems: 'center', gap: 10 }}>
+                                    <BrandLogo size={24} showText={false} />
+                                    <div>No public rooms are open.</div>
+                                </div>
                             )}
                             {openRooms.map(r => (
                                 <button key={r.roomCode} className="btn" style={{
@@ -161,16 +165,22 @@ export default function Home({ pushToast }) {
                         </div>
 
                         <div className="card" style={{ padding: 16 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                                <Sparkles size={14} color="var(--accent)" />
-                                <div style={{ fontWeight: 600, fontSize: 13 }}>What's inside</div>
+                            <div className="section-title" style={{ marginBottom: 12 }}>
+                                <PencilRuler size={14} color="var(--accent)" />
+                                Map workspace
                             </div>
-                            <ul style={{ margin: 0, padding: '0 0 0 18px', color: 'var(--text-2)', fontSize: 13, lineHeight: 1.7 }}>
-                                <li>Auctions, trades &amp; negotiations</li>
-                                <li>Mortgage, houses, hotels</li>
-                                <li>Custom boards &amp; rules</li>
-                                <li>Chat, live cursors, sound</li>
-                            </ul>
+                            <div className="cluster">
+                                <button className="btn soft" onClick={() => nav('/editor')} style={{ flex: 1 }}>
+                                    <PencilRuler size={15} /> New map
+                                </button>
+                                <button className="btn" onClick={() => nav('/maps')} style={{ flex: 1 }}>
+                                    <FolderOpen size={15} /> My maps
+                                </button>
+                            </div>
+                            <div className="status-line" style={{ marginTop: 12 }}>
+                                <span className="dot" style={{ background: 'var(--accent)', width: 8, height: 8 }} />
+                                Custom boards appear in the board selector after saving.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -179,10 +189,4 @@ export default function Home({ pushToast }) {
     );
 }
 
-const labelStyle = {
-    display: 'block',
-    fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
-    textTransform: 'uppercase', color: 'var(--text-3)',
-    marginBottom: 6,
-};
 const inputStyle = { width: '100%', fontSize: 14 };

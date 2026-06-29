@@ -9,6 +9,8 @@ export default function PlayerStrip({ room, me, onTrade }) {
         <div style={{
             display: 'flex', gap: 6, overflowX: 'auto',
             padding: '6px 8px',
+            background: 'var(--surface)',
+            borderBottom: '1px solid var(--border)',
             scrollSnapType: 'x proximity',
         }}>
             {room.players.map(p => {
@@ -19,7 +21,7 @@ export default function PlayerStrip({ room, me, onTrade }) {
                         flex: '0 0 auto',
                         minWidth: 128,
                         padding: '6px 8px',
-                        background: 'var(--surface)',
+                        background: 'var(--surface-2)',
                         border: `1.5px solid ${isActive ? p.color : 'var(--border)'}`,
                         boxShadow: isActive ? `0 0 0 2px ${p.color}33` : 'none',
                         borderRadius: 'var(--radius)',
@@ -34,7 +36,7 @@ export default function PlayerStrip({ room, me, onTrade }) {
                                 background: p.color,
                                 display: 'grid', placeItems: 'center',
                                 fontSize: 10, fontWeight: 800,
-                                color: ['#FFFFFF', '#FACC15'].includes(p.color?.toUpperCase()) ? '#0b0f17' : 'white',
+                                color: ['#FFFFFF', '#FACC15'].includes(p.color?.toUpperCase()) ? '#10130f' : 'var(--text)',
                             }}>{(p.username || '?')[0]?.toUpperCase()}</span>
                             <span style={{
                                 fontSize: 12, fontWeight: 700,

@@ -15,7 +15,7 @@ export default function TokenPicker({ tokens, value, onChange, disabledHexes = [
                         style={{
                             width: 40, height: 40, borderRadius: 10,
                             background: t.hex,
-                            border: selected ? '3px solid white' : '3px solid transparent',
+                            border: selected ? '3px solid var(--text)' : '3px solid transparent',
                             outline: selected ? '2px solid var(--accent)' : 'none',
                             opacity: disabled ? 0.25 : 1,
                             cursor: disabled ? 'not-allowed' : 'pointer',

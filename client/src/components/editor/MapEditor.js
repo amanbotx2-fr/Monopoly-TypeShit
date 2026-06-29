@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
+import BrandLogo from '../common/BrandLogo';
 import {
     AlertTriangle, ArrowLeft, CheckCircle2, Clipboard, ClipboardPaste,
     FilePlus2, FolderOpen, Loader2, Plus, RotateCcw, Save, X,
@@ -398,22 +399,33 @@ export default function MapEditor({ pushToast }) {
     const templateOptions = TEMPLATE_IDS.map(id => presets.find(p => p.id === id)).filter(Boolean);
 
     if (loading && !board) {
-        return <div className="grid-bg" style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--text-3)' }}>Loading...</div>;
+        return <div className="app-page grid-bg" style={{ display: 'grid', placeItems: 'center' }}>
+            <div className="card" style={{ display: 'grid', gap: 14, justifyItems: 'center', minWidth: 280 }}>
+                <BrandLogo size={32} />
+                <div className="status-line" style={{ justifyContent: 'center' }}>
+                    <Loader2 size={16} /> Loading map builder...
+                </div>
+            </div>
+        </div>;
     }
 
     return (
-        <div className="grid-bg" style={{ flex: 1, overflow: 'auto' }}>
-            <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px' }}>
-                <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+        <div className="app-page grid-bg">
+            <div className="page-shell wide">
+                <header className="topbar" style={{ marginBottom: 18, flexWrap: 'wrap' }}>
                     <button className="btn ghost sm" onClick={() => leave('/')}>
                         <ArrowLeft size={14} /> Home
                     </button>
                     <button className="btn ghost sm" onClick={() => leave('/maps')}>
                         <FolderOpen size={14} /> My Maps
                     </button>
+                    <BrandLogo size={30} showText={false} />
                     <div style={{ minWidth: 220 }}>
-                        <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>Custom Map Builder</div>
-                        <div style={{ color: 'var(--text-3)', fontSize: 13 }}>{draftStatus || 'Create and manage engine-compatible 40-tile maps.'}</div>
+                        <div className="brand-title" style={{ fontSize: 28 }}>Custom Map Builder</div>
+                        <div className="status-line" style={{ marginTop: 5 }}>
+                            <span className="dot" style={{ background: dirty ? 'var(--warning)' : 'var(--success)', width: 8, height: 8 }} />
+                            {draftStatus || '40-tile board schema'}
+                        </div>
                     </div>
                     <div style={{ flex: 1 }} />
                     {!boardId && (
@@ -449,7 +461,12 @@ export default function MapEditor({ pushToast }) {
                 )}
 
                 <div className="card" style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) minmax(220px, 1.5fr) auto', gap: 12, alignItems: 'end' }}>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                        gap: 12,
+                        alignItems: 'end',
+                    }}>
                         <label style={fieldLabel}>
                             Map Name
                             <input value={name} onChange={e => { setName(e.target.value.slice(0, 80)); markDirty(); }} />
@@ -474,7 +491,7 @@ export default function MapEditor({ pushToast }) {
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', minWidth: 1080, fontSize: 13, borderCollapse: 'collapse' }}>
                             <thead>
-                                <tr style={{ background: 'var(--surface-2)', color: 'var(--text-3)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                <tr style={{ background: 'var(--surface-2)', color: 'var(--text-3)', fontSize: 11, textTransform: 'uppercase' }}>
                                     <th style={cellStyle}>#</th>
                                     <th style={cellStyle}>Type</th>
                                     <th style={cellStyle}>Name</th>
@@ -652,18 +669,15 @@ function NewMapModal({ presets, onClose, onCreate, loading }) {
     }
 
     return (
-        <div className="fade-in" style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.58)', zIndex: 50,
-            display: 'grid', placeItems: 'center', padding: 20,
-        }}>
-            <form className="card slide-up" onSubmit={submit} style={{ width: 'min(100%, 520px)', boxShadow: 'var(--shadow-lg)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+        <div className="modal-backdrop fade-in" style={{ zIndex: 50 }}>
+            <form className="modal-panel slide-up" onSubmit={submit} style={{ width: 'min(100%, 520px)' }}>
+                <div className="modal-header">
                     <Plus size={18} color="var(--accent)" />
-                    <div style={{ fontSize: 20, fontWeight: 800, flex: 1 }}>New Map</div>
-                    <button type="button" className="btn sm ghost" onClick={onClose}><X size={14} /></button>
+                    <div className="modal-title" style={{ flex: 1 }}>New Map</div>
+                    <button type="button" className="btn sm icon ghost" onClick={onClose} aria-label="Close new map"><X size={14} /></button>
                 </div>
 
-                <div style={{ display: 'grid', gap: 12 }}>
+                <div style={{ display: 'grid', gap: 12, padding: 20 }}>
                     <label style={fieldLabel}>
                         Map Name
                         <input value={mapName} onChange={e => setMapName(e.target.value.slice(0, 80))} autoFocus />
@@ -687,7 +701,7 @@ function NewMapModal({ presets, onClose, onCreate, loading }) {
                     </label>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '0 20px 20px', flexWrap: 'wrap' }}>
                     <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
                     <button type="submit" className="btn primary" disabled={loading || !mapName.trim()}>
                         {loading ? <Loader2 size={15} /> : <Plus size={15} />} Create
@@ -719,7 +733,6 @@ const fieldLabel = {
     gap: 6,
     fontSize: 11,
     fontWeight: 700,
-    letterSpacing: 0.4,
     color: 'var(--text-3)',
 };
 const cellStyle = { padding: '8px 10px', textAlign: 'left', verticalAlign: 'middle' };

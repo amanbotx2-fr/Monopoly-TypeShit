@@ -61,22 +61,14 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
     const iAmProposer  = existingTrade?.fromUserId === me.userId;
 
     return (
-        <div onClick={onClose} style={{
-            position: 'fixed', inset: 0, zIndex: 90,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'grid', placeItems: 'center',
-        }}>
-            <div onClick={e => e.stopPropagation()} className="fade-in" style={{
-                width: 780, maxWidth: '95vw', maxHeight: '92vh',
-                background: 'var(--surface)',
-                border: '1px solid var(--border-2)',
-                borderRadius: 'var(--radius-lg)',
+        <div onClick={onClose} className="modal-backdrop" style={{ zIndex: 90 }}>
+            <div onClick={e => e.stopPropagation()} className="modal-panel fade-in" style={{
+                width: 'min(95vw, 780px)', maxHeight: '92vh',
                 display: 'flex', flexDirection: 'column',
-                overflow: 'hidden',
             }}>
-                <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid var(--border)' }}>
+                <div className="modal-header">
                     {peek ? <Eye size={18} color="var(--text-3)" /> : <Handshake size={18} color="var(--accent)" />}
-                    <div style={{ fontWeight: 800, fontSize: 16 }}>
+                    <div className="modal-title">
                         {peek ? 'Viewing trade' : `Trade with ${them?.username}`}
                     </div>
                     {peek && (
@@ -85,10 +77,17 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
                         </span>
                     )}
                     <div style={{ flex: 1 }} />
-                    <button className="btn sm ghost" onClick={onClose}><X size={14} /></button>
+                    <button className="btn sm icon ghost" onClick={onClose} aria-label="Close trade"><X size={14} /></button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: 16, overflow: 'auto', flex: 1 }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                    gap: 16,
+                    padding: 16,
+                    overflow: 'auto',
+                    flex: 1,
+                }}>
                     <Side
                         title={`${mine?.username} gives`}
                         bundle={offer}
@@ -110,7 +109,7 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
                 </div>
 
                 {existingTrade && (
-                    <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'center', fontSize: 12, color: 'var(--text-2)' }}>
+                    <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'center', fontSize: 12, color: 'var(--text-2)', flexWrap: 'wrap' }}>
                         <span>{mine?.username}: {iAccepted ? <b style={{ color: 'var(--success)' }}>Accepted</b> : 'Pending'}</span>
                         <span>·</span>
                         <span>{them?.username}: {theyAccepted ? <b style={{ color: 'var(--success)' }}>Accepted</b> : 'Pending'}</span>
@@ -135,7 +134,7 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
                 )}
 
                 {!peek && (
-                    <div style={{ padding: 14, borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+                    <div style={{ padding: 14, borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <button className="btn" onClick={submit}>
                             <Send size={14} /> {existingTrade ? 'Update offer' : 'Send proposal'}
                         </button>
@@ -160,11 +159,11 @@ function empty() { return { cash: 0, properties: [], jailCards: { chance: 0, che
 
 function Side({ title, bundle, props, onToggle, onCash, cashLimit, readOnly }) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-2)' }}>{title}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-2)' }}>{title}</div>
 
             <div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4, display: 'flex', justifyContent: 'space-between', textTransform: 'uppercase', fontWeight: 800 }}>
                     <span>Cash</span>
                     <span className="mono" style={{ color: 'var(--text-2)' }}>max ${cashLimit.toLocaleString()}</span>
                 </div>
@@ -173,6 +172,7 @@ function Side({ title, bundle, props, onToggle, onCash, cashLimit, readOnly }) {
                         type="number" min={0} max={cashLimit}
                         value={bundle.cash}
                         disabled={readOnly}
+                        aria-label={`${title} cash amount`}
                         onChange={e => onCash(Math.max(0, Math.min(cashLimit, Number(e.target.value || 0))))}
                         style={{ width: 96, fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700 }}
                     />
@@ -180,6 +180,7 @@ function Side({ title, bundle, props, onToggle, onCash, cashLimit, readOnly }) {
                         type="range" min={0} max={cashLimit || 0} step={10}
                         value={bundle.cash}
                         disabled={readOnly || cashLimit === 0}
+                        aria-label={`${title} cash slider`}
                         onChange={e => onCash(Number(e.target.value))}
                         style={{ flex: 1, accentColor: 'var(--accent)' }}
                     />
@@ -197,7 +198,7 @@ function Side({ title, bundle, props, onToggle, onCash, cashLimit, readOnly }) {
                 )}
             </div>
 
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, marginBottom: 2 }}>Properties</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, marginBottom: 2, textTransform: 'uppercase', fontWeight: 800 }}>Properties</div>
             <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {props.length === 0 && <div style={{ fontSize: 12, color: 'var(--text-4)' }}>No properties.</div>}
                 {props.map(({ pos, def }) => {

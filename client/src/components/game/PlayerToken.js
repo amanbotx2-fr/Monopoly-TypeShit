@@ -95,7 +95,7 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
                 left: `calc(${xPct}% + ${off[0]}px)`,
                 top:  `calc(${yPct}% + ${off[1]}px)`,
                 background: player.color,
-                color: isLight ? '#0b0f17' : 'white',
+                color: isLight ? '#10130f' : 'var(--text)',
                 textShadow: isLight ? 'none' : '0 1px 2px rgba(0,0,0,0.7)',
             }}
             onMouseEnter={(e) => onHover?.(e, player)}

@@ -53,3 +53,7 @@ dump/
 # tooling
 .turbo/
 .next/
+
+# Local design docs
+DESIGN.md
+DESIGN-figma.md

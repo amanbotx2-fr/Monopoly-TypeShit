@@ -24,20 +24,11 @@ export default function AuctionModal({ room, me, act }) {
     const canBid    = inAuction && !passed && !topBidder && me.cash >= bid;
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0, zIndex: 80,
-            background: 'rgba(0,0,0,0.65)',
-            display: 'grid', placeItems: 'center',
-            animation: 'fadeIn 0.15s ease-out',
-        }}>
-            <div className="fade-in" style={{
-                width: 460, background: 'var(--surface)',
-                border: '1px solid var(--border-2)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-lg)',
-                overflow: 'hidden',
+        <div className="modal-backdrop" style={{ zIndex: 80 }}>
+            <div className="modal-panel fade-in" style={{
+                width: 'min(100%, 460px)', background: 'var(--surface)',
             }}>
-                <div style={{ background: def.color || 'var(--accent)', height: 6 }} />
+                <div style={{ background: def.color || 'var(--accent)', height: 5 }} />
                 <div style={{ padding: 24 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Gavel size={20} color="var(--warning)" />
@@ -49,17 +40,17 @@ export default function AuctionModal({ room, me, act }) {
                         }}>{secLeft}s</div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 20 }}>
-                        <div>
-                            <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>List price</div>
-                            <div className="mono" style={{ fontSize: 22, fontWeight: 700 }}>${def.price}</div>
+                    <div className="metric-grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 20 }}>
+                        <div className="metric">
+                            <div className="metric-label">List price</div>
+                            <div className="metric-value mono">${def.price}</div>
                         </div>
-                        <div>
-                            <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Top bid</div>
-                            <div className="money" style={{ fontSize: 22, fontWeight: 700 }}>
+                        <div className="metric">
+                            <div className="metric-label">Top bid</div>
+                            <div className="money metric-value">
                                 ${a.currentBid || 0}
                                 {a.currentBidder && (
-                                    <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}>
+                                    <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6, fontWeight: 600 }}>
                                         by {room.players.find(p => p.userId === a.currentBidder)?.username}
                                     </span>
                                 )}
@@ -74,6 +65,7 @@ export default function AuctionModal({ room, me, act }) {
                                 type="number"
                                 style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, textAlign: 'center' }}
                                 min={a.currentBid + a.minIncrement}
+                                aria-label="Auction bid amount"
                                 value={bid}
                                 onChange={e => setBid(Number(e.target.value))}
                             />

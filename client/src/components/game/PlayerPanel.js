@@ -9,7 +9,7 @@ export default function PlayerPanel({ p, isMe, isActive, room, onTrade }) {
         <div className="card" style={{
             padding: 12,
             borderColor: isActive ? p.color : 'var(--border)',
-            boxShadow: isActive ? `0 0 0 2px ${p.color}55, var(--shadow)` : 'var(--shadow)',
+            boxShadow: isActive ? `0 0 0 2px ${p.color}55, var(--shadow-lg)` : 'var(--shadow)',
             opacity: p.bankrupt ? 0.4 : 1,
             transition: 'border-color 0.2s, box-shadow 0.2s',
         }}>
@@ -17,13 +17,13 @@ export default function PlayerPanel({ p, isMe, isActive, room, onTrade }) {
                 <div style={{
                     width: 32, height: 32, borderRadius: 8,
                     background: p.color,
-                    border: '2px solid white',
+                    border: '2px solid color-mix(in oklch, var(--text) 90%, transparent)',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                     display: 'grid', placeItems: 'center',
-                    color: 'white', fontSize: 13, fontWeight: 800,
+                    color: 'var(--text)', fontSize: 13, fontWeight: 800,
                 }}>{(p.username || '?')[0]?.toUpperCase()}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 }}>
                         <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {p.username}
                         </span>
@@ -43,16 +43,16 @@ export default function PlayerPanel({ p, isMe, isActive, room, onTrade }) {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 10, fontSize: 12 }}>
                 <div style={{ flex: 1 }}>
-                    <div style={{ color: 'var(--text-3)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Cash</div>
+                    <div style={{ color: 'var(--text-3)', fontSize: 10, textTransform: 'uppercase', fontWeight: 800 }}>Cash</div>
                     <div className="money" style={{ fontSize: 15 }}>${p.cash.toLocaleString()}</div>
                 </div>
                 <div style={{ flex: 1 }}>
-                    <div style={{ color: 'var(--text-3)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Assets</div>
+                    <div style={{ color: 'var(--text-3)', fontSize: 10, textTransform: 'uppercase', fontWeight: 800 }}>Assets</div>
                     <div className="mono" style={{ fontSize: 15, fontWeight: 600 }}>{ownedCount}</div>
                 </div>
                 {jailCards > 0 && (
                     <div>
-                        <div style={{ color: 'var(--text-3)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Jail free</div>
+                        <div style={{ color: 'var(--text-3)', fontSize: 10, textTransform: 'uppercase', fontWeight: 800 }}>Jail free</div>
                         <div className="mono" style={{ fontSize: 15, fontWeight: 600 }}>{jailCards}</div>
                     </div>
                 )}

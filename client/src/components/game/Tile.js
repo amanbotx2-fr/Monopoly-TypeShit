@@ -114,7 +114,7 @@ function TileInnerContent({ def }) {
     if (def.type === 'station') {
         return (
             <>
-                <Train style={{ width: '2vmin', height: '2vmin' }} color="var(--text-2)" />
+                <Train style={{ width: 18, height: 18 }} color="var(--text-2)" />
                 <div className="tile-name">{def.name}</div>
                 <div className="tile-price">${def.price}</div>
             </>
@@ -124,7 +124,7 @@ function TileInnerContent({ def }) {
         const Icon = def.name.toLowerCase().includes('electric') ? Lightbulb : Droplet;
         return (
             <>
-                <Icon style={{ width: '2.2vmin', height: '2.2vmin' }} color={def.name.toLowerCase().includes('electric') ? 'var(--warning)' : 'var(--accent-2)'} />
+                <Icon style={{ width: 18, height: 18 }} color={def.name.toLowerCase().includes('electric') ? 'var(--warning)' : 'var(--accent-2)'} />
                 <div className="tile-name">{def.name}</div>
                 <div className="tile-price">${def.price}</div>
             </>
@@ -133,7 +133,7 @@ function TileInnerContent({ def }) {
     if (def.type === 'chance') {
         return (
             <>
-                <HelpCircle style={{ width: '2.6vmin', height: '2.6vmin' }} color="var(--warning)" />
+                <HelpCircle style={{ width: 20, height: 20 }} color="var(--warning)" />
                 <div className="tile-name" style={{ color: 'var(--warning)' }}>Chance</div>
             </>
         );
@@ -141,7 +141,7 @@ function TileInnerContent({ def }) {
     if (def.type === 'chest') {
         return (
             <>
-                <Package style={{ width: '2.6vmin', height: '2.6vmin' }} color="var(--accent-2)" />
+                <Package style={{ width: 20, height: 20 }} color="var(--accent-2)" />
                 <div className="tile-name" style={{ color: 'var(--accent-2)' }}>Chest</div>
             </>
         );
@@ -149,7 +149,7 @@ function TileInnerContent({ def }) {
     if (def.type === 'tax') {
         return (
             <>
-                <Coins style={{ width: '2.4vmin', height: '2.4vmin' }} color="var(--danger)" />
+                <Coins style={{ width: 19, height: 19 }} color="var(--danger)" />
                 <div className="tile-name">{def.name}</div>
                 <div className="tile-price">-${def.amount}</div>
             </>
@@ -169,34 +169,34 @@ function CornerContent({ def }) {
     if (def.type === 'go') {
         return (
             <div style={wrap}>
-                <PlayCircle style={{ width: '4vmin', height: '4vmin' }} color="var(--success)" />
-                <div style={{ fontSize: '1.6vmin', fontWeight: 900, color: 'var(--success)', letterSpacing: -0.5, lineHeight: 1 }}>GO</div>
-                <div style={{ fontSize: '0.9vmin', color: 'var(--text-3)' }}>Collect salary</div>
+                <PlayCircle style={{ width: 28, height: 28 }} color="var(--success)" />
+                <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--success)', lineHeight: 1 }}>GO</div>
+                <div style={{ fontSize: 9, color: 'var(--text-3)' }}>Collect salary</div>
             </div>
         );
     }
     if (def.type === 'jail') {
         return (
             <div style={wrap}>
-                <Lock style={{ width: '3.2vmin', height: '3.2vmin' }} color="var(--warning)" />
-                <div style={{ fontSize: '1.2vmin', fontWeight: 800, color: 'var(--warning)', lineHeight: 1 }}>JAIL</div>
-                <div style={{ fontSize: '0.9vmin', color: 'var(--text-3)' }}>Just visiting</div>
+                <Lock style={{ width: 24, height: 24 }} color="var(--warning)" />
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--warning)', lineHeight: 1 }}>JAIL</div>
+                <div style={{ fontSize: 9, color: 'var(--text-3)' }}>Just visiting</div>
             </div>
         );
     }
     if (def.type === 'parking') {
         return (
             <div style={wrap}>
-                <Car style={{ width: '3.2vmin', height: '3.2vmin' }} color="var(--text-2)" />
-                <div style={{ fontSize: '1.1vmin', fontWeight: 800, lineHeight: 1.1 }}>Free Parking</div>
+                <Car style={{ width: 24, height: 24 }} color="var(--text-2)" />
+                <div style={{ fontSize: 11, fontWeight: 800, lineHeight: 1.1 }}>Free Parking</div>
             </div>
         );
     }
     if (def.type === 'gotojail') {
         return (
             <div style={wrap}>
-                <Car style={{ width: '3.2vmin', height: '3.2vmin' }} color="var(--danger)" />
-                <div style={{ fontSize: '1.1vmin', fontWeight: 800, color: 'var(--danger)', lineHeight: 1.1 }}>Go to Jail</div>
+                <Car style={{ width: 24, height: 24 }} color="var(--danger)" />
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--danger)', lineHeight: 1.1 }}>Go to Jail</div>
             </div>
         );
     }

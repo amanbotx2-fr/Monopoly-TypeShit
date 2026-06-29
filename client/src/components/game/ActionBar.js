@@ -46,11 +46,10 @@ export default function ActionBar({ room, me, isMyTurn, act }) {
             alignItems: 'stretch',
         }}>
             <div style={{
-                fontSize: '1.3vmin',
+                fontSize: 11,
                 color: 'var(--text-3)',
                 textAlign: 'center',
                 textTransform: 'uppercase',
-                letterSpacing: 1,
                 fontWeight: 600,
                 minHeight: 16,
             }}>{status}</div>
@@ -66,8 +65,8 @@ export default function ActionBar({ room, me, isMyTurn, act }) {
                             style={{
                                 width: '100%',
                                 justifyContent: 'center',
-                                fontSize: 'clamp(13px, 1.7vmin, 18px)',
-                                padding: 'clamp(10px, 1.6vmin, 16px) clamp(14px, 2vmin, 24px)',
+                                fontSize: 14,
+                                padding: '12px 16px',
                                 fontWeight: 700,
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',

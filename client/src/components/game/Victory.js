@@ -8,25 +8,18 @@ export default function Victory({ room, onLeave }) {
         .sort((a, b) => (b.cash + (b.owned?.length || 0) * 50) - (a.cash + (a.owned?.length || 0) * 50));
 
     return (
-        <div className="fade-in" style={{
-            position: 'fixed', inset: 0, zIndex: 200,
-            background: 'rgba(0,0,0,0.8)',
-            display: 'grid', placeItems: 'center',
-        }}>
-            <div className="slide-up" style={{
-                width: 420, padding: 32,
-                background: 'var(--surface)',
-                border: '2px solid var(--success)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-lg)',
+        <div className="modal-backdrop fade-in" style={{ zIndex: 200, background: 'rgba(0,0,0,0.8)' }}>
+            <div className="modal-panel slide-up" style={{
+                width: 'min(100%, 420px)', padding: 32,
+                borderColor: 'var(--success)',
                 textAlign: 'center',
             }}>
                 <Trophy size={56} color="var(--success)" style={{ marginBottom: 10 }} />
-                <div style={{ fontSize: 14, color: 'var(--text-3)', letterSpacing: 2, textTransform: 'uppercase' }}>Winner</div>
+                <div className="section-title" style={{ justifyContent: 'center' }}>Winner</div>
                 {winner && (
                     <>
                         <div className="dot" style={{ background: winner.color, width: 24, height: 24, margin: '12px auto' }} />
-                        <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: -1 }}>{winner.username}</div>
+                        <div style={{ fontSize: 28, fontWeight: 900 }}>{winner.username}</div>
                         <div className="money" style={{ fontSize: 18, marginTop: 2 }}>${winner.cash.toLocaleString()}</div>
                     </>
                 )}

@@ -34,8 +34,8 @@ export default function PlayerHoverCard({ player, room, anchor }) {
                         background: player.color,
                         display: 'grid', placeItems: 'center',
                         fontSize: 13, fontWeight: 800,
-                        color: ['#FFFFFF', '#FACC15'].includes(player.color?.toUpperCase()) ? '#0b0f17' : 'white',
-                        border: '2px solid white',
+                        color: ['#FFFFFF', '#FACC15'].includes(player.color?.toUpperCase()) ? '#10130f' : 'var(--text)',
+                        border: '2px solid color-mix(in oklch, var(--text) 90%, transparent)',
                     }}>{(player.username || '?')[0]?.toUpperCase()}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 700 }}>{player.username}</div>
@@ -54,7 +54,7 @@ export default function PlayerHoverCard({ player, room, anchor }) {
 
                 {ownedNames.length > 0 && (
                     <div style={{ marginTop: 10 }}>
-                        <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Properties</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4, fontWeight: 800 }}>Properties</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                             {ownedNames.map(t => (
                                 <span key={t.pos} className="chip" style={{
@@ -78,7 +78,7 @@ export default function PlayerHoverCard({ player, room, anchor }) {
 function Stat({ label, value, color }) {
     return (
         <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 800 }}>{label}</div>
             <div className="mono" style={{ fontSize: 14, fontWeight: 700, color: color || 'var(--text)' }}>{value}</div>
         </div>
     );

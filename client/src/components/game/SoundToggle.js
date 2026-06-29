@@ -34,7 +34,7 @@ export default function SoundToggle() {
                         <button className="btn sm ghost" onClick={toggleMute}>{prefs.muted ? 'Unmute' : 'Mute'}</button>
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>Volume {Math.round(prefs.volume * 100)}%</div>
-                    <input type="range" min="0" max="1" step="0.05" value={prefs.volume} onChange={onVol} style={{ width: '100%' }} />
+                    <input aria-label="Volume" type="range" min="0" max="1" step="0.05" value={prefs.volume} onChange={onVol} style={{ width: '100%' }} />
                 </div>
             )}
         </div>

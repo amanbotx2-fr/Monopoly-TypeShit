@@ -15,7 +15,7 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
         <>
             {!expanded && (
                 <button
-                    className="btn"
+                    className="btn floating-button"
                     onClick={() => setExpanded(true)}
                     style={{
                         position: 'fixed', left: 16, bottom: 16, zIndex: 70,
@@ -43,25 +43,16 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
             )}
 
             {expanded && (
-                <div className="fade-in" style={{
+                <div className="modal-panel fade-in" style={{
                     position: 'fixed', left: 16, bottom: 16, zIndex: 70,
                     width: 340, maxWidth: '92vw',
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border-2)',
-                    borderRadius: 'var(--radius-lg)',
-                    boxShadow: 'var(--shadow-lg)',
-                    overflow: 'hidden',
                 }}>
-                    <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '12px 14px',
-                        borderBottom: '1px solid var(--border)',
-                    }}>
+                    <div className="modal-header" style={{ padding: '12px 14px' }}>
                         <Handshake size={14} color="var(--accent)" />
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>Open trades</div>
+                        <div className="modal-title" style={{ fontSize: 13 }}>Open trades</div>
                         <span className="chip" style={{ fontSize: 10 }}>{count}</span>
                         <div style={{ flex: 1 }} />
-                        <button className="btn sm ghost" onClick={() => setExpanded(false)}><X size={13} /></button>
+                        <button className="btn sm icon ghost" onClick={() => setExpanded(false)} aria-label="Close trades"><X size={13} /></button>
                     </div>
                     <div style={{ maxHeight: 360, overflowY: 'auto', padding: 8 }}>
                         {open.length === 0 && (
@@ -143,7 +134,7 @@ function Bundle({ label, b, tiles }) {
             border: '1px solid var(--border)',
             borderRadius: 6,
         }}>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 4, fontWeight: 800 }}>{label}</div>
             {b.cash > 0 && <div className="money" style={{ fontSize: 12 }}>${b.cash.toLocaleString()}</div>}
             {propNames.map((n, i) => <div key={i} style={{ fontSize: 11 }}>{n}</div>)}
             {jail > 0 && <div style={{ fontSize: 11, color: 'var(--warning)' }}>Jail free × {jail}</div>}

@@ -37,7 +37,7 @@ export default function Board({ room, userId, diceRolling, events, act, me, isMy
                         rolling={diceRolling}
                     />
                     {room?.lastDiceRoller && (
-                        <div style={{ fontSize: '1.1vmin', color: 'var(--text-3)' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
                             {players.find(p => p.userId === room.lastDiceRoller)?.username || '—'} rolled
                         </div>
                     )}

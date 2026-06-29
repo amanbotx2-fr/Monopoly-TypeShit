@@ -15,7 +15,7 @@ import TradeModal from './TradeModal';
 import PropertyModal from './PropertyModal';
 import SoundToggle from './SoundToggle';
 import Victory from './Victory';
-import DieFace from '../common/DieFace';
+import BrandLogo from '../common/BrandLogo';
 import { LogOut, Copy, ScrollText } from 'lucide-react';
 
 export default function Game({ userId, pushToast }) {
@@ -45,8 +45,14 @@ export default function Game({ userId, pushToast }) {
     }, [events]);
 
     if (!room) {
-        return <div className="grid-bg" style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--text-3)' }}>
-            {connected ? 'Loading…' : 'Connecting…'}
+        return <div className="app-page grid-bg" style={{ display: 'grid', placeItems: 'center' }}>
+            <div className="card" style={{ display: 'grid', gap: 14, justifyItems: 'center', minWidth: 260 }}>
+                <BrandLogo size={32} />
+                <div className="status-line" style={{ justifyContent: 'center' }}>
+                    <span className="dot" style={{ background: connected ? 'var(--success)' : 'var(--warning)' }} />
+                    {connected ? 'Loading game...' : 'Connecting...'}
+                </div>
+            </div>
         </div>;
     }
 
@@ -100,9 +106,14 @@ export default function Game({ userId, pushToast }) {
                 overflow: 'hidden',
                 background: 'var(--bg)',
             }}>
-                <header style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '8px 10px' }}>
+                <header style={{
+                    display: 'flex', gap: 6, alignItems: 'center',
+                    padding: '8px 10px',
+                    borderBottom: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                }}>
                     <button className="btn ghost sm" onClick={() => nav('/')}><LogOut size={13} /></button>
-                    <DieFace value={5} size={22} />
+                    <BrandLogo size={26} showText={false} />
                     <div className="chip" style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>{roomCode}</div>
                     <button className="btn sm ghost" onClick={copyLink}><Copy size={12} /></button>
                     <div style={{ flex: 1 }} />
@@ -111,7 +122,7 @@ export default function Game({ userId, pushToast }) {
 
                 <PlayerStrip room={room} me={me} onTrade={(uid) => setTradeWith(uid)} />
 
-                <main style={{ display: 'grid', placeItems: 'center', padding: 10, minHeight: 0 }}>
+                <main style={{ display: 'grid', placeItems: 'center', padding: 10, minHeight: 0, background: 'var(--bg)' }}>
                     <div style={{ width: 'min(100%, 100vw - 20px)', maxHeight: '100%', aspectRatio: '1 / 1' }}>
                         <Board
                             room={room}
@@ -134,16 +145,37 @@ export default function Game({ userId, pushToast }) {
 
     // Desktop layout
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 300px) 1fr minmax(280px, 340px)', gap: 16, padding: 16, height: '100vh', overflow: 'hidden' }}>
-            <aside style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(270px, 310px) 1fr minmax(290px, 350px)',
+            gap: 16,
+            padding: 16,
+            height: '100vh',
+            overflow: 'hidden',
+            background: 'var(--bg)',
+        }}>
+            <aside style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                minHeight: 0,
+                padding: 12,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)',
+            }}>
                 <header style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <button className="btn ghost sm" onClick={() => nav('/')}><LogOut size={13} /></button>
-                    <DieFace value={5} size={22} />
+                    <BrandLogo size={28} showText={false} />
                     <div className="chip" style={{ fontFamily: 'var(--font-mono)' }}>{roomCode}</div>
                     <button className="btn sm ghost" onClick={copyLink}><Copy size={12} /></button>
                     <div style={{ flex: 1 }} />
                     <SoundToggle />
                 </header>
+                <div className="status-line" style={{ padding: '2px 2px 0' }}>
+                    <span className="dot" style={{ background: connected ? 'var(--success)' : 'var(--warning)' }} />
+                    {room.ended ? 'Game finished' : `${active?.username || 'Anonymous Player'} to act`}
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', paddingRight: 4, flex: 1 }}>
                     {room.players.map(p => (
                         <PlayerPanel
@@ -158,8 +190,17 @@ export default function Game({ userId, pushToast }) {
                 </div>
             </aside>
 
-            <main style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <div style={{ flex: 1, minHeight: 0, display: 'grid', placeItems: 'center' }}>
+            <main style={{
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--bg-1)',
+                boxShadow: 'var(--shadow-lg)',
+                overflow: 'hidden',
+            }}>
+                <div style={{ flex: 1, minHeight: 0, display: 'grid', placeItems: 'center', padding: 12 }}>
                     <div style={{ width: 'min(100%, 100vh - 32px)', aspectRatio: '1 / 1', maxHeight: 'calc(100vh - 32px)' }}>
                         <Board
                             room={room}
@@ -175,10 +216,19 @@ export default function Game({ userId, pushToast }) {
                 </div>
             </main>
 
-            <aside style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
-                <header style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 0' }}>
+            <aside style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                minHeight: 0,
+                padding: 12,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)',
+            }}>
+                <header className="section-title" style={{ padding: '2px 2px 0' }}>
                     <ScrollText size={14} color="var(--text-3)" />
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Action Log</div>
+                    <div>Action Log</div>
                 </header>
                 <ActionLog log={room.actionLog} players={room.players} tiles={room.board.tiles} />
             </aside>
