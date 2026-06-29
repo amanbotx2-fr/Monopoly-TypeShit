@@ -81,7 +81,7 @@ io.use(socketConnectionRateLimit('socket-connect', {
 }));
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monopoly')
-    .then(() => console.log('[mongo] connected'))
+    .then(() => console.info('[mongo] connected'))
     .catch(err => console.error('[mongo] connection error:', err.message));
 
 app.use('/api', require('./routes/rooms'));
@@ -91,13 +91,13 @@ app.get('/api/me', (req, res) => res.json({ userId: req.userId }));
 const roomLifecycle = registerSocketHandlers(io);
 configurePendingRoomCleanup(roomLifecycle.cleanupRoom);
 
-server.listen(PORT, () => console.log(`[monopoly] server on ${PORT}`));
+server.listen(PORT, () => console.info(`[monopoly] server on ${PORT}`));
 
 let shuttingDown = false;
 function shutdown(signal) {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`[monopoly] ${signal} received, cleaning up rooms`);
+    console.info(`[monopoly] ${signal} received, cleaning up rooms`);
     shutdownPendingRoomCleanup();
     roomLifecycle.shutdown();
     server.close(() => {

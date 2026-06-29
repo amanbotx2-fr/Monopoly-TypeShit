@@ -6,7 +6,11 @@ export default function AuctionModal({ room, me, act }) {
     const [bid, setBid] = useState(0);
     const [secLeft, setSecLeft] = useState(8);
 
-    useEffect(() => { if (a) setBid(Math.max(bid, a.currentBid + a.minIncrement)); /* eslint-disable-next-line */ }, [a?.currentBid]);
+    useEffect(() => {
+        if (!a) return;
+        const minimumBid = a.currentBid + a.minIncrement;
+        setBid(currentBid => Math.max(currentBid, minimumBid));
+    }, [a]);
     useEffect(() => {
         if (!a) return;
         const t = setInterval(() => {

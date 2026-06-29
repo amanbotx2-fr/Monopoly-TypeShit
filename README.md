@@ -1,316 +1,301 @@
-# Monopoly
+# MONOPOLY
 
-Richup-style online multiplayer Monopoly for the browser. Create a room, pick a token, invite friends, negotiate trades, run auctions, build houses, mortgage properties, and play on built-in or custom maps without accounts.
+Real-time multiplayer MONOPOLY for the web: rooms, live lobbies, custom boards,
+trades, auctions, spectators, and a server-authoritative game engine.
 
-Owned and maintained by [Aman Kumar](https://github.com/amanbotx2-fr).
+![Status](https://img.shields.io/badge/status-v1.0%20release%20candidate-1f6feb)
+![License](https://img.shields.io/badge/license-MIT-0f766e)
+![React](https://img.shields.io/badge/React-19-61dafb)
+![Node](https://img.shields.io/badge/Node.js-20+-339933)
+![Express](https://img.shields.io/badge/Express-5-111827)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47a248)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-4-010101)
 
-> Production frontend URL: TODO<br>
-> Production API URL: `https://monopoly-typeshit.onrender.com`
+MONOPOLY is an open-source, browser-based multiplayer board-game platform. It
+keeps the familiar flow of property trading, rent, auctions, mortgages, jail,
+and bankruptcy while adding real-time rooms, anonymous guest sessions, spectator
+support, and a custom map builder.
 
-## Highlights
+This repository is an independent open-source project and is not affiliated
+with Hasbro or any official Monopoly product.
 
-- Real-time multiplayer rooms powered by Socket.IO
-- Anonymous guest sessions with no login or registration
-- Built-in boards: World Tour, Classic USA, and World Capitals
-- Custom map builder with private/public maps, duplication, editing, and publishing
-- Lobby rules for starting cash, salary, jail rules, auctions, free parking, and turn order
-- Auctions, trading, mortgages, houses, hotels, jail cards, bankruptcy, and victory detection
-- In-game chat, action log, sound effects, responsive board UI, and mobile-friendly layouts
-- MongoDB persistence for custom boards and periodic game snapshots
-- Server-side session identity, payload validation, room cleanup, abuse protection, and rate limiting
+## Screenshots
 
-## Screens
+| Home | Lobby Host | Lobby Guest |
+| --- | --- | --- |
+| ![Home screen](docs/images/home.png) | ![Host lobby](docs/images/lobby-host.png) | ![Guest lobby](docs/images/lobby-guest.png) |
 
-Add screenshots here before publishing the repository:
+| Active Game | Property |
+| --- | --- |
+| ![Active game](docs/images/game.png) | ![Property modal](docs/images/property.png) |
 
-```text
-TODO: Add home/lobby screenshot.
-TODO: Add gameplay screenshot.
-TODO: Add custom map builder screenshot.
-```
+| Auction | Trade | Chat |
+| --- | --- | --- |
+| ![Auction modal](docs/images/auction.png) | ![Trade modal](docs/images/trade.png) | ![Chat drawer](docs/images/chat.png) |
+
+| Map Builder | My Maps |
+| --- | --- |
+| ![Map builder](docs/images/builder.png) | ![My Maps](docs/images/maps.png) |
+
+| Mobile Home | Mobile Lobby | Mobile Game |
+| --- | --- | --- |
+| ![Mobile home](docs/images/mobile-home.png) | ![Mobile lobby](docs/images/mobile-lobby.png) | ![Mobile game](docs/images/mobile-game.png) |
+
+## Features
+
+| Area | What is included |
+| --- | --- |
+| Multiplayer rooms | Create rooms, join by code, browse public rooms, host controls, spectator flow. |
+| Realtime sync | Socket.IO state broadcasts for lobby, turns, auctions, trades, chat, and game events. |
+| Guest sessions | Anonymous server-side sessions with no accounts, login screens, or JWTs. |
+| Game engine | Turn order, dice, movement, rent, jail, property ownership, cards, bankruptcy, and victory. |
+| Auctions | Server-side auction state, bids, passes, timers, and final transfer. |
+| Trading | Player-to-player proposals, cash/property exchange, messages, accept/reject/edit flows. |
+| Property management | Buy, mortgage, unmortgage, build houses, sell houses, inspect ownership and rents. |
+| Custom boards | Built-in boards plus saved custom boards that appear in room creation. |
+| Map builder | New maps from blank or templates, tile editing, drafts, validation, publish/unpublish. |
+| Abuse protection | Payload validation, REST rate limits, Socket.IO throttles, and idle-room cleanup. |
+| Responsive UI | Desktop, tablet, and mobile layouts with dark-first design tokens. |
+| Audio | Lightweight procedural sound effects with persisted mute and volume settings. |
 
 ## Tech Stack
 
-| Layer | Technology |
+| Layer | Stack |
 | --- | --- |
-| Frontend | React 19, Create React App, React Router, Socket.IO Client, lucide-react, Howler |
-| Backend | Node.js, Express 5, Socket.IO, express-session |
-| Database | MongoDB, Mongoose |
-| Runtime State | In-memory active rooms with periodic MongoDB snapshots |
-| Deployment | Backend on Render, frontend on Vercel or Render Static Site |
+| Frontend | React 19, Create React App, React Router, lucide-react, CSS design tokens. |
+| Backend | Node.js 20+, Express 5, Socket.IO 4, express-session. |
+| Database | MongoDB through Mongoose for custom boards and saved room snapshots. |
+| Realtime | Socket.IO rooms with server-owned game state and session-backed identity. |
+| Deployment | Separate frontend/backend deployment or same-origin nginx reverse proxy. |
 
-## Repository Structure
+## Project Structure
 
 ```text
 .
-|-- client/                 # React frontend
-|   |-- src/components/     # Home, lobby, game, and editor UI
-|   |-- src/api.js          # REST API client
-|   |-- src/socket.js       # Socket.IO client singleton
-|   `-- src/config.js       # REACT_APP_API_URL handling
-|-- server/                 # Express + Socket.IO backend
-|   |-- abuse/              # Rate limiting and pending-room cleanup
-|   |-- game/               # Board definitions and game engine modules
-|   |-- middleware/         # Session identity middleware
-|   |-- models/             # Mongoose models
-|   |-- routes/             # REST routes
-|   |-- socket/             # Socket.IO event handlers
-|   `-- validation/         # Server-side payload validation
-|-- deploy/                 # Self-hosting deployment templates
-`-- *.md                    # Audit and implementation reports
+├── client/
+│   ├── public/                 # App shell, favicon, PWA manifest, brand assets
+│   ├── src/
+│   │   ├── components/common/   # Brand logo and shared UI helpers
+│   │   ├── components/editor/   # Map builder and My Maps screens
+│   │   ├── components/game/     # Board, modals, panels, chat, auctions, trades
+│   │   ├── components/home/     # Home screen and token picker
+│   │   ├── components/lobby/    # Lobby, rules, players, host controls
+│   │   ├── api.js               # REST client with credentials
+│   │   ├── socket.js            # Socket.IO client
+│   │   ├── theme.css            # Design tokens and shared styles
+│   │   └── useRoom.js           # Room/socket state hook
+│   └── package.json
+├── server/
+│   ├── abuse/                   # REST and Socket.IO rate limiting
+│   ├── game/                    # Server-authoritative game engine
+│   ├── middleware/              # Session middleware shared by Express and Socket.IO
+│   ├── models/                  # Mongoose models
+│   ├── routes/                  # REST endpoints
+│   ├── socket/                  # Socket.IO event handlers and room lifecycle
+│   ├── validation/              # Strict payload validators
+│   └── index.js                 # Express and Socket.IO entrypoint
+├── deploy/                      # Optional nginx/systemd deployment templates
+├── docs/                        # Roadmap, design system, and README screenshots
+└── LICENSE
 ```
 
-## Architecture
-
-```mermaid
-flowchart LR
-    Browser[React Client] -->|REST API| Express[Express Server]
-    Browser <-->|Socket.IO| Socket[Socket.IO Server]
-    Express --> Rooms[In-memory activeRooms]
-    Socket --> Rooms
-    Socket --> Engine[Game Engine]
-    Engine --> Rooms
-    Express --> Mongo[(MongoDB)]
-    Socket --> Mongo
-```
-
-The backend is authoritative. The frontend renders state and sends intents; the server validates payloads, checks session identity, mutates game state, and broadcasts updated room snapshots.
-
-## Gameplay Features
-
-### Multiplayer
-
-- Create or join rooms by six-character room code
-- Host-controlled lobby and game start
-- Spectator support after a game has started
-- Reconnect support backed by server-side anonymous sessions
-- Automatic cleanup for empty or abandoned rooms
-
-### Game Engine
-
-- Turn order, dice rolling, doubles, jail, GO salary, taxes, cards, free parking
-- Property ownership, rent, color groups, stations, utilities
-- Buying, auctions, mortgages, unmortgaging, building, selling buildings
-- Trading with cash, properties, and jail cards
-- Bankruptcy and end-game detection
-
-### Custom Maps
-
-- Create maps from blank or built-in templates
-- Edit tile names, prices, rents, groups, taxes, stations, utilities, and special tiles
-- Save maps as `CustomBoard` documents
-- Manage maps from the My Maps page
-- Publish, unpublish, duplicate, rename, delete, and edit maps
-
-## Local Development
+## Installation
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20 or newer
 - npm
 - MongoDB running locally or a MongoDB connection string
 
-### 1. Start the backend
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/amanbotx2-fr/Monopoly-main.git
+cd Monopoly-main
+```
+
+### 2. Install backend dependencies
 
 ```bash
 cd server
 npm install
 cp .env.example .env
+```
+
+Edit `server/.env` if your MongoDB instance is not running at
+`mongodb://localhost:27017/monopoly`.
+
+### 3. Install frontend dependencies
+
+```bash
+cd ../client
+npm install
+cp .env.example .env.local
+```
+
+For local development, the default frontend API URL is already
+`http://localhost:5004`.
+
+### 4. Start MongoDB
+
+Use your local MongoDB service, Docker, MongoDB Atlas, or any compatible
+connection string. A local service usually works with:
+
+```bash
+mongod --dbpath ./mongo-data
+```
+
+If you use a managed database, set `MONGODB_URI` in `server/.env`.
+
+### 5. Start the backend
+
+```bash
+cd server
 npm start
 ```
 
-Default backend URL:
+The backend listens on `http://localhost:5004`.
 
-```text
-http://localhost:5004
-```
+### 6. Start the frontend
 
-Minimum backend `.env`:
-
-```env
-MONGODB_URI=mongodb://localhost:27017/monopoly
-CLIENT_URL=http://localhost:3000
-PORT=5004
-SESSION_SECRET=change-me
-ROOM_IDLE_TIMEOUT_MS=900000
-```
-
-### 2. Start the frontend
+Open a second terminal:
 
 ```bash
 cd client
-npm install
-cp .env.example .env
 npm start
 ```
 
-Default frontend URL:
-
-```text
-http://localhost:3000
-```
-
-For local development, `REACT_APP_API_URL` may be omitted because the frontend defaults to `http://localhost:5004`.
+Visit `http://localhost:3000`.
 
 ## Environment Variables
 
 ### Frontend
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `REACT_APP_API_URL` | Production | Backend base URL used by REST and Socket.IO |
-
-Example:
-
-```env
-REACT_APP_API_URL=https://monopoly-typeshit.onrender.com
-```
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `REACT_APP_API_URL` | No | `http://localhost:5004` | Express and Socket.IO backend URL. Create React App only exposes variables with the `REACT_APP_` prefix. |
 
 ### Backend
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `MONGODB_URI` | Yes | MongoDB connection string |
-| `CLIENT_URL` | Yes | Allowed frontend origin for CORS and Socket.IO |
-| `PORT` | No | Backend port, defaults to `5004` |
-| `SESSION_SECRET` | Production | Long random secret for signed session cookies |
-| `ROOM_IDLE_TIMEOUT_MS` | No | Idle in-progress room cleanup timeout |
-| `PENDING_HOST_CONNECT_MS` | No | Cleanup timeout for rooms whose host never connects |
-| `MAX_ACTIVE_ROOMS` | No | Global in-memory room cap |
-| `PENDING_ROOMS_PER_SESSION` | No | Pending room cap per anonymous session |
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `MONGODB_URI` | No | `mongodb://localhost:27017/monopoly` | MongoDB connection string. |
+| `CLIENT_URL` | No | `http://localhost:3000` | Allowed browser origin for CORS and Socket.IO credentials. |
+| `PORT` | No | `5004` | Backend HTTP port. |
+| `SESSION_SECRET` | Yes in production | development fallback | Secret used to sign anonymous session cookies. Use a long random value. |
+| `ROOM_IDLE_TIMEOUT_MS` | No | `900000` | How long an empty started room can remain before cleanup. |
+| `PENDING_HOST_CONNECT_MS` | No | `300000` | Grace period for a newly created room before the host connects by socket. |
+| `PENDING_ROOMS_PER_SESSION` | No | `2` | Number of pending rooms one session can create. |
+| `MAX_ACTIVE_ROOMS` | No | `200` | Hard cap for in-memory active rooms. |
+| `RATE_LIMIT_*` | No | See `server/.env.example` | REST and Socket.IO abuse-protection tuning. |
 
-The backend also supports optional rate-limit environment variables such as:
+## Gameplay
 
-```env
-RATE_LIMIT_ROOM_CREATE_SESSION_PER_MIN=5
-RATE_LIMIT_ROOM_CREATE_IP_PER_10_MIN=30
-RATE_LIMIT_BOARD_MUTATE_PER_MIN=30
-RATE_LIMIT_LOOKUP_PER_MIN=180
-RATE_LIMIT_SOCKET_CONNECT_PER_MIN=30
-RATE_LIMIT_SOCKET_CHAT_PER_10_SEC=8
-RATE_LIMIT_SOCKET_AUCTION_BID_PER_10_SEC=20
-RATE_LIMIT_SOCKET_TRADE_MSG_PER_10_SEC=10
+Players create a room, choose a board, invite others with a room code, tune
+rules, and start from the lobby. The backend owns the game state and accepts only
+validated actions from room members.
+
+The built-in flow includes:
+
+- Dice rolling and turn enforcement.
+- Property purchase, ownership, rent, and group monopolies.
+- Houses, hotels, mortgage, unmortgage, and house sales.
+- Chance and Community Chest decks.
+- Jail, paying fines, doubles, and jail-free cards.
+- Auctions when a property is skipped.
+- Trade proposals with cash, properties, and messages.
+- Bankruptcy resolution and end-game detection.
+- Spectators who can watch without becoming players.
+
+## Custom Boards
+
+The board system supports:
+
+- Built-in boards: Classic USA, World Tour, and World Capitals.
+- Saved custom boards in MongoDB.
+- Public/private visibility.
+- Duplicate, rename, delete, publish, and unpublish workflows.
+- Blank-board generation that remains compatible with the game engine.
+
+Saved custom boards are returned by `GET /api/boards`, so they automatically
+appear in the Home board selector without restarting the server.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser[React client] -->|REST with credentials| Express[Express API]
+    Browser <-->|Socket.IO with credentials| Socket[Socket.IO server]
+    Express --> Session[express-session]
+    Socket --> Session
+    Express --> Mongo[(MongoDB)]
+    Socket --> Rooms[activeRooms memory]
+    Rooms --> Engine[Game engine]
+    Engine --> Rooms
+    Express --> Boards[Built-in and custom boards]
+    Boards --> Mongo
 ```
+
+Key points:
+
+- Express and Socket.IO share the same session middleware.
+- The client never chooses its own identity; identity comes from the server
+  session.
+- REST routes handle room creation, board CRUD, public room listing, and health.
+- Socket.IO handles lobby sync, gameplay actions, chat, trades, auctions, and
+  reconnect behavior.
+- Active rooms are kept in memory and periodically saved to MongoDB.
+- Production deployments should replace the default session store before
+  running multiple backend instances.
 
 ## Deployment
 
-This repository supports a split deployment:
-
-- Backend: Render Web Service
-- Frontend: Vercel or Render Static Site
-- Database: MongoDB Atlas or another MongoDB deployment
-
-### Render backend
-
-Set these Render environment variables:
-
-```env
-MONGODB_URI=TODO
-CLIENT_URL=TODO_FRONTEND_URL
-SESSION_SECRET=TODO_LONG_RANDOM_SECRET
-NODE_ENV=production
-PORT=5004
-```
-
-### Vercel frontend
-
-Set this Vercel environment variable:
-
-```env
-REACT_APP_API_URL=https://monopoly-typeshit.onrender.com
-```
-
-Then build the frontend with:
+The frontend and backend can be deployed separately:
 
 ```bash
-cd client
-npm run build
+# frontend build environment
+REACT_APP_API_URL=https://api.example.com
+
+# backend environment
+CLIENT_URL=https://app.example.com
+NODE_ENV=production
+SESSION_SECRET=replace-with-a-long-random-secret
+MONGODB_URI=mongodb+srv://...
 ```
 
-Self-hosting templates are available in [deploy/](deploy/README.md).
-
-## API Overview
-
-Primary REST endpoints:
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/me` | Create/read anonymous session identity |
-| `GET` | `/api/tokens` | List token colors |
-| `GET` | `/api/boards` | List built-in, owned, and public boards |
-| `GET` | `/api/boards/:id` | Load a board |
-| `POST` | `/api/boards` | Create a custom board |
-| `PATCH` | `/api/boards/:id` | Update an owned custom board |
-| `DELETE` | `/api/boards/:id` | Delete an owned custom board |
-| `POST` | `/api/boards/:id/duplicate` | Duplicate a board |
-| `POST` | `/api/rooms` | Create a room |
-| `GET` | `/api/rooms` | List open rooms |
-| `GET` | `/api/rooms/:code` | Preview a room |
-
-Primary Socket.IO events:
-
-```text
-chat
-set-color
-set-username
-update-rules
-kick
-start-game
-roll
-buy
-decline-buy
-end-turn
-jail-pay
-jail-card
-mortgage
-unmortgage
-build
-demolish
-auction-bid
-auction-pass
-trade-propose
-trade-update
-trade-accept
-trade-reject
-trade-msg
-bankrupt
-```
-
-## Security and Reliability
-
-Implemented backend protections include:
-
-- Server-side anonymous session identity with `express-session`
-- Socket.IO identity from the same server session
-- Strict REST and Socket.IO payload validation
-- Structured validation and rate-limit errors
-- CORS restricted by `CLIENT_URL`
-- Socket and REST abuse protection
-- Idle room cleanup and pending-host cleanup
-- Autosave lifecycle management for active game rooms
+For same-origin self-hosting, see the nginx and systemd templates in
+[`deploy/`](deploy/README.md).
 
 ## Development Notes
 
-- Built-in boards live in `server/game/boards.js`.
-- The game engine lives in `server/game/engine.js`.
-- Property actions live in `server/game/property.js`.
-- Auctions live in `server/game/auction.js`.
-- Trades live in `server/game/trade.js`.
-- Socket event wiring lives in `server/socket/handlers.js`.
-- Custom board persistence is defined in `server/models/CustomBoard.js`.
+- The client is a Create React App project.
+- The backend is a plain Express app with Socket.IO mounted on the same HTTP
+  server.
+- There is no account system and no JWT flow.
+- MongoDB is required for custom boards and saved room snapshots.
+- The default `express-session` MemoryStore is suitable for local development
+  only. Use Redis, Mongo-backed sessions, or another shared store in production.
 
-## Project Status
+## Roadmap
 
-This is an active multiplayer game project. The core gameplay loop, custom map builder, session identity, validation, rate limiting, and deployment compatibility have been implemented. Before a public production launch, add final screenshots, a production frontend URL, a license, and production observability.
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for post-v1.0 work. High-priority
+areas include automated multiplayer tests, durable room recovery, production
+session storage, CSRF protection for REST mutations, and CI.
 
-## Maintainer
+## Contributing
 
-**Aman Kumar**<br>
-GitHub: [amanbotx2-fr](https://github.com/amanbotx2-fr)
+Contributions are welcome. Good first areas include documentation, accessibility
+improvements, test coverage, map-builder validation, and small UI refinements.
+
+Before opening a pull request:
+
+1. Keep gameplay-rule changes focused and documented.
+2. Run `npm install` in both `client/` and `server/`.
+3. Run `npm run build` in `client/`.
+4. Manually verify create/join room, lobby, game start, chat, trade, auction,
+   property actions, map builder, and My Maps.
+5. Do not commit `.env`, build output, logs, or local database files.
 
 ## License
 
-TODO: Add a license file before publishing or accepting external contributions.
-
-
-okay we need to do more
+MIT. See [`LICENSE`](LICENSE).

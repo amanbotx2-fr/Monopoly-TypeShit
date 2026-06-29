@@ -410,7 +410,7 @@ function onJoin(io, socket, payload) {
     const { createPlayerState } = require('../game/state');
     const p = createPlayerState({
         userId,
-        username: (username || 'Player').slice(0, 24),
+        username: (username || 'Guest').slice(0, 24),
         color: hex,
         seat: room.players.length,
         isHost: false,

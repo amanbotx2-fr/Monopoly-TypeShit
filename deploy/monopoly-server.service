@@ -1,20 +1,22 @@
 [Unit]
-Description=Monopoly (Aman Kumar) Node/Socket.io backend
+Description=MONOPOLY Node/Socket.IO backend
 After=network.target mongod.service
 Wants=mongod.service
 
 [Service]
 Type=simple
-# TODO: replace TODO_DEPLOY_USER and TODO_NODE_VERSION for Aman Kumar's server.
-User=TODO_DEPLOY_USER
-WorkingDirectory=/home/TODO_DEPLOY_USER/monopoly-server
-ExecStart=/home/TODO_DEPLOY_USER/.nvm/versions/node/TODO_NODE_VERSION/bin/node index.js
+User=monopoly
+Group=monopoly
+WorkingDirectory=/opt/monopoly/server
+ExecStart=/usr/bin/node index.js
 Restart=on-failure
 RestartSec=3s
 Environment=NODE_ENV=production
-EnvironmentFile=/home/TODO_DEPLOY_USER/monopoly-server/.env
-StandardOutput=append:/home/TODO_DEPLOY_USER/monopoly-server.log
-StandardError=append:/home/TODO_DEPLOY_USER/monopoly-server.log
+EnvironmentFile=/etc/monopoly/server.env
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
 
 [Install]
 WantedBy=multi-user.target

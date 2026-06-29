@@ -174,7 +174,7 @@ export default function Game({ userId, pushToast }) {
                 </header>
                 <div className="status-line" style={{ padding: '2px 2px 0' }}>
                     <span className="dot" style={{ background: connected ? 'var(--success)' : 'var(--warning)' }} />
-                    {room.ended ? 'Game finished' : `${active?.username || 'Anonymous Player'} to act`}
+                    {room.ended ? 'Game finished' : `${active?.username || 'Guest'} to act`}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', paddingRight: 4, flex: 1 }}>
                     {room.players.map(p => (

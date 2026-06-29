@@ -17,7 +17,7 @@ export default function useRoom({ userId }) {
     const seenVersion = useRef(-1);
 
     useEffect(() => {
-        const username = localStorage.getItem('monopoly.username') || 'Anonymous Player';
+        const username = localStorage.getItem('monopoly.username') || 'Guest';
         const color = localStorage.getItem('monopoly.color') || '#EF4444';
         const s = connectSocket({ userId, roomCode: code, username, color });
         s.on('connect', () => setConnected(true));

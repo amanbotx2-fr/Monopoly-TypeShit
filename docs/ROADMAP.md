@@ -1,68 +1,44 @@
 # Roadmap
 
-Last updated: 2026-06-30
+This roadmap tracks high-value work for the open-source project after v1.0.
+Items are intentionally scoped so contributors can pick up meaningful pieces
+without needing to rewrite the game engine.
 
-## Immediate
+## Reliability
 
-1. Let the user visually review logo replacement screenshots in `/private/tmp/monopoly-brand-screens`.
-2. Let the user visually review the latest lobby presence pass in `/private/tmp/monopoly-design-lobby-pass`.
-3. Address any requested visual changes.
-4. Commit the frontend redesign, logo replacement, and documentation as logical commits only after review approval.
+- Add automated multiplayer integration tests for create, join, reconnect,
+  spectator, auction, trade, bankruptcy, and victory flows.
+- Persist active room recovery across backend restarts with a durable store.
+- Add structured production logging and request tracing.
+- Add graceful degradation messaging when MongoDB or Socket.IO connectivity is
+  unavailable.
 
-## Frontend Redesign Phase
+## Security
 
-1. Remove or gate the temporary `API_BASE` console log if production debugging is no longer needed.
-2. Finalize README screenshot assets once the MONOPOLY branding is approved.
-3. Expand the multiplayer presence language beyond Lobby if future flows need it:
-   - current turn transitions
-   - recent joins/leaves
-   - spectator clarity
-4. Replace native confirm dialogs with app modals:
-   - reset board
-   - discard unsaved changes
-   - change template
-   - delete map
-5. Improve mobile game board readability without changing gameplay or board rendering responsibilities.
-6. Add a responsive Map Builder fallback for narrow screens.
-7. Add accessible toast semantics.
+- Move production session storage from `MemoryStore` to Redis or Mongo-backed
+  storage.
+- Add CSRF protection for credentialed REST mutations.
+- Add tighter production rate-limit tuning based on real traffic.
+- Add dependency vulnerability triage and scheduled dependency updates.
 
-## Product UX Phase
+## Gameplay
 
-1. Add clearer spectator user flow.
-2. Improve onboarding for first-time guest players.
-3. Add explicit empty/error states for failed backend connection.
-4. Add trade jail-card controls to match backend capability.
-5. Add rematch/new game flow after victory.
-6. Add room privacy controls if public rooms remain enabled.
+- Expand custom board templates and validation helpers.
+- Add optional house rules without changing default gameplay.
+- Add post-game summaries with final standings and key transactions.
+- Improve spectator tools for following active trades, auctions, and turns.
 
-## Engineering Quality Phase
+## Product Experience
 
-1. Add automated tests for:
-   - room creation
-   - room join/reconnect
-   - host start
-   - custom board create/use
-   - trade validation
-   - auction validation
-   - bankruptcy validation
-2. Add UI smoke tests for key routes.
-3. Remove unused code/dependencies after verifying they are not planned soon:
-   - `client/src/components/game/Chat.js`
-   - `howler`
-   - `@dnd-kit/*`
-4. Consider migrating from Create React App to Vite.
+- Add guided first-game onboarding.
+- Improve keyboard navigation for board inspection and modal workflows.
+- Add richer empty states for new installations without public rooms or maps.
+- Add optional reduced-motion settings for long play sessions.
 
-## Production Phase
+## Developer Experience
 
-1. Add a license.
-2. Add production frontend URL.
-3. Add screenshots to README.
-4. Replace deployment TODOs with real infrastructure values.
-5. Add CI/CD.
-6. Add observability:
-   - request logging
-   - socket event logging
-   - room count metrics
-   - error metrics
-7. Add MongoDB backup/restore notes.
-8. Add startup recovery from `GameRoom` snapshots if durable room restore is required.
+- Add lint and formatting scripts for both client and server.
+- Add a root-level workspace script for installing, building, and running both
+  packages.
+- Add seeded local fixtures for boards, rooms, and sample custom maps.
+- Add CI for install, build, tests, and security checks.

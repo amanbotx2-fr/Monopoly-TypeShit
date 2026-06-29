@@ -1,58 +1,86 @@
 # Deployment
 
-Maintainer: Aman Kumar  
-GitHub: https://github.com/amanbotx2-fr
+This folder contains optional deployment templates for running MONOPOLY on a
+Linux host with nginx, systemd, Node.js, and MongoDB.
 
-TODO: set the production frontend domain.
-TODO: set the production API domain if it is separate from the frontend domain.
-TODO: set the deployment SSH host, deployment user, and remote paths.
+The project also works when the React client and Express backend are deployed
+separately. In that setup, set `REACT_APP_API_URL` on the frontend to the public
+backend URL and set `CLIENT_URL` on the backend to the public frontend URL.
 
-## One-time setup
+## Files
+
+| File | Purpose |
+| --- | --- |
+| `monopoly.nginx.conf` | Example nginx server block for hosting the React build and proxying API/WebSocket traffic to Node. |
+| `monopoly-server.service` | Example systemd unit for the Express and Socket.IO backend. |
+| `push.sh` | Optional rsync-based deployment helper for a single Linux host. |
+
+## Single-Host Deployment
+
+Install Node.js 20+, MongoDB, nginx, and certbot on the server. Create a
+dedicated Linux user for the backend:
 
 ```bash
-# pull repo somewhere convenient; only server runs on the box, client is static
-ssh TODO_DEPLOY_USER@TODO_DEPLOY_HOST
-sudo tee /etc/nginx/sites-available/monopoly-frontend < monopoly.nginx.conf
-sudo ln -sf /etc/nginx/sites-available/monopoly-frontend /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-
-# TLS
-sudo certbot --nginx -d TODO_FRONTEND_DOMAIN
-# If the API uses a separate domain:
-# sudo certbot --nginx -d TODO_API_DOMAIN
-
-# systemd unit for the node server
-sudo cp monopoly-server.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now monopoly-server
+sudo useradd --system --create-home --shell /usr/sbin/nologin monopoly
+sudo mkdir -p /opt/monopoly/server /var/www/monopoly /etc/monopoly
+sudo chown -R monopoly:monopoly /opt/monopoly/server
 ```
 
-## ship new code
+Create `/etc/monopoly/server.env`:
 
 ```bash
-# from local machine
+MONGODB_URI=mongodb://127.0.0.1:27017/monopoly
+CLIENT_URL=https://monopoly.example.com
+PORT=5004
+NODE_ENV=production
+SESSION_SECRET=replace-with-a-long-random-secret
+ROOM_IDLE_TIMEOUT_MS=900000
+```
+
+Copy the service and nginx templates, then adjust the domain and filesystem
+paths for your server:
+
+```bash
+sudo cp deploy/monopoly-server.service /etc/systemd/system/monopoly-server.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now monopoly-server
+
+sudo cp deploy/monopoly.nginx.conf /etc/nginx/sites-available/monopoly
+sudo ln -sf /etc/nginx/sites-available/monopoly /etc/nginx/sites-enabled/monopoly
+sudo nginx -t
+sudo systemctl reload nginx
+sudo certbot --nginx -d monopoly.example.com
+```
+
+## Deploying With `push.sh`
+
+The helper script builds the client locally, uploads `client/build/` to the
+static web root, syncs the backend source, installs production server
+dependencies remotely, and restarts systemd.
+
+```bash
+DEPLOY_HOST=deploy@example.com \
+SERVER_DIR=/opt/monopoly/server \
+CLIENT_DIR=/var/www/monopoly \
 ./deploy/push.sh
 ```
 
-`push.sh` rsyncs `server/` to `/home/TODO_DEPLOY_USER/monopoly-server`, builds the
-client locally (`cd client && npm run build`), rsyncs `client/build/` to
-`/home/TODO_DEPLOY_USER/monopoly-client`, restarts the systemd unit, and reloads
-nginx. The unit uses `/home/TODO_DEPLOY_USER/monopoly-server/.env` (not in git) -
-make sure it has:
+The defaults in `push.sh` are examples. Use environment variables for real
+targets instead of editing secrets into the script.
 
-```
-MONGODB_URI=mongodb://localhost:27017/monopoly
-CLIENT_URL=https://TODO_FRONTEND_DOMAIN
-PORT=5004
+## Split Frontend/Backend Deployment
+
+When the frontend is served from a different origin than the backend:
+
+```bash
+# frontend
+REACT_APP_API_URL=https://api.example.com
+
+# backend
+CLIENT_URL=https://app.example.com
+SESSION_SECRET=replace-with-a-long-random-secret
 NODE_ENV=production
 ```
 
-## DNS
-
-In the DNS provider for Aman Kumar's production domain, add A/AAAA records:
-
-- `TODO_FRONTEND_DOMAIN` -> TODO_DEPLOY_HOST_PUBLIC_IP
-- `TODO_API_DOMAIN` -> TODO_DEPLOY_HOST_PUBLIC_IP, if using a separate API domain
-
-Proxying through Cloudflare is fine. Socket.IO falls back to long-polling
-if the websocket upgrade is blocked, but nginx should allow websockets.
+The backend keeps credentials enabled and does not use wildcard CORS. Make sure
+the configured frontend URL exactly matches the browser origin.

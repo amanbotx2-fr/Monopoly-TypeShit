@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const { createRoom, activeRooms, publicView, TOKEN_COLORS } = require('../game/state');
+const { createRoom, activeRooms, TOKEN_COLORS } = require('../game/state');
 const { BUILTIN_BOARDS, validateBoard, computeGroupSizes } = require('../game/boards');
 const CustomBoard = require('../models/CustomBoard');
 const validation = require('../validation/payloads');

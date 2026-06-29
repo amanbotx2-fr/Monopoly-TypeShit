@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# Build + ship monopoly. Run from the repo root:
+# Build and ship MONOPOLY. Run from the repo root:
 #   ./deploy/push.sh
-#
-# TODO: set Aman Kumar's deployment SSH target and remote directories before use.
 
 set -euo pipefail
 
-HOST="TODO_DEPLOY_USER@TODO_DEPLOY_HOST"
-SERVER_DIR="/home/TODO_DEPLOY_USER/monopoly-server"
-CLIENT_DIR="/home/TODO_DEPLOY_USER/monopoly-client"
+HOST="${DEPLOY_HOST:-deploy@example.com}"
+SERVER_DIR="${SERVER_DIR:-/opt/monopoly/server}"
+CLIENT_DIR="${CLIENT_DIR:-/var/www/monopoly}"
 
 # 1) Build client locally so the box doesn't need node_modules bloat.
 echo "building client..."
