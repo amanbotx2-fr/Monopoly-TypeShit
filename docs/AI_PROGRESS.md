@@ -1,6 +1,6 @@
 # AI Progress
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ## Current Objective
 
@@ -9,7 +9,7 @@ Redesign the frontend into a premium multiplayer strategy platform while preserv
 ## Current Repository State
 
 - Repository has 87 project files excluding `.git`, `node_modules`, and `client/build`.
-- Active working tree contains frontend redesign changes plus a small client socket emit compatibility fix.
+- Active working tree contains frontend presentation changes only.
 - No backend, game engine, database schema, REST route, package, lockfile, env, or deployment file is currently modified by the active redesign diff.
 - Persistent documentation was introduced in `docs/` so future sessions do not need chat history.
 - The application identity now uses the user-provided MONOPOLY logo asset rather than the previous dice app icon.
@@ -66,6 +66,13 @@ Redesign the frontend into a premium multiplayer strategy platform while preserv
   - Toasts
   - Board visual styling
   - Player panels and strips
+- Completed a follow-up visual evolution pass after the power outage:
+  - Re-read `DESIGN.md` and compared the current UI against the product principles.
+  - Confirmed the previous redesign changes survived in the working tree.
+  - Identified the lobby as the next highest-value surface because `DESIGN.md` treats multiplayer presence as first-class.
+  - Added a lobby presence strip with player initials, online count, readiness copy, and an invite action.
+  - Added responsive lobby presence styling for desktop, tablet, and mobile.
+  - Tightened `.btn.soft` to use the current blue/cyan accent system instead of the older green-tinted border.
 - Added basic accessible names for several unlabeled inputs and icon-only controls.
 - Fixed a client-side Socket.IO emission mismatch discovered during visual QA:
   - `client/src/socket.js` now omits the second socket argument when the payload is `undefined`.
@@ -85,7 +92,7 @@ Redesign the frontend into a premium multiplayer strategy platform while preserv
 - Local backend connected to MongoDB.
 - Local frontend dev server started on port `3000`.
 - HTTP smoke checks passed:
-  - `GET http://localhost:3000` returned the CRA HTML shell with `Monopoly 2026` metadata.
+  - `GET http://localhost:3000` returned the CRA HTML shell with `MONOPOLY` metadata.
   - `GET /api/health` returned `{ "status": "ok" }`.
   - `GET /api/me` issued a session-backed anonymous `userId`.
   - `GET /api/boards` returned the three built-in boards.
@@ -121,6 +128,21 @@ Redesign the frontend into a premium multiplayer strategy platform while preserv
   - Host lobby start flow was verified end-to-end; backend room lookup returned `started: true`.
   - Auction was triggered through real gameplay by rolling and declining purchase.
   - Trade, chat, property modal, map builder, and maps screens rendered without obvious clipping or modal overlap in the final run.
+- Screenshot output for the latest lobby presence pass is in `/private/tmp/monopoly-design-lobby-pass`.
+- Latest full visual harness result:
+  - Created a room through the Home UI.
+  - Joined the room as a guest.
+  - Verified host and guest lobby states.
+  - Started the game from the host lobby.
+  - Opened property, auction, trade, and chat surfaces.
+  - Captured My Maps and Map Builder.
+  - Captured mobile Home, Lobby, and Game.
+  - Captured tablet Home, Lobby, and Game.
+  - Found no console findings.
+  - Found no horizontal overflow.
+  - Reported `oldDiceBrandNodes: 0` on all captured screens.
+- `npm run build` in `client/` passed after the lobby presence pass.
+- `git diff --check` passed after the lobby presence pass.
 
 ## Current Known Issues
 
@@ -130,7 +152,8 @@ Redesign the frontend into a premium multiplayer strategy platform while preserv
 - `MapEditor` and `MyMaps` still use native `window.confirm`.
 - `REPORT.md` is partly stale because later backend sprints implemented several findings.
 - Mobile game board remains dense at 390px because the complete 40-tile board is shown in one viewport; no overflow was detected, but future mobile board readability could still be improved.
+- The integrated browser connector remains unavailable in this environment, so headless Chrome/CDP is the active browser verification path.
 
 ## Next Step
 
-Wait for human screenshot review before committing. No commit has been made for the logo replacement.
+Wait for human review of the latest visual pass before committing. No commit has been made for the redesign pass.

@@ -1,25 +1,30 @@
 # Roadmap
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ## Immediate
 
 1. Let the user visually review logo replacement screenshots in `/private/tmp/monopoly-brand-screens`.
-2. Address any requested visual changes.
-3. Commit the frontend redesign, logo replacement, and documentation as logical commits only after review approval.
+2. Let the user visually review the latest lobby presence pass in `/private/tmp/monopoly-design-lobby-pass`.
+3. Address any requested visual changes.
+4. Commit the frontend redesign, logo replacement, and documentation as logical commits only after review approval.
 
 ## Frontend Redesign Phase
 
 1. Remove or gate the temporary `API_BASE` console log if production debugging is no longer needed.
 2. Finalize README screenshot assets once the MONOPOLY branding is approved.
-3. Replace native confirm dialogs with app modals:
+3. Expand the multiplayer presence language beyond Lobby if future flows need it:
+   - current turn transitions
+   - recent joins/leaves
+   - spectator clarity
+4. Replace native confirm dialogs with app modals:
    - reset board
    - discard unsaved changes
    - change template
    - delete map
-4. Improve mobile game board readability without changing gameplay or board rendering responsibilities.
-5. Add a responsive Map Builder fallback for narrow screens.
-6. Add accessible toast semantics.
+5. Improve mobile game board readability without changing gameplay or board rendering responsibilities.
+6. Add a responsive Map Builder fallback for narrow screens.
+7. Add accessible toast semantics.
 
 ## Product UX Phase
 

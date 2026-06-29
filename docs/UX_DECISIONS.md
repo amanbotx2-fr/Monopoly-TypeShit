@@ -1,6 +1,6 @@
 # UX Decisions
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ## Decision Log
 
@@ -68,11 +68,17 @@ Lobby now adds a top status card with:
 - role
 - player count
 - selected board
+- player presence initials
+- online count
+- readiness copy
+- invite action
 
 Reason:
 
 - Host/non-host confusion has been a recurring product risk.
 - The lobby must make role and readiness obvious before start.
+- `DESIGN.md` identifies friends joining as an emotional goal and treats presence as a first-class multiplayer feature.
+- The presence strip makes the room feel active without adding a new step or changing socket behavior.
 
 ### Game Shell
 
@@ -142,3 +148,4 @@ Reason:
 - Screenshots confirmed layout, modal stacking, responsive states, and console health across the major flows.
 - When the integrated browser connector is unavailable, a headless Chrome/CDP fallback is acceptable for local visual evidence.
 - For logo replacement QA, screenshots were captured in `/private/tmp/monopoly-brand-screens` and every screen reported no old dice-brand nodes.
+- For the lobby presence pass, screenshots were captured in `/private/tmp/monopoly-design-lobby-pass`; the run reported no console findings, no horizontal overflow, and no old dice-brand nodes.

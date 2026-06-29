@@ -5,7 +5,7 @@ import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
 import TokenPicker from '../home/TokenPicker';
 import BrandLogo from '../common/BrandLogo';
-import { Copy, LogOut, Play, X, Users, Settings } from 'lucide-react';
+import { Copy, LogOut, Play, X, Users, Settings, UserPlus } from 'lucide-react';
 
 export default function Lobby({ userId, pushToast, onStart }) {
     const nav = useNavigate();
@@ -39,6 +39,12 @@ export default function Lobby({ userId, pushToast, onStart }) {
     const me = room.players.find(p => p.userId === userId);
     const isHost = me?.isHost;
     const takenColors = room.players.map(p => p.color);
+    const connectedPlayers = room.players.filter(p => p.connected !== false);
+    const readinessCopy = room.players.length < 2
+        ? 'Invite one more player to unlock the table.'
+        : isHost
+            ? 'Room is ready. Start when everyone is set.'
+            : 'You are in. Waiting for the host to start.';
 
     function copyLink() {
         const url = `${window.location.origin}/r/${roomCode}`;
@@ -69,6 +75,36 @@ export default function Lobby({ userId, pushToast, onStart }) {
                         <div className="status-line">
                             <span className="dot" style={{ background: connected ? 'var(--success)' : 'var(--warning)' }} />
                             {isHost ? 'Host controls active' : 'Waiting for host'}
+                        </div>
+                        <div className="lobby-presence-card">
+                            <div className="lobby-avatar-stack" aria-label={`${connectedPlayers.length} players online`}>
+                                {room.players.slice(0, 5).map(p => (
+                                    <span
+                                        key={p.userId}
+                                        className={`lobby-avatar ${p.connected === false ? 'is-offline' : ''}`}
+                                        title={p.username}
+                                        style={{ background: p.color }}
+                                    >
+                                        {String(p.username || 'P').slice(0, 1).toUpperCase()}
+                                    </span>
+                                ))}
+                                {room.players.length > 5 && (
+                                    <span className="lobby-avatar lobby-avatar-more">
+                                        +{room.players.length - 5}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ color: 'var(--text)', fontWeight: 800, fontSize: 13 }}>
+                                    {connectedPlayers.length} online at the table
+                                </div>
+                                <div style={{ color: 'var(--text-3)', fontSize: 12, marginTop: 2 }}>
+                                    {readinessCopy}
+                                </div>
+                            </div>
+                            <button className="btn soft sm" onClick={copyLink}>
+                                <UserPlus size={13} /> Invite
+                            </button>
                         </div>
                     </div>
                     <div className="metric-grid" style={{ minWidth: isMobile ? '100%' : 300 }}>

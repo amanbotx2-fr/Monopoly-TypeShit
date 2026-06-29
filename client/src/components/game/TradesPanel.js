@@ -20,8 +20,8 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
                     style={{
                         position: 'fixed', left: 16, bottom: 16, zIndex: 70,
                         borderRadius: 999, height: 40, padding: '0 14px',
-                        background: count > 0 ? 'var(--accent)' : 'var(--surface-2)',
-                        borderColor: count > 0 ? 'var(--accent)' : 'var(--border)',
+                        background: count > 0 ? 'var(--trade)' : 'var(--surface-2)',
+                        borderColor: count > 0 ? 'var(--trade)' : 'var(--border)',
                         color: count > 0 ? 'white' : 'var(--text-2)',
                         boxShadow: 'var(--shadow)',
                         gap: 8,
@@ -48,7 +48,7 @@ export default function TradesPanel({ room, me, onOpenTrade }) {
                     width: 340, maxWidth: '92vw',
                 }}>
                     <div className="modal-header" style={{ padding: '12px 14px' }}>
-                        <Handshake size={14} color="var(--accent)" />
+                        <Handshake size={14} color="var(--trade)" />
                         <div className="modal-title" style={{ fontSize: 13 }}>Open trades</div>
                         <span className="chip" style={{ fontSize: 10 }}>{count}</span>
                         <div style={{ flex: 1 }} />
@@ -85,7 +85,7 @@ function TradeRow({ t, room, me, onOpen }) {
     return (
         <div style={{
             background: 'var(--surface-2)',
-            border: `1px solid ${iAmParty ? 'var(--accent)' : 'var(--border)'}`,
+            border: `1px solid ${iAmParty ? 'var(--trade)' : 'var(--border)'}`,
             borderRadius: 'var(--radius)',
             padding: 10,
             marginBottom: 6,

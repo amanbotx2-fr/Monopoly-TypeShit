@@ -1,29 +1,37 @@
 /* ─── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
-    --bg:         oklch(16% 0.018 145);
-    --bg-1:       oklch(19% 0.02 145);
-    --surface:    oklch(23% 0.019 145);
-    --surface-2:  oklch(27% 0.02 145);
-    --surface-3:  oklch(32% 0.022 145);
-    --surface-elevated: oklch(25% 0.018 145);
-    --border:     oklch(38% 0.025 145);
-    --border-2:   oklch(48% 0.032 145);
+    --bg:         oklch(13.5% 0.007 250);
+    --bg-1:       oklch(17% 0.008 245);
+    --surface:    oklch(22% 0.009 245);
+    --surface-2:  oklch(27% 0.01 242);
+    --surface-3:  oklch(32% 0.012 240);
+    --surface-elevated: oklch(25% 0.01 244);
+    --surface-hover: oklch(35% 0.014 238);
+    --border:     oklch(39% 0.015 238);
+    --border-2:   oklch(50% 0.018 235);
 
-    --text:       oklch(94% 0.012 100);
-    --text-2:     oklch(78% 0.02 115);
-    --text-3:     oklch(63% 0.02 115);
-    --text-4:     oklch(47% 0.018 115);
+    --text:       oklch(94% 0.01 250);
+    --text-2:     oklch(78% 0.018 245);
+    --text-3:     oklch(63% 0.018 242);
+    --text-4:     oklch(48% 0.016 240);
 
-    --accent:       oklch(72% 0.15 165);
-    --accent-2:     oklch(80% 0.11 182);
-    --accent-soft:  oklch(72% 0.15 165 / 0.14);
-    --accent-strong: oklch(64% 0.16 165);
-    --info:         oklch(72% 0.13 245);
-    --success:      oklch(74% 0.16 150);
-    --warning:      oklch(82% 0.15 78);
-    --danger:       oklch(68% 0.18 28);
-    --money:        oklch(77% 0.16 145);
-    --focus:        oklch(86% 0.14 88);
+    --accent:       oklch(70% 0.125 222);
+    --accent-2:     oklch(82% 0.085 205);
+    --accent-soft:  oklch(70% 0.125 222 / 0.16);
+    --accent-strong: oklch(56% 0.14 230);
+    --info:         oklch(72% 0.13 232);
+    --success:      oklch(72% 0.135 152);
+    --success-soft: oklch(72% 0.135 152 / 0.15);
+    --warning:      oklch(78% 0.13 78);
+    --warning-soft: oklch(78% 0.13 78 / 0.15);
+    --danger:       oklch(66% 0.17 28);
+    --danger-soft:  oklch(66% 0.17 28 / 0.15);
+    --trade:        oklch(72% 0.12 305);
+    --trade-soft:   oklch(72% 0.12 305 / 0.15);
+    --auction:      oklch(78% 0.13 82);
+    --auction-soft: oklch(78% 0.13 82 / 0.16);
+    --money:        oklch(74% 0.13 150);
+    --focus:        oklch(84% 0.12 205);
 
     /* Property-group colors — match server boards.js */
     --g-brown:  #955436;
@@ -39,9 +47,9 @@
     --radius-lg: 8px;
     --radius-sm: 5px;
 
-    --shadow:       0 1px 2px rgb(0 0 0 / 0.22), 0 8px 20px rgb(0 0 0 / 0.18);
-    --shadow-lg:    0 18px 50px rgb(0 0 0 / 0.38), 0 2px 8px rgb(0 0 0 / 0.22);
-    --shadow-glow:  0 0 0 3px oklch(72% 0.15 165 / 0.18);
+    --shadow:       0 1px 1px rgb(0 0 0 / 0.22), 0 10px 28px rgb(0 0 0 / 0.2);
+    --shadow-lg:    0 22px 58px rgb(0 0 0 / 0.42), 0 2px 10px rgb(0 0 0 / 0.22);
+    --shadow-glow:  0 0 0 3px oklch(70% 0.125 222 / 0.2), 0 10px 28px oklch(56% 0.14 230 / 0.18);
 
     --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -66,7 +74,7 @@
 html, body, #root { height: 100%; margin: 0; }
 body {
     background:
-        linear-gradient(180deg, oklch(18% 0.018 145), var(--bg) 420px),
+        linear-gradient(180deg, oklch(18% 0.01 245), var(--bg) 420px),
         var(--bg);
     color: var(--text);
     font-family: var(--font-sans);
@@ -107,7 +115,7 @@ button {
 input, select, textarea {
     font-family: inherit;
     color: inherit;
-    background: var(--surface-2);
+    background: color-mix(in oklch, var(--surface-2) 92%, black);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     min-height: 40px;
@@ -155,31 +163,58 @@ a:focus-visible {
     transition: transform var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 .btn:hover:not(:disabled) {
-    background: var(--surface-3);
+    background: var(--surface-hover);
     border-color: var(--border-2);
     transform: translateY(-1px);
 }
 .btn:active:not(:disabled) { transform: translateY(0); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn.primary {
-    background: var(--accent-strong);
+    background: linear-gradient(180deg, var(--accent), var(--accent-strong));
     border-color: var(--accent);
-    color: oklch(12% 0.015 145);
+    color: var(--text);
 }
 .btn.primary:hover:not(:disabled) {
-    background: var(--accent);
+    background: linear-gradient(180deg, var(--accent-2), var(--accent));
     border-color: var(--accent-2);
     box-shadow: var(--shadow-glow);
 }
 .btn.secondary {
-    background: oklch(33% 0.046 170);
-    border-color: oklch(46% 0.055 170);
+    background: oklch(32% 0.035 240);
+    border-color: oklch(47% 0.04 235);
     color: var(--text);
 }
 .btn.soft {
     background: var(--accent-soft);
-    border-color: oklch(72% 0.15 165 / 0.34);
+    border-color: color-mix(in oklch, var(--accent) 44%, var(--border));
     color: var(--accent-2);
+}
+.btn.success {
+    background: linear-gradient(180deg, var(--success), oklch(54% 0.12 152));
+    border-color: var(--success);
+    color: oklch(13% 0.02 152);
+}
+.btn.success:hover:not(:disabled) {
+    background: var(--success);
+    box-shadow: 0 0 0 3px var(--success-soft);
+}
+.btn.trade {
+    background: linear-gradient(180deg, var(--trade), oklch(55% 0.13 305));
+    border-color: var(--trade);
+    color: var(--text);
+}
+.btn.trade:hover:not(:disabled) {
+    background: var(--trade);
+    box-shadow: 0 0 0 3px var(--trade-soft);
+}
+.btn.auction {
+    background: linear-gradient(180deg, var(--auction), oklch(60% 0.13 82));
+    border-color: var(--auction);
+    color: oklch(15% 0.025 80);
+}
+.btn.auction:hover:not(:disabled) {
+    background: var(--auction);
+    box-shadow: 0 0 0 3px var(--auction-soft);
 }
 .btn.danger {
     background: transparent;
@@ -209,7 +244,8 @@ a:focus-visible {
 }
 
 .card {
-    background: color-mix(in oklch, var(--surface) 92%, black);
+    background:
+        linear-gradient(180deg, color-mix(in oklch, var(--surface) 96%, var(--text) 4%), var(--surface));
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 20px;
@@ -306,7 +342,7 @@ a:focus-visible {
     margin-top: 3px;
 }
 .page-title {
-    font-size: clamp(28px, 4vw, 44px);
+    font-size: 44px;
     line-height: 1.02;
     font-weight: 900;
     margin: 0;
@@ -371,12 +407,64 @@ a:focus-visible {
     text-align: center;
     font-size: 13px;
 }
+.empty-state-title {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 800;
+}
+.empty-state-copy {
+    width: min(100%, 42ch);
+    color: var(--text-3);
+    font-size: 13px;
+    line-height: 1.45;
+}
 .status-line {
     display: flex;
     align-items: center;
     gap: var(--space-2);
     color: var(--text-3);
     font-size: 13px;
+}
+.lobby-presence-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    padding: 10px 12px;
+    background:
+        linear-gradient(180deg, color-mix(in oklch, var(--accent-soft) 36%, transparent), transparent),
+        color-mix(in oklch, var(--surface-2) 88%, black);
+    border: 1px solid color-mix(in oklch, var(--accent) 32%, var(--border));
+    border-radius: var(--radius);
+}
+.lobby-avatar-stack {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding-left: 8px;
+}
+.lobby-avatar {
+    width: 28px;
+    height: 28px;
+    margin-left: -8px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--surface);
+    border-radius: 999px;
+    box-shadow: 0 3px 10px rgb(0 0 0 / 0.26);
+    color: white;
+    font-size: 11px;
+    font-weight: 850;
+    line-height: 1;
+}
+.lobby-avatar.is-offline {
+    opacity: 0.48;
+    filter: saturate(0.45);
+}
+.lobby-avatar-more {
+    background: var(--surface-3);
+    color: var(--text-2);
+    border-color: var(--surface);
 }
 .modal-backdrop {
     position: fixed;
@@ -427,10 +515,10 @@ a:focus-visible {
 .grid-bg {
     background-color: var(--bg);
     background-image:
-      linear-gradient(color-mix(in oklch, var(--border) 36%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklch, var(--border) 30%, transparent) 1px, transparent 1px),
-      linear-gradient(180deg, color-mix(in oklch, var(--bg-1) 68%, transparent), transparent 42%);
-    background-size: 36px 36px, 36px 36px, 100% 100%;
+      linear-gradient(color-mix(in oklch, var(--border) 24%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--border) 20%, transparent) 1px, transparent 1px),
+      linear-gradient(180deg, color-mix(in oklch, var(--bg-1) 72%, transparent), transparent 46%);
+    background-size: 48px 48px, 48px 48px, 100% 100%;
 }
 
 @media (max-width: 819px) {
@@ -451,6 +539,9 @@ a:focus-visible {
     .brand-logo-subtitle {
         font-size: 11px;
     }
+    .page-title {
+        font-size: 31px;
+    }
     .lobby-topbar {
         flex-wrap: wrap;
         align-items: center !important;
@@ -465,6 +556,13 @@ a:focus-visible {
     }
     .metric-grid {
         grid-template-columns: 1fr;
+    }
+    .lobby-presence-card {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+    .lobby-presence-card .btn {
+        margin-left: auto;
     }
 }
 

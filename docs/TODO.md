@@ -1,6 +1,6 @@
 # TODO
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ## Critical Next Tasks
 
@@ -25,6 +25,8 @@ Last updated: 2026-06-29
 - [x] Browser-verify mobile Lobby.
 - [x] Browser-verify mobile Game.
 - [x] Fix visual/runtime regressions found in browser verification.
+- [x] Add lobby multiplayer presence strip for player initials, online count, readiness copy, and invite action.
+- [x] Browser-verify the lobby presence pass across desktop, tablet, and mobile.
 
 ## Active Redesign Cleanup
 
@@ -37,6 +39,7 @@ Last updated: 2026-06-29
 - [ ] Verify mobile layout of Map Builder table.
 - [ ] Improve mobile game board readability without rewriting the board renderer.
 - [ ] Review logo replacement screenshot set in `/private/tmp/monopoly-brand-screens` before committing.
+- [ ] Review latest lobby presence screenshot set in `/private/tmp/monopoly-design-lobby-pass` before committing.
 
 ## Documentation TODOs
 

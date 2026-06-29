@@ -104,9 +104,15 @@ export default function MyMaps({ pushToast }) {
                 )}
 
                 {!loading && filtered.length === 0 && (
-                    <div className="card empty-state" style={{ display: 'grid', justifyItems: 'center', gap: 10 }}>
+                    <div className="card empty-state" style={{ display: 'grid', justifyItems: 'center', gap: 10, padding: 28 }}>
                         <BrandLogo size={28} showText={false} />
-                        <div>No maps found.</div>
+                        <div className="empty-state-title">No custom maps yet</div>
+                        <div className="empty-state-copy">
+                            Build a private board for friends or publish a map for other rooms to discover.
+                        </div>
+                        <button className="btn primary" onClick={() => nav('/editor')}>
+                            <Plus size={15} /> Create map
+                        </button>
                     </div>
                 )}
 

@@ -28,7 +28,7 @@ export default function AuctionModal({ room, me, act }) {
             <div className="modal-panel fade-in" style={{
                 width: 'min(100%, 460px)', background: 'var(--surface)',
             }}>
-                <div style={{ background: def.color || 'var(--accent)', height: 5 }} />
+                <div style={{ background: def.color || 'var(--auction)', height: 5 }} />
                 <div style={{ padding: 24 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Gavel size={20} color="var(--warning)" />
@@ -76,7 +76,7 @@ export default function AuctionModal({ room, me, act }) {
 
                     <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                         <button
-                            className="btn primary"
+                            className="btn auction"
                             style={{ flex: 1, justifyContent: 'center' }}
                             disabled={!canBid}
                             onClick={() => act('auction-bid', { amount: bid })}

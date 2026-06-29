@@ -1,6 +1,6 @@
 # Design System
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
 ## Product Identity
 
@@ -78,6 +78,11 @@ Core tokens are OKLCH-based in `theme.css`:
 - `--success`
 - `--warning`
 - `--danger`
+- `--danger-soft`
+- `--trade`
+- `--trade-soft`
+- `--auction`
+- `--auction-soft`
 - `--money`
 - `--focus`
 
@@ -197,7 +202,12 @@ Content primitives:
 - `.metric-label`
 - `.metric-value`
 - `.empty-state`
+- `.empty-state-title`
+- `.empty-state-copy`
 - `.status-line`
+- `.lobby-presence-card`
+- `.lobby-avatar-stack`
+- `.lobby-avatar`
 
 Controls:
 
@@ -205,6 +215,9 @@ Controls:
 - `.btn.primary`
 - `.btn.secondary`
 - `.btn.soft`
+- `.btn.success`
+- `.btn.trade`
+- `.btn.auction`
 - `.btn.danger`
 - `.btn.ghost`
 - `.btn.icon`
@@ -231,6 +244,7 @@ Overlays:
 ## Open Design-System Work
 
 - Convert more inline styles into reusable primitives.
+- Continue moving lobby-specific inline layout details into reusable multiplayer presence primitives if similar patterns appear elsewhere.
 - Replace native `window.confirm` dialogs with app modal variants.
 - Add a formal modal footer/button layout pattern.
 - Add loading skeleton primitives.

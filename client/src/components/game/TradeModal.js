@@ -67,7 +67,7 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
                 display: 'flex', flexDirection: 'column',
             }}>
                 <div className="modal-header">
-                    {peek ? <Eye size={18} color="var(--text-3)" /> : <Handshake size={18} color="var(--accent)" />}
+                    {peek ? <Eye size={18} color="var(--text-3)" /> : <Handshake size={18} color="var(--trade)" />}
                     <div className="modal-title">
                         {peek ? 'Viewing trade' : `Trade with ${them?.username}`}
                     </div>
@@ -135,12 +135,12 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
 
                 {!peek && (
                     <div style={{ padding: 14, borderTop: '1px solid var(--border)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <button className="btn" onClick={submit}>
+                        <button className="btn trade" onClick={submit}>
                             <Send size={14} /> {existingTrade ? 'Update offer' : 'Send proposal'}
                         </button>
                         {existingTrade && (
                             <>
-                                <button className="btn primary" disabled={iAccepted} onClick={() => act('trade-accept', { tradeId: existingTrade.id })}>
+                                <button className="btn success" disabled={iAccepted} onClick={() => act('trade-accept', { tradeId: existingTrade.id })}>
                                     <Check size={14} /> Accept
                                 </button>
                                 <button className="btn danger" onClick={() => { act('trade-reject', { tradeId: existingTrade.id }); onClose(); }}>
@@ -182,7 +182,7 @@ function Side({ title, bundle, props, onToggle, onCash, cashLimit, readOnly }) {
                         disabled={readOnly || cashLimit === 0}
                         aria-label={`${title} cash slider`}
                         onChange={e => onCash(Number(e.target.value))}
-                        style={{ flex: 1, accentColor: 'var(--accent)' }}
+                        style={{ flex: 1, accentColor: 'var(--trade)' }}
                     />
                 </div>
                 {!readOnly && cashLimit > 0 && (
@@ -209,8 +209,8 @@ function Side({ title, bundle, props, onToggle, onCash, cashLimit, readOnly }) {
                             disabled={readOnly}
                             style={{
                                 justifyContent: 'flex-start',
-                                background: on ? 'var(--accent-soft)' : 'var(--surface-2)',
-                                borderColor: on ? 'var(--accent)' : 'var(--border)',
+                                background: on ? 'var(--trade-soft)' : 'var(--surface-2)',
+                                borderColor: on ? 'var(--trade)' : 'var(--border)',
                                 opacity: readOnly && !on ? 0.55 : 1,
                             }}>
                             {def.color && <span className="dot" style={{ background: def.color, width: 10, height: 10 }} />}

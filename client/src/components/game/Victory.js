@@ -11,10 +11,10 @@ export default function Victory({ room, onLeave }) {
         <div className="modal-backdrop fade-in" style={{ zIndex: 200, background: 'rgba(0,0,0,0.8)' }}>
             <div className="modal-panel slide-up" style={{
                 width: 'min(100%, 420px)', padding: 32,
-                borderColor: 'var(--success)',
+                borderColor: 'var(--auction)',
                 textAlign: 'center',
             }}>
-                <Trophy size={56} color="var(--success)" style={{ marginBottom: 10 }} />
+                <Trophy size={56} color="var(--auction)" style={{ marginBottom: 10 }} />
                 <div className="section-title" style={{ justifyContent: 'center' }}>Winner</div>
                 {winner && (
                     <>

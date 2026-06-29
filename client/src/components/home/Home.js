@@ -143,9 +143,12 @@ export default function Home({ pushToast }) {
                                 <span className="chip count">{openRooms.length}</span>
                             </div>
                             {openRooms.length === 0 && (
-                                <div className="empty-state" style={{ display: 'grid', justifyItems: 'center', gap: 10 }}>
+                                <div className="empty-state" style={{ display: 'grid', justifyItems: 'center', gap: 10, padding: '8px 0' }}>
                                     <BrandLogo size={24} showText={false} />
-                                    <div>No public rooms are open.</div>
+                                    <div className="empty-state-title">No public rooms are open</div>
+                                    <div className="empty-state-copy">
+                                        Create a room and share the code when you are ready to bring friends in.
+                                    </div>
                                 </div>
                             )}
                             {openRooms.map(r => (
