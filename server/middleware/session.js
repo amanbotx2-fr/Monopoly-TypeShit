@@ -3,6 +3,7 @@
 
 const crypto = require('crypto');
 const session = require('express-session');
+const { MongoStore } = require('connect-mongo');
 
 const SESSION_COOKIE = 'monopoly.sid';
 const SESSION_MAX_AGE = 1000 * 60 * 60 * 24 * 365; // 1 year
@@ -15,11 +16,23 @@ function sessionSecret() {
 	return 'dev-only-monopoly-session-secret';
 }
 
+function mongoStore() {
+	const uri = process.env.MONGODB_URI;
+	if (!uri) return undefined;
+	return new MongoStore({
+		mongoUrl: uri,
+		collectionName: 'sessions',
+		ttl: 60 * 60 * 24 * 365, // 1 year — matches SESSION_MAX_AGE
+		autoRemove: 'native',
+	});
+}
+
 const sessionParser = session({
 	name: SESSION_COOKIE,
 	secret: sessionSecret(),
 	resave: false,
 	saveUninitialized: true,
+	store: mongoStore(),
 	cookie: {
 		httpOnly: true,
 		sameSite: isProduction ? 'none' : 'lax',

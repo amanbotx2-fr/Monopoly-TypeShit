@@ -364,13 +364,15 @@ function replaceExistingSocket(io, socket, oldSocketId) {
 }
 
 // Room metadata comes from the client, but identity comes only from the
-// express-session-backed Socket.IO middleware.
+// express-session-backed Socket.IO middleware. Returns null when the room
+// cannot be found (server restart or cleanup) — the connection is rejected
+// so the client can redirect back to the home page.
 function identify(socket, auth) {
 	const { roomCode } = auth;
 	const userId = socket.data.userId;
-	if (!userId || !roomCode) return null;
+	if (!userId || !roomCode) return { error: 'missing-identity' };
 	const room = getRoom(roomCode);
-	if (!room) return null;
+	if (!room) return { error: 'room-not-found' };
 	return { room, userId };
 }
 
@@ -382,8 +384,12 @@ function onJoin(io, socket, payload) {
 		return false;
 	}
 	const ident = identify(socket, auth.value);
-	if (!ident) {
-		socket.emit('error-msg', 'invalid-session');
+	if (!ident || ident.error) {
+		const msg =
+			ident?.error === 'room-not-found'
+				? 'Room is no longer active. Please create a new one.'
+				: 'Could not verify your session. Please try refreshing the page.';
+		socket.emit('error-msg', msg);
 		socket.disconnect(true);
 		return false;
 	}
