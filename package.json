@@ -2,12 +2,14 @@
 	"name": "monopoly",
 	"private": true,
 	"scripts": {
+		"dev": "concurrently -n be,fe -c cyan,magenta \"npm start --prefix server\" \"npm start --prefix client\"",
 		"lint": "npm run lint --prefix client && npm run lint --prefix server",
 		"lint:fix": "npm run lint:fix --prefix client && npm run lint:fix --prefix server",
 		"format": "prettier --check 'client/src/**/*.{js,jsx}' 'server/**/*.js'",
 		"format:fix": "prettier --write 'client/src/**/*.{js,jsx}' 'server/**/*.js'"
 	},
 	"devDependencies": {
+		"concurrently": "10.0.3",
 		"prettier": "3.9.4"
 	}
 }

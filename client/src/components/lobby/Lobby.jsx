@@ -7,6 +7,9 @@ import TokenPicker from '../home/TokenPicker';
 import BrandLogo from '../common/BrandLogo';
 import { Copy, LogOut, Play, X, Users, Settings, UserPlus } from 'lucide-react';
 
+const allowSoloDevGame =
+	import.meta.env.VITE_ALLOW_SOLO_DEV_GAME === '1' || import.meta.env.DEV;
+
 export default function Lobby({ userId, pushToast, onStart }) {
 	const nav = useNavigate();
 	const isMobile = useIsMobile();
@@ -48,9 +51,12 @@ export default function Lobby({ userId, pushToast, onStart }) {
 	const isHost = me?.isHost;
 	const takenColors = room.players.map((p) => p.color);
 	const connectedPlayers = room.players.filter((p) => p.connected !== false);
+	const canStartGame = room.players.length >= 2 || allowSoloDevGame;
 	const readinessCopy =
-		room.players.length < 2
+		room.players.length < 2 && !allowSoloDevGame
 			? 'Invite one more player to unlock the table.'
+			: room.players.length < 2 && allowSoloDevGame
+				? 'Solo start is enabled in dev so you can test the full game loop.'
 			: isHost
 				? 'Room is ready. Start when everyone is set.'
 				: 'You are in. Waiting for the host to start.';
@@ -230,7 +236,7 @@ export default function Lobby({ userId, pushToast, onStart }) {
 						{isHost && (
 							<button
 								className="btn primary lg"
-								disabled={room.players.length < 2}
+								disabled={!canStartGame}
 								onClick={() => act('start-game')}
 								style={{ width: '100%', justifyContent: 'center' }}
 							>

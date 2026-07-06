@@ -29,6 +29,8 @@ const {
 const DEFAULT_IDLE_CLEANUP_MS = 15 * 60 * 1000;
 const SAVE_INTERVAL = 30000;
 const IDLE_CLEANUP_MS = positiveInt(process.env.ROOM_IDLE_TIMEOUT_MS, DEFAULT_IDLE_CLEANUP_MS);
+const ALLOW_SOLO_DEV_GAME =
+	process.env.ALLOW_SOLO_DEV_GAME === '1' || process.env.NODE_ENV !== 'production';
 const SOCKET_LIMITS = {
 	default: {
 		limit: positiveInt(process.env.RATE_LIMIT_SOCKET_DEFAULT_PER_10_SEC, 120),
@@ -554,7 +556,9 @@ const handlers = {
 		if (!room) return;
 		if (socket.data.userId !== room.hostUserId) return socket.emit('error-msg', 'not-host');
 		if (room.started) return;
-		if (room.players.length < 2) return socket.emit('error-msg', 'need-2-players');
+		if (room.players.length < 2 && !ALLOW_SOLO_DEV_GAME) {
+			return socket.emit('error-msg', 'need-2-players');
+		}
 		if (room.rules.randomTurnOrder) {
 			// Shuffle player array and re-assign seats.
 			for (let i = room.players.length - 1; i > 0; i--) {
