@@ -5,7 +5,11 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { sessionMiddleware, sessionParser, socketSessionMiddleware } = require('./middleware/session');
+const {
+	sessionMiddleware,
+	sessionParser,
+	socketSessionMiddleware,
+} = require('./middleware/session');
 const registerSocketHandlers = require('./socket/handlers');
 const { positiveInt, socketConnectionRateLimit } = require('./abuse/rateLimit');
 const { configurePendingRoomCleanup, shutdownPendingRoomCleanup } = require('./abuse/pendingRooms');
@@ -15,74 +19,76 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 5004;
 const DEFAULT_CLIENT_URL = 'http://localhost:3000';
 const CLIENT_URL = process.env.CLIENT_URL || DEFAULT_CLIENT_URL;
-const ALLOWED_ORIGINS = CLIENT_URL
-    .split(',')
-    .map(origin => origin.trim())
-    .filter(Boolean);
+const ALLOWED_ORIGINS = CLIENT_URL.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
 
 function isAllowedOrigin(origin) {
-    // Non-browser requests such as health checks and server-to-server calls do
-    // not send Origin. Browser CORS is still restricted to ALLOWED_ORIGINS.
-    if (!origin) return true;
-    return ALLOWED_ORIGINS.includes(origin);
+	// Non-browser requests such as health checks and server-to-server calls do
+	// not send Origin. Browser CORS is still restricted to ALLOWED_ORIGINS.
+	if (!origin) return true;
+	return ALLOWED_ORIGINS.includes(origin);
 }
 
 const corsOptions = {
-    origin(origin, callback) {
-        if (isAllowedOrigin(origin)) return callback(null, true);
-        return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
+	origin(origin, callback) {
+		if (isAllowedOrigin(origin)) return callback(null, true);
+		return callback(new Error(`CORS blocked for origin: ${origin}`));
+	},
+	credentials: true,
 };
 
 const io = new Server(server, {
-    cors: corsOptions,
-    pingInterval: 10000,
-    pingTimeout: 15000,
+	cors: corsOptions,
+	pingInterval: 10000,
+	pingTimeout: 15000,
 });
 
 app.set('trust proxy', 1);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 app.use((err, req, res, next) => {
-    if (err?.type === 'entity.too.large') {
-        console.warn('[validation]', {
-            route: `${req.method} ${req.originalUrl}`,
-            code: 'payload-too-large',
-            details: err.message,
-        });
-        return res.status(413).json({
-            error: 'validation',
-            code: 'payload-too-large',
-            message: 'Payload is too large',
-        });
-    }
-    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-        console.warn('[validation]', {
-            route: `${req.method} ${req.originalUrl}`,
-            code: 'invalid-json',
-            details: err.message,
-        });
-        return res.status(400).json({
-            error: 'validation',
-            code: 'invalid-json',
-            message: 'Malformed JSON body',
-        });
-    }
-    return next(err);
+	if (err?.type === 'entity.too.large') {
+		console.warn('[validation]', {
+			route: `${req.method} ${req.originalUrl}`,
+			code: 'payload-too-large',
+			details: err.message,
+		});
+		return res.status(413).json({
+			error: 'validation',
+			code: 'payload-too-large',
+			message: 'Payload is too large',
+		});
+	}
+	if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+		console.warn('[validation]', {
+			route: `${req.method} ${req.originalUrl}`,
+			code: 'invalid-json',
+			details: err.message,
+		});
+		return res.status(400).json({
+			error: 'validation',
+			code: 'invalid-json',
+			message: 'Malformed JSON body',
+		});
+	}
+	return next(err);
 });
 app.use(cookieParser());
 app.use(sessionMiddleware);
 io.engine.use(sessionParser);
 io.use(socketSessionMiddleware);
-io.use(socketConnectionRateLimit('socket-connect', {
-    limit: positiveInt(process.env.RATE_LIMIT_SOCKET_CONNECT_PER_MIN, 30),
-    windowMs: 60 * 1000,
-}));
+io.use(
+	socketConnectionRateLimit('socket-connect', {
+		limit: positiveInt(process.env.RATE_LIMIT_SOCKET_CONNECT_PER_MIN, 30),
+		windowMs: 60 * 1000,
+	}),
+);
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monopoly')
-    .then(() => console.info('[mongo] connected'))
-    .catch(err => console.error('[mongo] connection error:', err.message));
+mongoose
+	.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monopoly')
+	.then(() => console.info('[mongo] connected'))
+	.catch((err) => console.error('[mongo] connection error:', err.message));
 
 app.use('/api', require('./routes/rooms'));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
@@ -95,15 +101,15 @@ server.listen(PORT, () => console.info(`[monopoly] server on ${PORT}`));
 
 let shuttingDown = false;
 function shutdown(signal) {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    console.info(`[monopoly] ${signal} received, cleaning up rooms`);
-    shutdownPendingRoomCleanup();
-    roomLifecycle.shutdown();
-    server.close(() => {
-        mongoose.connection.close(false).finally(() => process.exit(0));
-    });
-    setTimeout(() => process.exit(1), 10000).unref();
+	if (shuttingDown) return;
+	shuttingDown = true;
+	console.info(`[monopoly] ${signal} received, cleaning up rooms`);
+	shutdownPendingRoomCleanup();
+	roomLifecycle.shutdown();
+	server.close(() => {
+		mongoose.connection.close(false).finally(() => process.exit(0));
+	});
+	setTimeout(() => process.exit(1), 10000).unref();
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));

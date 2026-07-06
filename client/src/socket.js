@@ -10,37 +10,55 @@ let currentRoom = null;
 const listeners = { state: new Set(), chat: new Set(), error: new Set() };
 
 export function connectSocket({ roomCode, username, color, asSpectator }) {
-    if (socket && currentRoom === roomCode) return socket;
-    if (socket) { socket.disconnect(); socket = null; }
-    currentRoom = roomCode;
+	if (socket && currentRoom === roomCode) return socket;
+	if (socket) {
+		socket.disconnect();
+		socket = null;
+	}
+	currentRoom = roomCode;
 
-    socket = io(SOCKET_URL, {
-        withCredentials: true,
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionDelay: 500,
-        reconnectionDelayMax: 5000,
-        auth: { roomCode, username, color, asSpectator: !!asSpectator },
-    });
+	socket = io(SOCKET_URL, {
+		withCredentials: true,
+		transports: ['websocket', 'polling'],
+		reconnection: true,
+		reconnectionDelay: 500,
+		reconnectionDelayMax: 5000,
+		auth: { roomCode, username, color, asSpectator: !!asSpectator },
+	});
 
-    socket.on('state',      (p) => listeners.state.forEach(fn => fn(p)));
-    socket.on('chat',       (p) => listeners.chat.forEach(fn => fn(p)));
-    socket.on('error-msg',  (e) => listeners.error.forEach(fn => fn(e)));
+	socket.on('state', (p) => listeners.state.forEach((fn) => fn(p)));
+	socket.on('chat', (p) => listeners.chat.forEach((fn) => fn(p)));
+	socket.on('error-msg', (e) => listeners.error.forEach((fn) => fn(e)));
 
-    return socket;
+	return socket;
 }
 
-export function getSocket() { return socket; }
+export function getSocket() {
+	return socket;
+}
 export function disconnectSocket() {
-    if (socket) { socket.disconnect(); socket = null; currentRoom = null; }
+	if (socket) {
+		socket.disconnect();
+		socket = null;
+		currentRoom = null;
+	}
 }
 
-export function onState(fn)  { listeners.state.add(fn);  return () => listeners.state.delete(fn); }
-export function onChat(fn)   { listeners.chat.add(fn);   return () => listeners.chat.delete(fn); }
-export function onError(fn)  { listeners.error.add(fn);  return () => listeners.error.delete(fn); }
+export function onState(fn) {
+	listeners.state.add(fn);
+	return () => listeners.state.delete(fn);
+}
+export function onChat(fn) {
+	listeners.chat.add(fn);
+	return () => listeners.chat.delete(fn);
+}
+export function onError(fn) {
+	listeners.error.add(fn);
+	return () => listeners.error.delete(fn);
+}
 
 export function emit(event, payload) {
-    if (!socket) return;
-    if (payload === undefined) socket.emit(event);
-    else socket.emit(event, payload);
+	if (!socket) return;
+	if (payload === undefined) socket.emit(event);
+	else socket.emit(event, payload);
 }
