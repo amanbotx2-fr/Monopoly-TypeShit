@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
@@ -28,6 +28,7 @@ export default function Game({ userId, pushToast }) {
 	const [peekTradeId, setPeekTradeId] = useState(null);
 	const [openPropertyPos, setOpenPropertyPos] = useState(null);
 	const [drawnCard, setDrawnCard] = useState(null);
+	const handleTradeClick = useCallback((id) => setPeekTradeId(id), []);
 	const [chatOpen, setChatOpen] = useState(false);
 	const [logOpen, setLogOpen] = useState(false);
 
@@ -201,6 +202,7 @@ export default function Game({ userId, pushToast }) {
 					onOpen={() => setLogOpen(true)}
 					onClose={() => setLogOpen(false)}
 					room={room}
+					onTradeClick={handleTradeClick}
 				/>
 				{modals}
 			</div>
@@ -334,7 +336,12 @@ export default function Game({ userId, pushToast }) {
 					<ScrollText size={14} color="var(--text-3)" />
 					<div>Action Log</div>
 				</header>
-				<ActionLog log={room.actionLog} players={room.players} tiles={room.board.tiles} />
+				<ActionLog
+					log={room.actionLog}
+					players={room.players}
+					tiles={room.board.tiles}
+					onTradeClick={handleTradeClick}
+				/>
 			</aside>
 
 			{modals}

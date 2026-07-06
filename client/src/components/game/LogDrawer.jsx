@@ -4,7 +4,7 @@ import ActionLog from './ActionLog';
 
 // Mobile-only floating Log button that opens a bottom-sheet drawer with the
 // action log. On desktop the log is always visible in the sidebar instead.
-export default function LogDrawer({ open, onOpen, onClose, room }) {
+export default function LogDrawer({ open, onOpen, onClose, room, onTradeClick }) {
 	return (
 		<>
 			{!open && (
@@ -88,6 +88,7 @@ export default function LogDrawer({ open, onOpen, onClose, room }) {
 								log={room.actionLog}
 								players={room.players}
 								tiles={room.board.tiles}
+								onTradeClick={onTradeClick}
 							/>
 						</div>
 					</div>

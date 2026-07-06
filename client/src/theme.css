@@ -576,3 +576,24 @@ a:focus-visible {
         transition-duration: 1ms !important;
     }
 }
+
+/* ─── Action log trade entries ──────────────────────────────────────────────── */
+.trade-row {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin: 0 -4px;
+    transition: background 0.15s;
+}
+.trade-row:hover {
+    background: var(--surface-2);
+}
+.trade-clickable {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+.trade-clickable:hover {
+    color: var(--trade);
+}

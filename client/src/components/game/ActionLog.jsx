@@ -3,7 +3,14 @@ import React, { useEffect, useRef } from 'react';
 // Renders a formatted event history. Log entries have `kind` + varying payload;
 // we translate each into a short human string with player colors. Tile names
 // are looked up from the board so the log says "Paris" not "#34".
-export default function ActionLog({ log, players, tiles }) {
+//
+// `onTradeClick(tradeId)` is called when the user clicks a trade-related log
+// entry, opening that trade for viewing (even after it's completed/closed).
+//
+// Performance: uses event delegation (single click handler on the scroll
+// container) and CSS hover instead of per-row JS handlers, so it stays
+// cheap even with hundreds of log entries.
+export default function ActionLog({ log, players, tiles, onTradeClick }) {
 	const ref = useRef(null);
 	useEffect(() => {
 		if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
@@ -23,10 +30,21 @@ export default function ActionLog({ log, players, tiles }) {
 		return <b style={{ color: t.color || 'var(--text)' }}>{t.name}</b>;
 	};
 
+	// Single delegated click handler — reads data-trade-id from the clicked
+	// row instead of attaching per-row onClick.
+	function handleContainerClick(e) {
+		if (!onTradeClick) return;
+		const row = e.target.closest('[data-trade-id]');
+		if (!row) return;
+		const id = row.getAttribute('data-trade-id');
+		if (id) onTradeClick(id);
+	}
+
 	return (
 		<div
 			className="card"
 			ref={ref}
+			onClick={handleContainerClick}
 			style={{
 				flex: 1,
 				overflowY: 'auto',
@@ -53,6 +71,14 @@ export default function ActionLog({ log, players, tiles }) {
 }
 
 function LogRow({ e, nameOf, tile }) {
+	// Trade entries get a data attribute and CSS hover class so the parent can
+	// use event delegation instead of per-row onClick handlers.
+	const isTradeEntry =
+		e.kind === 'trade-open' ||
+		e.kind === 'trade-update' ||
+		e.kind === 'trade-executed' ||
+		e.kind === 'trade-close';
+
 	let body = null;
 	switch (e.kind) {
 		case 'game-start':
@@ -209,22 +235,33 @@ function LogRow({ e, nameOf, tile }) {
 		case 'trade-open':
 			body = (
 				<>
-					{nameOf(e.fromUserId)} proposed a trade to {nameOf(e.toUserId)}
+					{nameOf(e.fromUserId)} proposed{' '}
+					<span className="trade-clickable">a trade</span> to {nameOf(e.toUserId)}
 				</>
 			);
 			break;
 		case 'trade-update':
-			body = <>Trade revised.</>;
+			body = (
+				<>
+					<span className="trade-clickable">Trade</span> revised.
+				</>
+			);
 			break;
 		case 'trade-executed':
 			body = (
 				<>
-					<b style={{ color: 'var(--success)' }}>Trade completed.</b>
+					<b style={{ color: 'var(--success)' }}>
+						<span className="trade-clickable">Trade completed.</span>
+					</b>
 				</>
 			);
 			break;
 		case 'trade-close':
-			body = <>Trade {e.status}.</>;
+			body = (
+				<>
+					<span className="trade-clickable">Trade</span> {e.status}.
+				</>
+			);
 			break;
 		case 'bankrupt':
 			body = (
@@ -246,5 +283,9 @@ function LogRow({ e, nameOf, tile }) {
 		default:
 			body = <em style={{ color: 'var(--text-4)' }}>{e.kind}</em>;
 	}
-	return <div>{body}</div>;
+
+	const attrs = isTradeEntry
+		? { 'data-trade-id': e.tradeId, className: 'trade-row' }
+		: {};
+	return <div {...attrs}>{body}</div>;
 }

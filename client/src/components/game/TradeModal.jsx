@@ -51,7 +51,7 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
 	);
 
 	function toggleProp(side, pos) {
-		if (peek) return;
+		if (readOnly) return;
 		const bucket = side === 'mine' ? offer : request;
 		const set = bucket.properties.includes(pos)
 			? bucket.properties.filter((p) => p !== pos)
@@ -69,6 +69,8 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
 		else act('trade-update', body);
 	}
 
+	const isOpen = existingTrade?.status === 'open';
+	const readOnly = peek || (!!existingTrade && !isOpen);
 	const iAccepted = existingTrade?.acceptedBy?.includes(me.userId);
 	const theyAccepted = existingTrade?.acceptedBy?.includes(theirId);
 	const iAmProposer = existingTrade?.fromUserId === me.userId;
@@ -124,18 +126,18 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
 						bundle={offer}
 						props={myProps}
 						onToggle={(p) => toggleProp('mine', p)}
-						onCash={(v) => !peek && setOffer((o) => ({ ...o, cash: v }))}
+						onCash={(v) => !readOnly && setOffer((o) => ({ ...o, cash: v }))}
 						cashLimit={mine?.cash || 0}
-						readOnly={peek}
+						readOnly={readOnly}
 					/>
 					<Side
 						title={`${them?.username} gives`}
 						bundle={request}
 						props={theirProps}
 						onToggle={(p) => toggleProp('their', p)}
-						onCash={(v) => !peek && setRequest((o) => ({ ...o, cash: v }))}
+						onCash={(v) => !readOnly && setRequest((o) => ({ ...o, cash: v }))}
 						cashLimit={them?.cash || 0}
-						readOnly={peek}
+						readOnly={readOnly}
 					/>
 				</div>
 
@@ -152,29 +154,45 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
 							flexWrap: 'wrap',
 						}}
 					>
-						<span>
-							{mine?.username}:{' '}
-							{iAccepted ? (
-								<b style={{ color: 'var(--success)' }}>Accepted</b>
-							) : (
-								'Pending'
-							)}
-						</span>
-						<span>·</span>
-						<span>
-							{them?.username}:{' '}
-							{theyAccepted ? (
-								<b style={{ color: 'var(--success)' }}>Accepted</b>
-							) : (
-								'Pending'
-							)}
-						</span>
+						{isOpen ? (
+							<>
+								<span>
+									{mine?.username}:{' '}
+									{iAccepted ? (
+										<b style={{ color: 'var(--success)' }}>Accepted</b>
+									) : (
+										'Pending'
+									)}
+								</span>
+								<span>·</span>
+								<span>
+									{them?.username}:{' '}
+									{theyAccepted ? (
+										<b style={{ color: 'var(--success)' }}>Accepted</b>
+									) : (
+										'Pending'
+									)}
+								</span>
+							</>
+						) : (
+							<span style={{ fontWeight: 700 }}>
+								{existingTrade.status === 'accepted'
+									? '✓ Trade completed'
+									: existingTrade.status === 'cancelled'
+										? '✕ Trade cancelled'
+										: existingTrade.status === 'rejected'
+											? '✕ Trade rejected'
+											: `Trade ${existingTrade.status}`}
+							</span>
+						)}
 						<div style={{ flex: 1 }} />
-						<span style={{ color: 'var(--text-3)' }}>v{existingTrade.version}</span>
+						{isOpen && (
+							<span style={{ color: 'var(--text-3)' }}>v{existingTrade.version}</span>
+						)}
 					</div>
 				)}
 
-				{existingTrade && !peek && (
+				{existingTrade && !peek && isOpen && (
 					<div
 						style={{
 							padding: '8px 16px',
@@ -211,11 +229,16 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
 							flexWrap: 'wrap',
 						}}
 					>
-						<button className="btn trade" onClick={submit}>
-							<Send size={14} /> {existingTrade ? 'Update offer' : 'Send proposal'}
-						</button>
-						{existingTrade && (
+						{!existingTrade && (
+							<button className="btn trade" onClick={submit}>
+								<Send size={14} /> Send proposal
+							</button>
+						)}
+						{existingTrade && isOpen && (
 							<>
+								<button className="btn trade" onClick={submit}>
+									<Send size={14} /> Update offer
+								</button>
 								<button
 									className="btn success"
 									disabled={iAccepted}
