@@ -23,8 +23,6 @@ function tileSt(room, pos) {
 	return room.tileState[pos];
 }
 
-
-
 // Count how many tiles in `group` are owned by `player` — used for rent mult.
 function ownedInGroup(room, player, group) {
 	let n = 0;

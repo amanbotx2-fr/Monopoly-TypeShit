@@ -81,7 +81,7 @@ export default function Dice({ dice, rolling }) {
 		return () => {
 			if (timerRef.current) clearTimeout(timerRef.current);
 		};
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [rolling]);
 
 	// If a new dice value arrives while not rolling (e.g. reconnect), adopt it.

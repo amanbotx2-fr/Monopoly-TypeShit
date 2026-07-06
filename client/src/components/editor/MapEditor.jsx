@@ -212,9 +212,7 @@ export default function MapEditor({ pushToast }) {
 	const [saving, setSaving] = useState(false);
 	const [dirty, setDirty] = useState(false);
 	const [newMapOpen, setNewMapOpen] = useState(false);
-	const [draftAvailable, setDraftAvailable] = useState(
-		!!localStorage.getItem(DRAFT_KEY),
-	);
+	const [draftAvailable, setDraftAvailable] = useState(!!localStorage.getItem(DRAFT_KEY));
 	const [draftStatus, setDraftStatus] = useState('');
 	const [tileClipboard, setTileClipboard] = useState(null);
 
