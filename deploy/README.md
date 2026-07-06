@@ -4,16 +4,16 @@ This folder contains optional deployment templates for running MONOPOLY on a
 Linux host with nginx, systemd, Node.js, and MongoDB.
 
 The project also works when the React client and Express backend are deployed
-separately. In that setup, set `REACT_APP_API_URL` on the frontend to the public
+separately. In that setup, set `VITE_API_URL` on the frontend to the public
 backend URL and set `CLIENT_URL` on the backend to the public frontend URL.
 
 ## Files
 
-| File | Purpose |
-| --- | --- |
-| `monopoly.nginx.conf` | Example nginx server block for hosting the React build and proxying API/WebSocket traffic to Node. |
-| `monopoly-server.service` | Example systemd unit for the Express and Socket.IO backend. |
-| `push.sh` | Optional rsync-based deployment helper for a single Linux host. |
+| File                      | Purpose                                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------- |
+| `monopoly.nginx.conf`     | Example nginx server block for hosting the React build and proxying API/WebSocket traffic to Node. |
+| `monopoly-server.service` | Example systemd unit for the Express and Socket.IO backend.                                        |
+| `push.sh`                 | Optional rsync-based deployment helper for a single Linux host.                                    |
 
 ## Single-Host Deployment
 
@@ -54,7 +54,7 @@ sudo certbot --nginx -d monopoly.example.com
 
 ## Deploying With `push.sh`
 
-The helper script builds the client locally, uploads `client/build/` to the
+The helper script builds the client locally, uploads `client/dist/` to the
 static web root, syncs the backend source, installs production server
 dependencies remotely, and restarts systemd.
 
@@ -74,7 +74,7 @@ When the frontend is served from a different origin than the backend:
 
 ```bash
 # frontend
-REACT_APP_API_URL=https://api.example.com
+VITE_API_URL=https://api.example.com
 
 # backend
 CLIENT_URL=https://app.example.com
