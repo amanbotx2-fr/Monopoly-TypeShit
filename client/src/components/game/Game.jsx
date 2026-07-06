@@ -36,12 +36,18 @@ export default function Game({ userId, pushToast }) {
 		const last = events[events.length - 1];
 		if (!last) return;
 		if (last.type === 'roll') {
-			setDiceRolling(true);
-			const t = setTimeout(() => setDiceRolling(false), 1150);
-			return () => clearTimeout(t);
+			const t1 = setTimeout(() => setDiceRolling(true));
+			const t2 = setTimeout(() => setDiceRolling(false), 1150);
+			return () => {
+				clearTimeout(t1);
+				clearTimeout(t2);
+			};
 		}
 		if (last.type === 'draw-card') {
-			setDrawnCard({ deck: last.deck, cardId: last.cardId, text: last.text });
+			const t = setTimeout(() =>
+				setDrawnCard({ deck: last.deck, cardId: last.cardId, text: last.text }),
+			);
+			return () => clearTimeout(t);
 		}
 	}, [events]);
 

@@ -26,9 +26,9 @@ export default function MyMaps({ pushToast }) {
 	const [renameValue, setRenameValue] = useState('');
 
 	// Load once on page entry; subsequent refreshes are explicit after actions.
-
 	useEffect(() => {
 		loadMaps();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	async function loadMaps() {

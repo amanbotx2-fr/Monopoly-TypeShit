@@ -8,7 +8,7 @@
 // from the `to` side).
 
 const { v4: uuidv4 } = require('uuid');
-const { tileDef, tileSt, transfer } = require('./engine');
+const { transfer } = require('./engine');
 const { appendLog } = require('./state');
 
 function emptyBundle() {

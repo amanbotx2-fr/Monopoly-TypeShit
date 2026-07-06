@@ -217,7 +217,7 @@ router.get('/boards/my', lookupLimit, async (req, res) => {
 			.sort({ updatedAt: -1 })
 			.lean();
 		res.json({ boards: boards.map((b) => boardSummary(b)) });
-	} catch (e) {
+	} catch {
 		res.status(500).json({ error: 'server' });
 	}
 });
@@ -231,7 +231,7 @@ router.get('/boards/:id', lookupLimit, async (req, res) => {
 		const cb = await findVisibleCustomBoard(id.value, req.userId);
 		if (!cb) return res.status(404).json({ error: 'not-found' });
 		res.json(cb);
-	} catch (e) {
+	} catch {
 		res.status(500).json({ error: 'server' });
 	}
 });
@@ -270,7 +270,7 @@ router.post('/boards', boardMutationLimit, async (req, res) => {
 			{ upsert: true, new: true, setDefaultsOnInsert: true },
 		);
 		res.json(customBoardView(doc));
-	} catch (e) {
+	} catch {
 		res.status(500).json({ error: 'server' });
 	}
 });
@@ -294,7 +294,7 @@ router.patch('/boards/:id', boardMutationLimit, async (req, res) => {
 		Object.assign(doc, patch);
 		await doc.save();
 		res.json(customBoardView(doc));
-	} catch (e) {
+	} catch {
 		res.status(500).json({ error: 'server' });
 	}
 });
@@ -307,7 +307,7 @@ router.delete('/boards/:id', boardMutationLimit, async (req, res) => {
 		const result = await CustomBoard.deleteOne({ id: id.value, authorUserId: req.userId });
 		if (!result.deletedCount) return res.status(404).json({ error: 'not-found' });
 		res.json({ ok: true });
-	} catch (e) {
+	} catch {
 		res.status(500).json({ error: 'server' });
 	}
 });
@@ -337,7 +337,7 @@ router.post('/boards/:id/duplicate', boardMutationLimit, async (req, res) => {
 			updatedAt: new Date(),
 		});
 		res.json(customBoardView(doc));
-	} catch (e) {
+	} catch {
 		res.status(500).json({ error: 'server' });
 	}
 });

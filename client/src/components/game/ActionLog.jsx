@@ -94,7 +94,7 @@ function LogRow({ e, nameOf, tile }) {
 						paddingTop: 4,
 					}}
 				>
-					— {nameOf(e.userId)}'s turn
+					— {nameOf(e.userId)}&rsquo;s turn
 				</div>
 			);
 			break;

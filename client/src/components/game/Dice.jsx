@@ -47,12 +47,17 @@ export default function Dice({ dice, rolling }) {
 	const timerRef = useRef(null);
 	const prevDice = useRef(dice);
 
+	// Sync display with real dice when not rolling.
 	useEffect(() => {
-		// Not rolling → mirror the real roll result (or keep last shown).
-		if (!rolling) {
-			if (dice) setShown(dice);
-			return;
+		if (!rolling && dice) {
+			const t = setTimeout(() => setShown(dice));
+			return () => clearTimeout(t);
 		}
+	}, [rolling, dice]);
+
+	// Rolling animation — flicker through random faces then freeze on result.
+	useEffect(() => {
+		if (!rolling) return;
 		const start = Date.now();
 		const tick = () => {
 			const elapsed = Date.now() - start;
@@ -76,7 +81,8 @@ export default function Dice({ dice, rolling }) {
 		return () => {
 			if (timerRef.current) clearTimeout(timerRef.current);
 		};
-	}, [rolling, dice]);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [rolling]);
 
 	// If a new dice value arrives while not rolling (e.g. reconnect), adopt it.
 	useEffect(() => {

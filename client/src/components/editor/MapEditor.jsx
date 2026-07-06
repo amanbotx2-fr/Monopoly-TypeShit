@@ -212,7 +212,9 @@ export default function MapEditor({ pushToast }) {
 	const [saving, setSaving] = useState(false);
 	const [dirty, setDirty] = useState(false);
 	const [newMapOpen, setNewMapOpen] = useState(false);
-	const [draftAvailable, setDraftAvailable] = useState(false);
+	const [draftAvailable, setDraftAvailable] = useState(
+		!!localStorage.getItem(DRAFT_KEY),
+	);
 	const [draftStatus, setDraftStatus] = useState('');
 	const [tileClipboard, setTileClipboard] = useState(null);
 
@@ -220,16 +222,15 @@ export default function MapEditor({ pushToast }) {
 		api.listBoards()
 			.then(({ builtin }) => setPresets(builtin || []))
 			.catch(() => {});
-		setDraftAvailable(!!localStorage.getItem(DRAFT_KEY));
 	}, []);
 
 	// Route/template loading is intentionally driven only by these two values.
-	/* eslint-disable react-hooks/exhaustive-deps */
+	/* eslint-disable react-hooks/exhaustive-deps, react-hooks/immutability */
 	useEffect(() => {
 		if (boardId) loadExistingBoard(boardId);
 		else loadTemplate(selected);
 	}, [boardId, selected]);
-	/* eslint-enable react-hooks/exhaustive-deps */
+	/* eslint-enable react-hooks/exhaustive-deps, react-hooks/immutability */
 
 	useEffect(() => {
 		function warn(e) {

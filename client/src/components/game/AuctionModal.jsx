@@ -3,14 +3,10 @@ import { Gavel, X } from 'lucide-react';
 
 export default function AuctionModal({ room, me, act }) {
 	const a = room.auction;
-	const [bid, setBid] = useState(0);
+	const minimumBid = a ? a.currentBid + a.minIncrement : 0;
+	const [bid, setBid] = useState(minimumBid);
 	const [secLeft, setSecLeft] = useState(8);
-
-	useEffect(() => {
-		if (!a) return;
-		const minimumBid = a.currentBid + a.minIncrement;
-		setBid((currentBid) => Math.max(currentBid, minimumBid));
-	}, [a]);
+	const effectiveBid = Math.max(bid, minimumBid);
 	useEffect(() => {
 		if (!a) return;
 		const t = setInterval(() => {
@@ -25,7 +21,7 @@ export default function AuctionModal({ room, me, act }) {
 	const inAuction = a.participants.includes(me.userId);
 	const passed = a.passed.includes(me.userId);
 	const topBidder = a.currentBidder === me.userId;
-	const canBid = inAuction && !passed && !topBidder && me.cash >= bid;
+	const canBid = inAuction && !passed && !topBidder && me.cash >= effectiveBid;
 
 	return (
 		<div className="modal-backdrop" style={{ zIndex: 80 }}>
@@ -126,9 +122,9 @@ export default function AuctionModal({ room, me, act }) {
 							className="btn auction"
 							style={{ flex: 1, justifyContent: 'center' }}
 							disabled={!canBid}
-							onClick={() => act('auction-bid', { amount: bid })}
+							onClick={() => act('auction-bid', { amount: effectiveBid })}
 						>
-							Bid ${bid}
+							Bid ${effectiveBid}
 						</button>
 						<button
 							className="btn"

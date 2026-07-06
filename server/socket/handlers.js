@@ -108,7 +108,7 @@ async function saveRoomSnapshot(room) {
 			},
 			{ upsert: true },
 		);
-	} catch (e) {
+	} catch {
 		/* mongo optional in dev */
 	}
 }
@@ -661,10 +661,10 @@ const handlers = {
 		broadcast(io, room, r.events);
 	},
 
-	mortgage: (io, socket, { pos }) => doPropAction(io, socket, (p) => property.mortgage, pos),
-	unmortgage: (io, socket, { pos }) => doPropAction(io, socket, (p) => property.unmortgage, pos),
-	build: (io, socket, { pos }) => doPropAction(io, socket, (p) => property.buildHouse, pos),
-	demolish: (io, socket, { pos }) => doPropAction(io, socket, (p) => property.sellHouse, pos),
+	mortgage: (io, socket, { pos }) => doPropAction(io, socket, (_p) => property.mortgage, pos),
+	unmortgage: (io, socket, { pos }) => doPropAction(io, socket, (_p) => property.unmortgage, pos),
+	build: (io, socket, { pos }) => doPropAction(io, socket, (_p) => property.buildHouse, pos),
+	demolish: (io, socket, { pos }) => doPropAction(io, socket, (_p) => property.sellHouse, pos),
 
 	'auction-bid': (io, socket, { amount }) => {
 		const room = getRoom(socket.data.roomCode);

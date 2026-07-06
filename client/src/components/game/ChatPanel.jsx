@@ -24,8 +24,12 @@ export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose })
 		}
 	}, [chat, open, me?.userId]);
 
+	function handleOpen() {
+		setUnseen(0);
+		onOpen?.();
+	}
+
 	useEffect(() => {
-		if (open) setUnseen(0);
 		const el = scrollRef.current;
 		if (el) el.scrollTop = el.scrollHeight;
 	}, [chat, open]);
@@ -46,7 +50,7 @@ export default function ChatPanel({ chat, sendChat, me, open, onOpen, onClose })
 			{!open && (
 				<button
 					className="btn floating-button"
-					onClick={onOpen}
+					onClick={handleOpen}
 					style={{
 						position: 'fixed',
 						right: 16,

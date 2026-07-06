@@ -4,7 +4,7 @@
 // plays back in sequence (roll → move → land → buy, etc.) — that's how we
 // keep the UI snappy without needing multi-RTT round trips per step.
 
-const { getCard, newChanceDeck, newChestDeck, shuffled, CHANCE, CHEST } = require('./cards');
+const { getCard, shuffled, CHANCE, CHEST } = require('./cards');
 const { appendLog } = require('./state');
 
 // ─── Dice ────────────────────────────────────────────────────────────────────
@@ -23,11 +23,7 @@ function tileSt(room, pos) {
 	return room.tileState[pos];
 }
 
-function ownerOf(room, pos) {
-	const st = tileSt(room, pos);
-	if (!st || !st.owner) return null;
-	return room.players.find((p) => p.userId === st.owner) || null;
-}
+
 
 // Count how many tiles in `group` are owned by `player` — used for rent mult.
 function ownedInGroup(room, player, group) {
@@ -321,7 +317,7 @@ function resolveLanding(room, player, diceRoll, { chainedFromCard = false } = {}
 }
 
 // ─── Card drawing ────────────────────────────────────────────────────────────
-function drawCard(room, deckName, player) {
+function drawCard(room, deckName, _player) {
 	const deck = deckName === 'chance' ? room.chanceDeck : room.chestDeck;
 	if (deck.draw.length === 0) {
 		const all = deckName === 'chance' ? CHANCE : CHEST;

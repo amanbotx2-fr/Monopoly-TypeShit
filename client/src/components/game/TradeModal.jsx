@@ -32,13 +32,15 @@ export default function TradeModal({ room, me, counterpartyUserId, existingTrade
 	const [request, setRequest] = useState(existingTrade?.request || empty());
 	const [msg, setMsg] = useState('');
 
+	// Sync state when the existing trade changes (e.g. counterparty updates).
 	useEffect(() => {
 		if (!existingTrade) return;
-		// offer = what `fromUserId` is giving; request = what `toUserId` is giving.
-		// Normalize into whoever is "my side" in the current perspective.
 		const iAmSender = existingTrade.fromUserId === myId;
-		setOffer(iAmSender ? existingTrade.offer : existingTrade.request);
-		setRequest(iAmSender ? existingTrade.request : existingTrade.offer);
+		const t = setTimeout(() => {
+			setOffer(iAmSender ? existingTrade.offer : existingTrade.request);
+			setRequest(iAmSender ? existingTrade.request : existingTrade.offer);
+		});
+		return () => clearTimeout(t);
 	}, [existingTrade, myId]);
 
 	const myProps = useMemo(

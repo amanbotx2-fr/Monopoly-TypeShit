@@ -16,13 +16,16 @@ function readPrefs() {
 	try {
 		return { ...d, ...(JSON.parse(localStorage.getItem(KEY)) || {}) };
 	} catch {
+		/* ignore */
 		return d;
 	}
 }
 function writePrefs(p) {
 	try {
 		localStorage.setItem(KEY, JSON.stringify(p));
-	} catch {}
+	} catch {
+		/* ignore localStorage write failures */
+	}
 }
 
 function ensureCtx() {
@@ -253,7 +256,9 @@ export function play(key) {
 	if (!fn) return;
 	try {
 		fn();
-	} catch {}
+	} catch {
+		/* ignore */
+	}
 }
 
 // Server event types → sound keys.

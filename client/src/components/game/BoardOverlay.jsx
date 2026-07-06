@@ -21,13 +21,16 @@ export default function BoardOverlay({ room, events, players }) {
 			if (spawned) added.push(...spawned);
 		}
 		if (added.length) {
-			setEffects((prev) => [...prev, ...added]);
+			const t = setTimeout(() => {
+				setEffects((prev) => [...prev, ...added]);
+			});
 			for (const fx of added) {
 				setTimeout(
 					() => setEffects((prev) => prev.filter((x) => x.id !== fx.id)),
 					fx.ttl || LIFESPAN_MS,
 				);
 			}
+			return () => clearTimeout(t);
 		}
 	}, [events, room, players]);
 

@@ -2,7 +2,7 @@ import React from 'react';
 
 // Detailed property info — rent table, mortgage value, houses. Used as a
 // hover popup on the board and inside the trade / property panels.
-export default function PropertyCard({ def, state, players, style, compact = false }) {
+export default function PropertyCard({ def, state, players, style, compact: _compact }) {
 	if (!def) return null;
 	const owner = state?.owner ? players?.find((p) => p.userId === state.owner) : null;
 

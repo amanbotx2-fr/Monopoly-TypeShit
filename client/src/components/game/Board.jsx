@@ -10,7 +10,7 @@ import './board.css';
 
 export default function Board({
 	room,
-	userId,
+	userId: _userId,
 	diceRolling,
 	events,
 	act,

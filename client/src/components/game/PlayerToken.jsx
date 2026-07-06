@@ -25,38 +25,6 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 	const runningRef = useRef(false);
 	const lastSeenVersion = useRef(null);
 
-	// Feed new move events for this player into the queue.
-	useEffect(() => {
-		if (!events) return;
-		for (const e of events) {
-			if (e._k === lastSeenVersion.current) break;
-		}
-		const idx = events.findIndex((e) => e._k === lastSeenVersion.current);
-		const newEvents = idx === -1 ? events : events.slice(idx + 1);
-		if (newEvents.length) lastSeenVersion.current = newEvents[newEvents.length - 1]._k;
-		for (const e of newEvents) {
-			if (e.type === 'move' && e.userId === player.userId) {
-				queueRef.current.push({ kind: 'walk', path: e.path });
-			}
-			if (e.type === 'jail' && e.userId === player.userId) {
-				queueRef.current.push({ kind: 'jail' });
-			}
-			if (e.type === 'jail-escape' && e.userId === player.userId) {
-				queueRef.current.push({ kind: 'jail-escape' });
-			}
-		}
-		drain();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [events, player.userId]);
-
-	// If the server snapshot diverges from our display (reconnect, etc.),
-	// catch up without the walk.
-	useEffect(() => {
-		if (queueRef.current.length === 0 && !runningRef.current) {
-			setDisplayPos(player.position);
-		}
-	}, [player.position]);
-
 	function drain() {
 		if (runningRef.current) return;
 		const next = queueRef.current.shift();
@@ -92,6 +60,38 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 			}, 300);
 		}
 	}
+
+	// Feed new move events for this player into the queue.
+	useEffect(() => {
+		if (!events) return;
+		for (const e of events) {
+			if (e._k === lastSeenVersion.current) break;
+		}
+		const idx = events.findIndex((e) => e._k === lastSeenVersion.current);
+		const newEvents = idx === -1 ? events : events.slice(idx + 1);
+		if (newEvents.length) lastSeenVersion.current = newEvents[newEvents.length - 1]._k;
+		for (const e of newEvents) {
+			if (e.type === 'move' && e.userId === player.userId) {
+				queueRef.current.push({ kind: 'walk', path: e.path });
+			}
+			if (e.type === 'jail' && e.userId === player.userId) {
+				queueRef.current.push({ kind: 'jail' });
+			}
+			if (e.type === 'jail-escape' && e.userId === player.userId) {
+				queueRef.current.push({ kind: 'jail-escape' });
+			}
+		}
+		drain();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [events, player.userId]);
+
+	// If the server snapshot diverges from our display (reconnect, etc.),
+	// catch up without the walk.
+	useEffect(() => {
+		if (queueRef.current.length === 0 && !runningRef.current) {
+			setDisplayPos(player.position);
+		}
+	}, [player.position]);
 
 	const [xPct, yPct] = tokenCenter(displayPos);
 	const side = tileRect(displayPos).side;

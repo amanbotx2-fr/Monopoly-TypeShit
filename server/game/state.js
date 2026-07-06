@@ -4,7 +4,7 @@
 // private fields before broadcast.
 
 const { v4: uuidv4 } = require('uuid');
-const { BUILTIN_BOARDS, WORLD_TOUR, computeGroupSizes } = require('./boards');
+const { BUILTIN_BOARDS, computeGroupSizes } = require('./boards');
 const { newChanceDeck, newChestDeck } = require('./cards');
 
 const activeRooms = new Map();

@@ -1,7 +1,7 @@
 // Property-management actions: mortgage, unmortgage, build house / hotel,
 // demolish. All route through engine.transfer for consistent money flow.
 
-const { transfer, tileDef, tileSt, ownedInGroup, ownsFullGroup } = require('./engine');
+const { transfer, tileDef, tileSt, ownsFullGroup } = require('./engine');
 const { appendLog } = require('./state');
 
 // ─── Mortgage ────────────────────────────────────────────────────────────────
