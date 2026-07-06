@@ -4,21 +4,81 @@
 
 import { API_BASE } from './config';
 
-async function req(path, opts = {}) {
+const CSRF_HEADER = 'x-csrf-token';
+const CSRF_ERROR_CODES = new Set(['csrf-missing', 'csrf-invalid']);
+
+let csrfToken = null;
+let csrfBootstrap = null;
+
+function isMutation(method) {
+	return !['GET', 'HEAD', 'OPTIONS'].includes((method || 'GET').toUpperCase());
+}
+
+async function parseJson(res) {
+	try {
+		return await res.json();
+	} catch {
+		return null;
+	}
+}
+
+function storeCsrfToken(body) {
+	if (body?.csrfToken) csrfToken = body.csrfToken;
+	return body;
+}
+
+async function fetchJson(path, opts = {}) {
+	const { headers, ...rest } = opts;
 	const res = await fetch(`${API_BASE}${path}`, {
 		credentials: 'include',
-		headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
-		...opts,
+		...rest,
+		headers: { 'Content-Type': 'application/json', ...(headers || {}) },
 	});
+	const body = storeCsrfToken(await parseJson(res));
 	if (!res.ok) {
-		let msg = res.statusText;
-		try {
-			const j = await res.json();
-			msg = j.error || msg;
-		} catch {}
-		throw new Error(msg);
+		const err = new Error(body?.error || res.statusText);
+		err.code = body?.code;
+		throw err;
 	}
-	return res.json();
+	return body;
+}
+
+async function bootstrapCsrf() {
+	if (csrfToken) return csrfToken;
+	if (!csrfBootstrap) {
+		csrfBootstrap = fetchJson('/api/me').finally(() => {
+			csrfBootstrap = null;
+		});
+	}
+	await csrfBootstrap;
+	return csrfToken;
+}
+
+async function req(path, opts = {}) {
+	const method = (opts.method || 'GET').toUpperCase();
+	if (isMutation(method)) {
+		await bootstrapCsrf();
+	}
+	try {
+		return await fetchJson(path, {
+			...opts,
+			method,
+			headers: isMutation(method)
+				? { ...(opts.headers || {}), [CSRF_HEADER]: csrfToken }
+				: opts.headers,
+		});
+	} catch (err) {
+		if (isMutation(method) && CSRF_ERROR_CODES.has(err.code)) {
+			csrfToken = null;
+			await bootstrapCsrf();
+			return fetchJson(path, {
+				...opts,
+				method,
+				headers: { ...(opts.headers || {}), [CSRF_HEADER]: csrfToken },
+			});
+		}
+		throw err;
+	}
 }
 
 export const api = {

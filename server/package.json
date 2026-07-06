@@ -16,6 +16,7 @@
 	"scripts": {
 		"start": "node index.js",
 		"dev": "nodemon index.js",
+		"test": "vitest run",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"format": "prettier --check .",
@@ -37,5 +38,7 @@
 		"eslint": "10.6.0",
 		"globals": "17.7.0",
 		"nodemon": "^3.1.14"
+		,
+		"vitest": "^4.1.10"
 	}
 }

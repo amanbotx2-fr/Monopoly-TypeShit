@@ -246,8 +246,9 @@ Key points:
 - Socket.IO handles lobby sync, gameplay actions, chat, trades, auctions, and
   reconnect behavior.
 - Active rooms are kept in memory and periodically saved to MongoDB.
-- Production deployments should replace the default session store before
-  running multiple backend instances.
+- Production deployments use Mongo-backed sessions and require
+  `SESSION_STORE_MONGODB_URI` or `MONGODB_URI` so `MemoryStore` is never used
+  outside local development.
 
 ## Deployment
 

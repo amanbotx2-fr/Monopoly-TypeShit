@@ -11,6 +11,7 @@ const {
 	sessionParser,
 	socketSessionMiddleware,
 } = require('./middleware/session');
+const { attachCsrfToken, requireCsrf } = require('./middleware/csrf');
 const registerSocketHandlers = require('./socket/handlers');
 const { positiveInt, socketConnectionRateLimit } = require('./abuse/rateLimit');
 const { configurePendingRoomCleanup, shutdownPendingRoomCleanup } = require('./abuse/pendingRooms');
@@ -77,6 +78,8 @@ app.use((err, req, res, next) => {
 });
 app.use(cookieParser());
 app.use(sessionMiddleware);
+app.use(attachCsrfToken);
+app.use('/api', requireCsrf);
 io.engine.use(sessionParser);
 io.use(socketSessionMiddleware);
 io.use(
@@ -93,7 +96,7 @@ mongoose
 
 app.use('/api', require('./routes/rooms'));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
-app.get('/api/me', (req, res) => res.json({ userId: req.userId }));
+app.get('/api/me', (req, res) => res.json({ userId: req.userId, csrfToken: req.csrfToken }));
 
 const roomLifecycle = registerSocketHandlers(io);
 configurePendingRoomCleanup(roomLifecycle.cleanupRoom);
