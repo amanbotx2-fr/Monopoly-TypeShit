@@ -29,8 +29,27 @@ const {
 const DEFAULT_IDLE_CLEANUP_MS = 15 * 60 * 1000;
 const SAVE_INTERVAL = 30000;
 const IDLE_CLEANUP_MS = positiveInt(process.env.ROOM_IDLE_TIMEOUT_MS, DEFAULT_IDLE_CLEANUP_MS);
+
+function isLocalClientUrl(value) {
+	if (!value) return false;
+	return value
+		.split(',')
+		.map((entry) => entry.trim())
+		.filter(Boolean)
+		.some((entry) => {
+			try {
+				const url = new URL(entry);
+				return ['localhost', '127.0.0.1', '0.0.0.0'].includes(url.hostname);
+			} catch {
+				return false;
+			}
+		});
+}
+
 const ALLOW_SOLO_DEV_GAME =
-	process.env.ALLOW_SOLO_DEV_GAME === '1' || process.env.NODE_ENV !== 'production';
+	process.env.ALLOW_SOLO_DEV_GAME === '1' ||
+	process.env.NODE_ENV !== 'production' ||
+	isLocalClientUrl(process.env.CLIENT_URL);
 const SOCKET_LIMITS = {
 	default: {
 		limit: positiveInt(process.env.RATE_LIMIT_SOCKET_DEFAULT_PER_10_SEC, 120),
