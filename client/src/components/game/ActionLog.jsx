@@ -235,8 +235,8 @@ function LogRow({ e, nameOf, tile }) {
 		case 'trade-open':
 			body = (
 				<>
-					{nameOf(e.fromUserId)} proposed{' '}
-					<span className="trade-clickable">a trade</span> to {nameOf(e.toUserId)}
+					{nameOf(e.fromUserId)} proposed <span className="trade-clickable">a trade</span>{' '}
+					to {nameOf(e.toUserId)}
 				</>
 			);
 			break;
@@ -284,8 +284,6 @@ function LogRow({ e, nameOf, tile }) {
 			body = <em style={{ color: 'var(--text-4)' }}>{e.kind}</em>;
 	}
 
-	const attrs = isTradeEntry
-		? { 'data-trade-id': e.tradeId, className: 'trade-row' }
-		: {};
+	const attrs = isTradeEntry ? { 'data-trade-id': e.tradeId, className: 'trade-row' } : {};
 	return <div {...attrs}>{body}</div>;
 }

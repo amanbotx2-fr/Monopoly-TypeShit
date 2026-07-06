@@ -7,8 +7,7 @@ import TokenPicker from '../home/TokenPicker';
 import BrandLogo from '../common/BrandLogo';
 import { Copy, LogOut, Play, X, Users, Settings, UserPlus } from 'lucide-react';
 
-const allowSoloDevGame =
-	import.meta.env.VITE_ALLOW_SOLO_DEV_GAME === '1' || import.meta.env.DEV;
+const allowSoloDevGame = import.meta.env.VITE_ALLOW_SOLO_DEV_GAME === '1' || import.meta.env.DEV;
 
 export default function Lobby({ userId, pushToast, onStart }) {
 	const nav = useNavigate();
@@ -57,9 +56,9 @@ export default function Lobby({ userId, pushToast, onStart }) {
 			? 'Invite one more player to unlock the table.'
 			: room.players.length < 2 && allowSoloDevGame
 				? 'Solo start is enabled in dev so you can test the full game loop.'
-			: isHost
-				? 'Room is ready. Start when everyone is set.'
-				: 'You are in. Waiting for the host to start.';
+				: isHost
+					? 'Room is ready. Start when everyone is set.'
+					: 'You are in. Waiting for the host to start.';
 
 	function copyLink() {
 		const url = `${window.location.origin}/r/${roomCode}`;
