@@ -3,12 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 
-const {
-	WORLD_TOUR,
-	BUILTIN_BOARDS,
-	validateBoard,
-	computeGroupSizes,
-} = require('../game/boards');
+const { WORLD_TOUR, BUILTIN_BOARDS, validateBoard, computeGroupSizes } = require('../game/boards');
 
 describe('WORLD_TOUR', () => {
 	it('has 40 tiles', () => {
@@ -135,9 +130,7 @@ describe('validateBoard', () => {
 	});
 
 	it('rejects tile with wrong pos', () => {
-		const tiles = makeValidBoard().tiles.map((t, i) =>
-			i === 5 ? { ...t, pos: 99 } : t,
-		);
+		const tiles = makeValidBoard().tiles.map((t, i) => (i === 5 ? { ...t, pos: 99 } : t));
 		expect(validateBoard({ tiles }).some((e) => e.includes('wrong pos'))).toBe(true);
 	});
 
