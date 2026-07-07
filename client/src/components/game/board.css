@@ -102,8 +102,8 @@
 .tile-flag {
 	position: absolute;
 	z-index: 6;
-	width: clamp(24px, 4cqi, 32px);
-	height: clamp(24px, 4cqi, 32px);
+	width: clamp(30px, 5cqi, 40px);
+	height: clamp(30px, 5cqi, 40px);
 	border-radius: 50%;
 	overflow: hidden;
 	pointer-events: none;
@@ -117,10 +117,10 @@
 	display: block;
 }
 /* Half outside tile (inner edge = toward board center) */
-.tile-side-top    .tile-flag { bottom: -16px; left: 50%; transform: translateX(-50%); }
-.tile-side-bottom .tile-flag { top: -16px;    left: 50%; transform: translateX(-50%); }
-.tile-side-right  .tile-flag { left: -16px;   top: 50%;  transform: translateY(-50%); }
-.tile-side-left   .tile-flag { right: -16px;  top: 50%;  transform: translateY(-50%); }
+.tile-side-top    .tile-flag { bottom: -20px; left: 50%; transform: translateX(-50%); }
+.tile-side-bottom .tile-flag { top: -20px;    left: 50%; transform: translateX(-50%); }
+.tile-side-right  .tile-flag { left: -20px;   top: 50%;  transform: translateY(-50%); }
+.tile-side-left   .tile-flag { right: -20px;  top: 50%;  transform: translateY(-50%); }
 
 /* ─── Tile body (text/icon area) ───────────────────────────────────────────── */
 .tile-body {
