@@ -1,144 +1,151 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
-// Pip positions for each face (1..6) in a 3x3 grid.
-const PIPS = {
-	1: [[1, 1]],
-	2: [
-		[0, 0],
-		[2, 2],
-	],
-	3: [
-		[0, 0],
-		[1, 1],
-		[2, 2],
-	],
-	4: [
-		[0, 0],
-		[0, 2],
-		[2, 0],
-		[2, 2],
-	],
-	5: [
-		[0, 0],
-		[0, 2],
-		[1, 1],
-		[2, 0],
-		[2, 2],
-	],
-	6: [
-		[0, 0],
-		[0, 2],
-		[1, 0],
-		[1, 2],
-		[2, 0],
-		[2, 2],
-	],
+// 3D CSS cube dice — inline transforms + CSS transition for smooth rotation,
+// like richup.io. During rolling the cube spins through random faces with
+// extra full rotations for visual spin; when done it settles on the result.
+
+// Face → cube rotation to show that face (front face = 6 is default).
+const FACE_ROTATION = {
+	1: 'rotateX(180deg)',
+	2: 'rotateX(-90deg)',
+	3: 'rotateY(90deg)',
+	4: 'rotateY(-90deg)',
+	5: 'rotateX(90deg)',
+	6: 'rotateX(0deg)',
 };
 
-// Cycle through random faces while the dice shake. We freeze on the real
-// result a bit before the CSS animation ends so the final pop lands on the
-// actual number.
-const CYCLE_MS = 90;
-const SHAKE_END_MS = 800; // stop cycling; freeze on the real result
-const TOTAL_MS = 1100; // matches diceRoll keyframes in board.css
+// Pip positions for each face (1..6) in a 3×3 grid. [row, col].
+const PIPS = {
+	1: [[1, 1]],
+	2: [[0, 0], [2, 2]],
+	3: [[0, 0], [1, 1], [2, 2]],
+	4: [[0, 0], [0, 2], [2, 0], [2, 2]],
+	5: [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]],
+	6: [[0, 0], [0, 2], [1, 0], [1, 2], [2, 0], [2, 2]],
+};
 
-export default function Dice({ dice, rolling, onRollComplete }) {
-	const [shown, setShown] = useState(dice || [1, 1]);
-	const timerRef = useRef(null);
-	const prevDice = useRef(dice);
-	const completedDiceRef = useRef(0);
+const CYCLE_MS = 100;
+const FREEZE_MS = 800;  // when to stop spinning
+const SETTLE_MS = 1100;  // total time before we consider roll "done"
 
-	useEffect(() => {
-		if (rolling) completedDiceRef.current = 0;
-	}, [rolling]);
-
-	// Sync display with real dice when not rolling.
-	useEffect(() => {
-		if (!rolling && dice) {
-			const t = setTimeout(() => setShown(dice));
-			return () => clearTimeout(t);
-		}
-	}, [rolling, dice]);
-
-	// Rolling animation — flicker through random faces then freeze on result.
-	useEffect(() => {
-		if (!rolling) return;
-		const start = Date.now();
-		const tick = () => {
-			const elapsed = Date.now() - start;
-			if (elapsed < SHAKE_END_MS) {
-				// Keep flickering — ensure each tick actually changes at least
-				// one value so the eye sees motion.
-				setShown((prev) => {
-					let a = 1 + Math.floor(Math.random() * 6);
-					let b = 1 + Math.floor(Math.random() * 6);
-					if (prev && a === prev[0] && b === prev[1]) a = 1 + (a % 6);
-					return [a, b];
-				});
-				timerRef.current = setTimeout(tick, CYCLE_MS);
-			} else if (dice) {
-				// Lock the final value well before the rotation finishes, so
-				// the tumble visibly settles on the actual result.
-				setShown(dice);
-			}
-		};
-		tick();
-		return () => {
-			if (timerRef.current) clearTimeout(timerRef.current);
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [rolling]);
-
-	// If a new dice value arrives while not rolling (e.g. reconnect), adopt it.
-	useEffect(() => {
-		if (!rolling && dice && prevDice.current !== dice) {
-			setShown(dice);
-			prevDice.current = dice;
-		}
-	}, [dice, rolling]);
-
-	if (!shown || shown[0] == null) {
-		return (
-			<div className="dice-wrap" style={{ opacity: 0.3 }}>
-				<Die value={1} rolling={false} />
-				<Die value={1} rolling={false} />
-			</div>
-		);
-	}
-
-	function handleAnimationEnd(e) {
-		if (!rolling || !e.target.classList?.contains('die')) return;
-		completedDiceRef.current += 1;
-		if (completedDiceRef.current < 2) return;
-		completedDiceRef.current = 0;
-		onRollComplete?.();
-	}
+export default function Dice({ dice, rolling }) {
+	const d1 = dice?.[0] || 1;
+	const d2 = dice?.[1] || 1;
 
 	return (
-		<div className="dice-wrap" onAnimationEnd={handleAnimationEnd}>
-			<Die value={shown[0]} rolling={rolling} />
-			<Die value={shown[1]} rolling={rolling} />
+		<div className={`dice-wrap${!dice ? ' dimmed' : ''}`}>
+			<Die value={d1} rolling={rolling} />
+			<Die value={d2} rolling={rolling} />
 		</div>
 	);
 }
 
 function Die({ value, rolling }) {
-	const pips = PIPS[value] || [];
-	const grid = Array.from({ length: 9 }).map((_, i) => {
-		const row = Math.floor(i / 3),
-			col = i % 3;
-		return pips.some(([r, c]) => r === row && c === col);
-	});
+	const [phase, setPhase] = React.useState('idle'); // idle | spinning | settling
+	const [displayFace, setDisplayFace] = React.useState(value);
+	const timerRef = useRef(null);
+	const prevRolling = useRef(rolling);
+	const targetRef = useRef(value);
+
+	// Keep target face in sync when not rolling.
+	useEffect(() => {
+		targetRef.current = value;
+		if (!rolling) {
+			setDisplayFace(value);
+			setPhase('idle');
+		}
+	}, [value, rolling]);
+
+	// Rolling lifecycle.
+	useEffect(() => {
+		// Detect rolling start: was false, now true.
+		if (rolling && !prevRolling.current) {
+			setPhase('spinning');
+			const start = Date.now();
+
+			const tick = () => {
+				const elapsed = Date.now() - start;
+				if (elapsed >= FREEZE_MS) {
+					// Settle on the real result.
+					setDisplayFace(targetRef.current);
+					setPhase('settling');
+					return;
+				}
+				// Spin: show a random face.
+				setDisplayFace(1 + Math.floor(Math.random() * 6));
+				timerRef.current = setTimeout(tick, CYCLE_MS);
+			};
+			tick();
+		}
+		prevRolling.current = rolling;
+
+		return () => {
+			if (timerRef.current) clearTimeout(timerRef.current);
+		};
+	}, [rolling]);
+
+	// Build the rotation string. During spinning we add extra full rotations
+	// for visual spin; otherwise just the face rotation.
+	const rotation = (() => {
+		const base = FACE_ROTATION[displayFace] || FACE_ROTATION[6];
+		if (phase === 'spinning') {
+			// Add random full spins to make the cube tumble.
+			const rx = Math.floor(Math.random() * 4) * 360;
+			const ry = Math.floor(Math.random() * 4) * 360;
+			const rz = (Math.floor(Math.random() * 3) - 1) * 30;
+			return `rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+		}
+		return base;
+	})();
+
+	const spinClass = phase === 'spinning' ? ' spinning' : phase === 'settling' ? ' settling' : '';
+
 	return (
-		<div className={`die ${rolling ? 'rolling' : ''}`}>
-			{grid.map((on, i) => (
-				<div key={i} style={{ padding: 2, display: 'grid', placeItems: 'center' }}>
-					{on && <span className="die-pip" />}
+		<div className="dice-cube-scene">
+			<div
+				className={`dice-cube${spinClass}`}
+				style={{ transform: rotation }}
+			>
+				{/* Face 1 — back */}
+				<div className="dice-face dice-face-back">
+					{PIPS[1].map(([r, c], i) => (
+						<div key={i} className="dice-pip" style={{ gridRow: r + 1, gridColumn: c + 1 }} />
+					))}
 				</div>
-			))}
+				{/* Face 2 — top */}
+				<div className="dice-face dice-face-top">
+					{PIPS[2].map(([r, c], i) => (
+						<div key={i} className="dice-pip" style={{ gridRow: r + 1, gridColumn: c + 1 }} />
+					))}
+				</div>
+				{/* Face 3 — left */}
+				<div className="dice-face dice-face-left">
+					{PIPS[3].map(([r, c], i) => (
+						<div key={i} className="dice-pip" style={{ gridRow: r + 1, gridColumn: c + 1 }} />
+					))}
+				</div>
+				{/* Face 4 — right */}
+				<div className="dice-face dice-face-right">
+					{PIPS[4].map(([r, c], i) => (
+						<div key={i} className="dice-pip" style={{ gridRow: r + 1, gridColumn: c + 1 }} />
+					))}
+				</div>
+				{/* Face 5 — bottom */}
+				<div className="dice-face dice-face-bottom">
+					{PIPS[5].map(([r, c], i) => (
+						<div key={i} className="dice-pip" style={{ gridRow: r + 1, gridColumn: c + 1 }} />
+					))}
+				</div>
+				{/* Face 6 — front */}
+				<div className="dice-face dice-face-front">
+					{PIPS[6].map(([r, c], i) => (
+						<div key={i} className="dice-pip" style={{ gridRow: r + 1, gridColumn: c + 1 }} />
+					))}
+				</div>
+			</div>
 		</div>
 	);
 }
 
-// Export so Game.js can keep its setTimeout in sync with the CSS total.
-export const DICE_TOTAL_MS = TOTAL_MS;
+export const DICE_TOTAL_MS = SETTLE_MS;
+

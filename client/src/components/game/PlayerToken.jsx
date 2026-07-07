@@ -18,14 +18,7 @@ function stackOffset(side, idx) {
 // walks across each tile instead of teleporting.
 const STEP_MS = 160;
 
-export default function PlayerToken({
-	player,
-	isActive,
-	stackIndex,
-	events,
-	onHover,
-	onMotionComplete,
-}) {
+export default function PlayerToken({ player, isActive, stackIndex, events, onHover, boardInfo }) {
 	const [displayPos, setDisplayPos] = useState(player.position);
 	const [isJailShaking, setJailShaking] = useState(false);
 	const queueRef = useRef([]);
@@ -40,17 +33,9 @@ export default function PlayerToken({
 
 		if (next.kind === 'walk') {
 			const path = next.path || [];
-			if (next.animate === false || path.length === 0) {
-				if (path.length > 0) setDisplayPos(path[path.length - 1]);
-				onMotionComplete?.(next.eventKey);
-				runningRef.current = false;
-				drain();
-				return;
-			}
 			let i = 0;
 			const step = () => {
 				if (i >= path.length) {
-					onMotionComplete?.(next.eventKey);
 					runningRef.current = false;
 					drain();
 					return;
@@ -87,12 +72,7 @@ export default function PlayerToken({
 		if (newEvents.length) lastSeenVersion.current = newEvents[newEvents.length - 1]._k;
 		for (const e of newEvents) {
 			if (e.type === 'move' && e.userId === player.userId) {
-				queueRef.current.push({
-					kind: 'walk',
-					path: e.path,
-					animate: e.animate,
-					eventKey: e._k,
-				});
+				queueRef.current.push({ kind: 'walk', path: e.path });
 			}
 			if (e.type === 'jail' && e.userId === player.userId) {
 				queueRef.current.push({ kind: 'jail' });
@@ -113,8 +93,8 @@ export default function PlayerToken({
 		}
 	}, [player.position]);
 
-	const [xPct, yPct] = tokenCenter(displayPos);
-	const side = tileRect(displayPos).side;
+	const [xPct, yPct] = tokenCenter(displayPos, boardInfo);
+	const side = tileRect(displayPos, boardInfo).side;
 	const off = stackOffset(side, stackIndex);
 	const initial = (player.username || '?').trim()[0]?.toUpperCase() || '?';
 	const isLight = ['#FFFFFF', '#FACC15', '#FEF200'].includes(player.color?.toUpperCase());
