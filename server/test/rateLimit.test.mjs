@@ -145,6 +145,12 @@ describe('socketSessionId', () => {
 			hashId('sess-1'),
 		);
 	});
+
+	it('falls back to request.session.id', () => {
+		expect(socketSessionId({ data: {}, request: { session: { id: 'sess-final' } } })).toBe(
+			hashId('sess-final'),
+		);
+	});
 });
 
 describe('key generators', () => {

@@ -221,6 +221,15 @@ describe('tradeMessage', () => {
 		}
 		expect(room.trades[0].messages).toHaveLength(100);
 	});
+
+	it('tradeMessage rejects non-party user', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const prop = trade.proposeTrade(room, from, 'player-2');
+		const r = trade.tradeMessage(room, { userId: 'outsider' }, prop.trade.id, 'hi');
+		expect(r.ok).toBe(false);
+		expect(r.error).toBe('not-party');
+	});
 });
 
 describe('executeTrade', () => {
