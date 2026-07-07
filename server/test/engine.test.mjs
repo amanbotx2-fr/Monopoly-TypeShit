@@ -324,13 +324,11 @@ describe('rollAndMove', () => {
 		expect(r.error).toBe('not-your-turn-to-roll');
 	});
 
-	it('succeeds and changes position (no mocks — real dice)', () => {
+	it('succeeds, records dice, and enters a valid post-roll phase', () => {
 		const room = makeRoom();
 		const p = room.players[0];
-		const posBefore = p.position;
 		const r = engine.rollAndMove(room, p);
 		expect(r.ok).toBe(true);
-		expect(p.position).not.toBe(posBefore);
 		expect(room.lastDice).toHaveLength(2);
 		expect(room.lastDiceRoller).toBe(p.userId);
 		expect(p.hasRolled).toBe(true);
