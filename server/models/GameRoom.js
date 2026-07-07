@@ -5,11 +5,11 @@
 const mongoose = require('mongoose');
 
 const gameRoomSchema = new mongoose.Schema({
-    roomCode: { type: String, required: true, unique: true, index: true },
-    hostUserId: { type: String, required: true },
-    state: { type: mongoose.Schema.Types.Mixed, required: true },  // whole room object minus transient socket ids
-    createdAt: { type: Date, default: Date.now },
-    lastActivity: { type: Date, default: Date.now },
+	roomCode: { type: String, required: true, unique: true, index: true },
+	hostUserId: { type: String, required: true },
+	state: { type: mongoose.Schema.Types.Mixed, required: true }, // whole room object minus transient socket ids
+	createdAt: { type: Date, default: Date.now },
+	lastActivity: { type: Date, default: Date.now },
 });
 
 // Auto-expire rooms that haven't seen activity in 12 hours.

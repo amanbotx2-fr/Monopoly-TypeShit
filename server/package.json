@@ -1,33 +1,44 @@
 {
-  "name": "monopoly-server",
-  "version": "1.0.0",
-  "description": "Express and Socket.IO backend for MONOPOLY multiplayer rooms, boards, and game state.",
-  "author": "Aman Kumar",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/amanbotx2-fr/Monopoly-main.git",
-    "directory": "server"
-  },
-  "main": "index.js",
-  "engines": {
-    "node": ">=20"
-  },
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "dependencies": {
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.1",
-    "express": "^5.2.1",
-    "express-session": "^1.19.0",
-    "mongoose": "^9.4.1",
-    "socket.io": "^4.8.3",
-    "uuid": "^13.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
-  }
+	"name": "monopoly-server",
+	"version": "1.0.0",
+	"description": "Express and Socket.IO backend for MONOPOLY multiplayer rooms, boards, and game state.",
+	"author": "Aman Kumar",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/amanbotx2-fr/Monopoly-main.git",
+		"directory": "server"
+	},
+	"main": "index.js",
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"start": "node index.js",
+		"dev": "nodemon index.js",
+		"test": "vitest run",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --check .",
+		"format:fix": "prettier --write ."
+	},
+	"dependencies": {
+		"connect-mongo": "6.0.0",
+		"cookie-parser": "^1.4.7",
+		"cors": "^2.8.6",
+		"dotenv": "^17.4.1",
+		"express": "^5.2.1",
+		"express-session": "^1.19.0",
+		"mongoose": "^9.4.1",
+		"socket.io": "^4.8.3",
+		"uuid": "^13.0.0"
+	},
+	"devDependencies": {
+		"@eslint/js": "10.0.1",
+		"eslint": "10.6.0",
+		"globals": "17.7.0",
+		"nodemon": "^3.1.14"
+		,
+		"vitest": "^4.1.10"
+	}
 }

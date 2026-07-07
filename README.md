@@ -21,59 +21,60 @@ with Hasbro or any official Monopoly product.
 
 ## Screenshots
 
-| Home | Lobby Host | Lobby Guest |
-| --- | --- | --- |
+| Home                                 | Lobby Host                                | Lobby Guest                                 |
+| ------------------------------------ | ----------------------------------------- | ------------------------------------------- |
 | ![Home screen](docs/images/home.png) | ![Host lobby](docs/images/lobby-host.png) | ![Guest lobby](docs/images/lobby-guest.png) |
 
-| Active Game | Property |
-| --- | --- |
+| Active Game                          | Property                                    |
+| ------------------------------------ | ------------------------------------------- |
 | ![Active game](docs/images/game.png) | ![Property modal](docs/images/property.png) |
 
-| Auction | Trade | Chat |
-| --- | --- | --- |
+| Auction                                   | Trade                                 | Chat                                 |
+| ----------------------------------------- | ------------------------------------- | ------------------------------------ |
 | ![Auction modal](docs/images/auction.png) | ![Trade modal](docs/images/trade.png) | ![Chat drawer](docs/images/chat.png) |
 
-| Map Builder | My Maps |
-| --- | --- |
+| Map Builder                             | My Maps                          |
+| --------------------------------------- | -------------------------------- |
 | ![Map builder](docs/images/builder.png) | ![My Maps](docs/images/maps.png) |
 
-| Mobile Home | Mobile Lobby | Mobile Game |
-| --- | --- | --- |
+| Mobile Home                                 | Mobile Lobby                                  | Mobile Game                                 |
+| ------------------------------------------- | --------------------------------------------- | ------------------------------------------- |
 | ![Mobile home](docs/images/mobile-home.png) | ![Mobile lobby](docs/images/mobile-lobby.png) | ![Mobile game](docs/images/mobile-game.png) |
 
 ## Features
 
-| Area | What is included |
-| --- | --- |
-| Multiplayer rooms | Create rooms, join by code, browse public rooms, host controls, spectator flow. |
-| Realtime sync | Socket.IO state broadcasts for lobby, turns, auctions, trades, chat, and game events. |
-| Guest sessions | Anonymous server-side sessions with no accounts, login screens, or JWTs. |
-| Game engine | Turn order, dice, movement, rent, jail, property ownership, cards, bankruptcy, and victory. |
-| Auctions | Server-side auction state, bids, passes, timers, and final transfer. |
-| Trading | Player-to-player proposals, cash/property exchange, messages, accept/reject/edit flows. |
-| Property management | Buy, mortgage, unmortgage, build houses, sell houses, inspect ownership and rents. |
-| Custom boards | Built-in boards plus saved custom boards that appear in room creation. |
-| Map builder | New maps from blank or templates, tile editing, drafts, validation, publish/unpublish. |
-| Abuse protection | Payload validation, REST rate limits, Socket.IO throttles, and idle-room cleanup. |
-| Responsive UI | Desktop, tablet, and mobile layouts with dark-first design tokens. |
-| Audio | Lightweight procedural sound effects with persisted mute and volume settings. |
+| Area                | What is included                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Multiplayer rooms   | Create rooms, join by code, browse public rooms, host controls, spectator flow.             |
+| Realtime sync       | Socket.IO state broadcasts for lobby, turns, auctions, trades, chat, and game events.       |
+| Guest sessions      | Anonymous server-side sessions with no accounts, login screens, or JWTs.                    |
+| Game engine         | Turn order, dice, movement, rent, jail, property ownership, cards, bankruptcy, and victory. |
+| Auctions            | Server-side auction state, bids, passes, timers, and final transfer.                        |
+| Trading             | Player-to-player proposals, cash/property exchange, messages, accept/reject/edit flows.     |
+| Property management | Buy, mortgage, unmortgage, build houses, sell houses, inspect ownership and rents.          |
+| Custom boards       | Built-in boards plus saved custom boards that appear in room creation.                      |
+| Map builder         | New maps from blank or templates, tile editing, drafts, validation, publish/unpublish.      |
+| Abuse protection    | Payload validation, REST rate limits, Socket.IO throttles, and idle-room cleanup.           |
+| Responsive UI       | Desktop, tablet, and mobile layouts with dark-first design tokens.                          |
+| Audio               | Lightweight procedural sound effects with persisted mute and volume settings.               |
 
 ## Tech Stack
 
-| Layer | Stack |
-| --- | --- |
-| Frontend | React 19, Create React App, React Router, lucide-react, CSS design tokens. |
-| Backend | Node.js 20+, Express 5, Socket.IO 4, express-session. |
-| Database | MongoDB through Mongoose for custom boards and saved room snapshots. |
-| Realtime | Socket.IO rooms with server-owned game state and session-backed identity. |
-| Deployment | Separate frontend/backend deployment or same-origin nginx reverse proxy. |
+| Layer      | Stack                                                                     |
+| ---------- | ------------------------------------------------------------------------- |
+| Frontend   | React 19, Vite, React Router, lucide-react, CSS design tokens.            |
+| Backend    | Node.js 20+, Express 5, Socket.IO 4, express-session.                     |
+| Database   | MongoDB through Mongoose for custom boards and saved room snapshots.      |
+| Realtime   | Socket.IO rooms with server-owned game state and session-backed identity. |
+| Deployment | Separate frontend/backend deployment or same-origin nginx reverse proxy.  |
 
 ## Project Structure
 
 ```text
 .
 ├── client/
-│   ├── public/                 # App shell, favicon, PWA manifest, brand assets
+│   ├── index.html              # Vite HTML entrypoint
+│   ├── public/                 # Static assets, favicon, PWA manifest, brand assets
 │   ├── src/
 │   │   ├── components/common/   # Brand logo and shared UI helpers
 │   │   ├── components/editor/   # Map builder and My Maps screens
@@ -171,23 +172,23 @@ Visit `http://localhost:3000`.
 
 ### Frontend
 
-| Variable | Required | Default | Description |
-| --- | --- | --- | --- |
-| `REACT_APP_API_URL` | No | `http://localhost:5004` | Express and Socket.IO backend URL. Create React App only exposes variables with the `REACT_APP_` prefix. |
+| Variable       | Required | Default                 | Description                                                                        |
+| -------------- | -------- | ----------------------- | ---------------------------------------------------------------------------------- |
+| `VITE_API_URL` | No       | `http://localhost:5004` | Express and Socket.IO backend URL. Vite exposes variables with the `VITE_` prefix. |
 
 ### Backend
 
-| Variable | Required | Default | Description |
-| --- | --- | --- | --- |
-| `MONGODB_URI` | No | `mongodb://localhost:27017/monopoly` | MongoDB connection string. |
-| `CLIENT_URL` | No | `http://localhost:3000` | Allowed browser origin for CORS and Socket.IO credentials. |
-| `PORT` | No | `5004` | Backend HTTP port. |
-| `SESSION_SECRET` | Yes in production | development fallback | Secret used to sign anonymous session cookies. Use a long random value. |
-| `ROOM_IDLE_TIMEOUT_MS` | No | `900000` | How long an empty started room can remain before cleanup. |
-| `PENDING_HOST_CONNECT_MS` | No | `300000` | Grace period for a newly created room before the host connects by socket. |
-| `PENDING_ROOMS_PER_SESSION` | No | `2` | Number of pending rooms one session can create. |
-| `MAX_ACTIVE_ROOMS` | No | `200` | Hard cap for in-memory active rooms. |
-| `RATE_LIMIT_*` | No | See `server/.env.example` | REST and Socket.IO abuse-protection tuning. |
+| Variable                    | Required          | Default                              | Description                                                               |
+| --------------------------- | ----------------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| `MONGODB_URI`               | No                | `mongodb://localhost:27017/monopoly` | MongoDB connection string.                                                |
+| `CLIENT_URL`                | No                | `http://localhost:3000`              | Allowed browser origin for CORS and Socket.IO credentials.                |
+| `PORT`                      | No                | `5004`                               | Backend HTTP port.                                                        |
+| `SESSION_SECRET`            | Yes in production | development fallback                 | Secret used to sign anonymous session cookies. Use a long random value.   |
+| `ROOM_IDLE_TIMEOUT_MS`      | No                | `900000`                             | How long an empty started room can remain before cleanup.                 |
+| `PENDING_HOST_CONNECT_MS`   | No                | `300000`                             | Grace period for a newly created room before the host connects by socket. |
+| `PENDING_ROOMS_PER_SESSION` | No                | `2`                                  | Number of pending rooms one session can create.                           |
+| `MAX_ACTIVE_ROOMS`          | No                | `200`                                | Hard cap for in-memory active rooms.                                      |
+| `RATE_LIMIT_*`              | No                | See `server/.env.example`            | REST and Socket.IO abuse-protection tuning.                               |
 
 ## Gameplay
 
@@ -245,8 +246,9 @@ Key points:
 - Socket.IO handles lobby sync, gameplay actions, chat, trades, auctions, and
   reconnect behavior.
 - Active rooms are kept in memory and periodically saved to MongoDB.
-- Production deployments should replace the default session store before
-  running multiple backend instances.
+- Production deployments use Mongo-backed sessions and require
+  `SESSION_STORE_MONGODB_URI` or `MONGODB_URI` so `MemoryStore` is never used
+  outside local development.
 
 ## Deployment
 
@@ -254,7 +256,7 @@ The frontend and backend can be deployed separately:
 
 ```bash
 # frontend build environment
-REACT_APP_API_URL=https://api.example.com
+VITE_API_URL=https://api.example.com
 
 # backend environment
 CLIENT_URL=https://app.example.com
@@ -268,7 +270,7 @@ For same-origin self-hosting, see the nginx and systemd templates in
 
 ## Development Notes
 
-- The client is a Create React App project.
+- The client is a Vite project.
 - The backend is a plain Express app with Socket.IO mounted on the same HTTP
   server.
 - There is no account system and no JWT flow.

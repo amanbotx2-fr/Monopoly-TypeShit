@@ -16,7 +16,7 @@ popd >/dev/null
 
 # 2) Sync client static files.
 echo "syncing client to $CLIENT_DIR"
-rsync -az --delete client/build/ "$HOST:$CLIENT_DIR/"
+rsync -az --delete client/dist/ "$HOST:$CLIENT_DIR/"
 
 # 3) Sync server source. node_modules rebuilt remotely so native bindings match.
 echo "syncing server to $SERVER_DIR"

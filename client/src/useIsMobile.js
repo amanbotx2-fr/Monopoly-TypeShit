@@ -6,17 +6,17 @@ import { useEffect, useState } from 'react';
 const BREAKPOINT = 820;
 
 export default function useIsMobile(bp = BREAKPOINT) {
-    const [isMobile, setIsMobile] = useState(() =>
-        typeof window !== 'undefined' ? window.innerWidth < bp : false
-    );
-    useEffect(() => {
-        const on = () => setIsMobile(window.innerWidth < bp);
-        window.addEventListener('resize', on);
-        window.addEventListener('orientationchange', on);
-        return () => {
-            window.removeEventListener('resize', on);
-            window.removeEventListener('orientationchange', on);
-        };
-    }, [bp]);
-    return isMobile;
+	const [isMobile, setIsMobile] = useState(() =>
+		typeof window !== 'undefined' ? window.innerWidth < bp : false,
+	);
+	useEffect(() => {
+		const on = () => setIsMobile(window.innerWidth < bp);
+		window.addEventListener('resize', on);
+		window.addEventListener('orientationchange', on);
+		return () => {
+			window.removeEventListener('resize', on);
+			window.removeEventListener('orientationchange', on);
+		};
+	}, [bp]);
+	return isMobile;
 }
