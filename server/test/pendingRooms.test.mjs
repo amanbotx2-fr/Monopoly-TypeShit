@@ -143,4 +143,27 @@ describe('pendingRoomStats', () => {
 		schedulePendingRoomCleanup(room);
 		expect(pendingRoomStats().pendingHostTimers).toBe(1);
 	});
+
+	it('schedulePendingRoomCleanup: null room is no-op', () => {
+		schedulePendingRoomCleanup(null);
+		schedulePendingRoomCleanup(undefined);
+	});
+
+	it('schedulePendingRoomCleanup: started room skips cleanup', () => {
+		vi.useFakeTimers();
+		const room = makeRoom();
+		room.started = true;
+		schedulePendingRoomCleanup(room);
+		vi.advanceTimersByTime(120000);
+		shutdownPendingRoomCleanup();
+		vi.useRealTimers();
+	});
+
+	it('clearPendingRoomCleanup: non-matching cleanupReason not cleared', () => {
+		const room = makeRoom();
+		schedulePendingRoomCleanup(room);
+		room.cleanupReason = 'other-reason';
+		clearPendingRoomCleanup(room.roomCode);
+		expect(room.cleanupReason).toBe('other-reason');
+	});
 });

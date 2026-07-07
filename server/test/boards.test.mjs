@@ -203,4 +203,10 @@ describe('computeGroupSizes', () => {
 		expect(sizes.green).toBe(3);
 		expect(sizes.dblue).toBe(2);
 	});
+
+	it('classic-usa has non-property tiles matching world-tour', () => {
+		const usa = BUILTIN_BOARDS['classic-usa'];
+		expect(usa.tiles[0].name).toBe(WORLD_TOUR.tiles[0].name);
+		expect(usa.tiles[1].name).not.toBe(WORLD_TOUR.tiles[1].name);
+	});
 });

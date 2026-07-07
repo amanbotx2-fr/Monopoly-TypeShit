@@ -104,4 +104,34 @@ describe('socketConnectionRateLimit', () => {
 		expect(next2).toHaveBeenCalledWith(expect.any(Error));
 		expect(next2.mock.calls[0][0].message).toBe('rate-limited');
 	});
+
+	it('prunes expired and trims overflow entries', () => {
+		const t1 = Date.now() - 10000;
+		for (let i = 0; i < 10; i++) {
+			checkRateLimit(
+				'prune-overflow',
+				`k${i}`,
+				{ limit: 1, windowMs: 60000, maxEntries: 3 },
+				t1,
+			);
+		}
+		const t2 = t1 + 30001;
+		checkRateLimit(
+			'prune-overflow',
+			'new-key',
+			{ limit: 1, windowMs: 60000, maxEntries: 3 },
+			t2,
+		);
+	});
+
+	it('pruning skips when within 30s window', () => {
+		checkRateLimit('prune-skip', 'a', { limit: 1, windowMs: 60000 });
+		checkRateLimit('prune-skip', 'b', { limit: 1, windowMs: 60000 });
+	});
+
+	it('pruning removes expired buckets on next call', () => {
+		const t1 = Date.now() - 120000;
+		checkRateLimit('prune-exp', 'old-key', { limit: 1, windowMs: 10000 }, t1);
+		checkRateLimit('prune-exp', 'new-key', { limit: 1, windowMs: 60000 });
+	});
 });

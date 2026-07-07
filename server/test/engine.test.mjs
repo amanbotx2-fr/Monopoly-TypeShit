@@ -1210,4 +1210,55 @@ describe('applyCardEffect', () => {
 		engine.applyCardEffect(room, p, card);
 		expect(room.parkingPot).toBe(15);
 	});
+
+	it('rentOwed handles single-value roll for utilities', () => {
+		const room = makeRoom();
+		const p = room.players[1];
+		room.tileState[12].owner = p.userId;
+		p.owned.push(12);
+		expect(engine.rentOwed(room, 12, 5)).toBe(20);
+		expect(engine.rentOwed(room, 12, 0)).toBe(0);
+	});
+
+	it('no rent when owner bankrupt and noRentInJail off', () => {
+		const room = makeRoom();
+		room.rules.noRentInJail = false;
+		const p = room.players[0];
+		const owner = room.players[1];
+		p.position = 1;
+		room.tileState[1].owner = owner.userId;
+		owner.bankrupt = true;
+		owner.owned.push(1);
+		room.turnPhase = 'moving';
+		const cashBefore = p.cash;
+		engine.resolveLanding(room, p, [2, 3]);
+		expect(p.cash).toBe(cashBefore);
+	});
+
+	it('rent collected when noRentInJail off and owner jailed', () => {
+		const room = makeRoom();
+		room.rules.noRentInJail = false;
+		const p = room.players[0];
+		const owner = room.players[1];
+		p.position = 1;
+		room.tileState[1].owner = owner.userId;
+		owner.inJail = true;
+		owner.owned.push(1);
+		room.turnPhase = 'moving';
+		const cashBefore = p.cash;
+		engine.resolveLanding(room, p, [2, 3]);
+		expect(p.cash).toBeLessThan(cashBefore);
+	});
+
+	it('Free Parking empty pot with pot enabled is no-op', () => {
+		const room = makeRoom();
+		room.rules.freeParkingPot = true;
+		room.parkingPot = 0;
+		const p = room.players[0];
+		p.position = 20;
+		room.turnPhase = 'moving';
+		const cashBefore = p.cash;
+		engine.resolveLanding(room, p, [2, 3]);
+		expect(p.cash).toBe(cashBefore);
+	});
 });

@@ -313,4 +313,18 @@ describe('validateSocketAuth extra', () => {
 		);
 		expect(r.ok).toBe(false);
 	});
+	it('validatePatchBoardBody: tiles in patch', () => {
+		const { WORLD_TOUR } = require('../game/boards');
+		const tiles = WORLD_TOUR.tiles.map((t) => ({ ...t }));
+		const r = validation.validatePatchBoardBody({ tiles });
+		expect(r.ok).toBe(true);
+		expect(r.value.tiles).toBeDefined();
+	});
+
+	it('validateDuplicateBoardBody: with description and isPublic', () => {
+		const r = validation.validateDuplicateBoardBody({ description: 'A copy', isPublic: false });
+		expect(r.ok).toBe(true);
+		expect(r.value.description).toBe('A copy');
+		expect(r.value.isPublic).toBe(false);
+	});
 });

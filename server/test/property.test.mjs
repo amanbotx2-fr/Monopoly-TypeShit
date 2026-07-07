@@ -366,4 +366,16 @@ describe('sellHouse', () => {
 		expect(r.ok).toBe(false);
 		expect(r.error).toBe('no-houses-to-replace-hotel');
 	});
+
+	it('canSellEven: returns true when evenBuild is off', () => {
+		const room = makeRoom();
+		room.rules.evenBuild = false;
+		const p = room.players[0];
+		giveMonopoly(room, p, 'brown');
+		room.tileState[1].houses = 2;
+		room.tileState[3].houses = 0;
+		const r = property.sellHouse(room, p, 1);
+		expect(r.ok).toBe(true);
+		expect(room.tileState[1].houses).toBe(1);
+	});
 });

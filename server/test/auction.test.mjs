@@ -232,4 +232,33 @@ describe('maybeCloseOnTimeout', () => {
 		expect(result).not.toBeNull();
 		expect(result.ok).toBe(true);
 	});
+
+	it('pass: already passed player gets error', () => {
+		const room = makeRoom();
+		auction.startAuction(room, 1);
+		auction.pass(room, room.players[0]);
+		const r = auction.pass(room, room.players[0]);
+		expect(r.ok).toBe(false);
+		expect(r.error).toBe('already-passed');
+	});
+
+	it('resolveAuction: winner has insufficient cash', () => {
+		const room = makeRoom();
+		auction.startAuction(room, 1);
+		auction.placeBid(room, room.players[0], 100);
+		room.players[0].cash = 50;
+		auction.pass(room, room.players[1]);
+		expect(room.auction).toBeNull();
+		expect(room.tileState[1].owner).toBeNull();
+	});
+
+	it('resolveAuction: ghost bidder not found', () => {
+		const room = makeRoom();
+		auction.startAuction(room, 1);
+		room.auction.currentBid = 100;
+		room.auction.currentBidder = 'ghost-user';
+		auction.pass(room, room.players[0]);
+		auction.pass(room, room.players[1]);
+		expect(room.tileState[1].owner).toBeNull();
+	});
 });

@@ -293,4 +293,145 @@ describe('trade with jail cards', () => {
 		expect(room.jailFreeLedger[from.userId].chance).toBe(0);
 		expect(from.cash).toBe(1700); // 1500 + 200
 	});
+
+	it('executeTrade: from-insufficient cash at execution', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		room.tileState[1].owner = from.userId;
+		from.owned.push(1);
+		const prop = trade.proposeTrade(room, from, to.userId, {
+			cash: 100,
+			properties: [1],
+			jailCards: { chance: 0, chest: 0 },
+		});
+		from.cash = 50;
+		room.trades[0].offer.cash = 100;
+		room.trades[0].acceptedBy = [];
+		trade.acceptTrade(room, to, prop.trade.id);
+		const r = trade.acceptTrade(room, from, prop.trade.id);
+		expect(r.ok).toBe(true);
+		expect(room.trades[0].status).toBe('rejected');
+	});
+
+	it('executeTrade: to-insufficient cash', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		room.tileState[1].owner = from.userId;
+		from.owned.push(1);
+		const prop = trade.proposeTrade(
+			room,
+			from,
+			to.userId,
+			{ cash: 0, properties: [1], jailCards: { chance: 0, chest: 0 } },
+			{ cash: 2000, properties: [], jailCards: { chance: 0, chest: 0 } },
+		);
+		to.cash = 100;
+		room.trades[0].request.cash = 2000;
+		room.trades[0].acceptedBy = [];
+		trade.acceptTrade(room, to, prop.trade.id);
+		const r = trade.acceptTrade(room, from, prop.trade.id);
+		expect(r.ok).toBe(true);
+		expect(room.trades[0].status).toBe('rejected');
+	});
+
+	it('executeTrade: from-not-owner', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		room.tileState[1].owner = to.userId;
+		to.owned.push(1);
+		const prop = trade.proposeTrade(room, from, to.userId, {
+			cash: 0,
+			properties: [],
+			jailCards: { chance: 0, chest: 0 },
+		});
+		room.trades[0].offer.properties = [1];
+		room.trades[0].acceptedBy = [];
+		trade.acceptTrade(room, to, prop.trade.id);
+		const r = trade.acceptTrade(room, from, prop.trade.id);
+		expect(r.ok).toBe(true);
+		expect(room.trades[0].status).toBe('rejected');
+	});
+
+	it('executeTrade: to-not-owner', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		room.tileState[1].owner = from.userId;
+		from.owned.push(1);
+		const prop = trade.proposeTrade(
+			room,
+			from,
+			to.userId,
+			{ cash: 0, properties: [1], jailCards: { chance: 0, chest: 0 } },
+			{ cash: 0, properties: [6], jailCards: { chance: 0, chest: 0 } },
+		);
+		room.trades[0].request.properties = [6];
+		room.trades[0].acceptedBy = [];
+		trade.acceptTrade(room, to, prop.trade.id);
+		const r = trade.acceptTrade(room, from, prop.trade.id);
+		expect(r.ok).toBe(true);
+		expect(room.trades[0].status).toBe('rejected');
+	});
+
+	it('executeTrade: from-no-card', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		const prop = trade.proposeTrade(room, from, to.userId, {
+			cash: 0,
+			properties: [],
+			jailCards: { chance: 1, chest: 0 },
+		});
+		room.trades[0].offer.jailCards = { chance: 1, chest: 0 };
+		room.trades[0].acceptedBy = [];
+		trade.acceptTrade(room, to, prop.trade.id);
+		const r = trade.acceptTrade(room, from, prop.trade.id);
+		expect(r.ok).toBe(true);
+		expect(room.trades[0].status).toBe('rejected');
+	});
+
+	it('executeTrade: to-no-card', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		const prop = trade.proposeTrade(
+			room,
+			from,
+			to.userId,
+			{ cash: 0, properties: [], jailCards: { chance: 0, chest: 0 } },
+			{ cash: 0, properties: [], jailCards: { chance: 1, chest: 0 } },
+		);
+		room.trades[0].request.jailCards = { chance: 1, chest: 0 };
+		room.trades[0].acceptedBy = [];
+		trade.acceptTrade(room, to, prop.trade.id);
+		const r = trade.acceptTrade(room, from, prop.trade.id);
+		expect(r.ok).toBe(true);
+		expect(room.trades[0].status).toBe('rejected');
+	});
+
+	it('rejectOrCancelTrade: from cancels, to rejects', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		const p1 = trade.proposeTrade(room, from, to.userId);
+		trade.rejectOrCancelTrade(room, from, p1.trade.id);
+		expect(room.trades[0].status).toBe('cancelled');
+		const p2 = trade.proposeTrade(room, from, to.userId);
+		trade.rejectOrCancelTrade(room, to, p2.trade.id);
+		expect(room.trades[1].status).toBe('rejected');
+	});
+
+	it('acceptTrade: already accepted', () => {
+		const room = makeRoom();
+		const from = room.players[0];
+		const to = room.players[1];
+		const prop = trade.proposeTrade(room, from, to.userId);
+		trade.acceptTrade(room, to, prop.trade.id);
+		const r = trade.acceptTrade(room, to, prop.trade.id);
+		expect(r.ok).toBe(false);
+		expect(r.error).toBe('already-accepted');
+	});
 });

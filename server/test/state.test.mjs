@@ -299,4 +299,48 @@ describe('TOKEN_COLORS', () => {
 			expect(c.name).toBeTruthy();
 		}
 	});
+
+	it('getPlayer returns null for non-player', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		expect(getPlayer(room, 'nobody')).toBeNull();
+	});
+
+	it('getSpectator returns null for non-spectator', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		expect(getSpectator(room, 'nobody')).toBeNull();
+	});
+
+	it('getOccupant returns spectator when not a player', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		room.spectators.push({ userId: 'spec-1', username: 'Watcher', socketId: 's1' });
+		expect(getOccupant(room, 'spec-1').username).toBe('Watcher');
+	});
+
+	it('getOccupant returns null for unknown user', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		expect(getOccupant(room, 'ghost')).toBeNull();
+	});
+});
+
+describe('state lookups', () => {
+	it('getPlayer returns null for non-player', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		expect(getPlayer(room, 'nobody')).toBeNull();
+	});
+
+	it('getSpectator returns null for non-spectator', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		expect(getSpectator(room, 'nobody')).toBeNull();
+	});
+
+	it('getOccupant returns spectator when not a player', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		room.spectators.push({ userId: 'spec-1', username: 'Watcher', socketId: 's1' });
+		expect(getOccupant(room, 'spec-1').username).toBe('Watcher');
+	});
+
+	it('getOccupant returns null for unknown user', () => {
+		const room = createRoom({ hostUserId: 'h', hostUsername: 'A', hostColor: '#EF4444' });
+		expect(getOccupant(room, 'ghost')).toBeNull();
+	});
 });
