@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 
@@ -252,13 +252,15 @@ describe('engine edge cases', () => {
 		expect(landLog).toBeDefined();
 	});
 
-	it('rollAndMove logs pass-go when crossing GO', () => {
+	it('rollAndMove emits roll event with dice recorded', () => {
 		const room = makeRoom();
 		const p = room.players[0];
-		p.position = 39; // Crossing GO almost certainly
-		engine.rollAndMove(room, p);
-		// May or may not pass go depending on dice, but action was logged
-		expect(room.actionLog.some((e) => e.kind === 'roll')).toBe(true);
+		p.position = 39;
+		const r = engine.rollAndMove(room, p);
+		expect(r.ok).toBe(true);
+		// Dice were recorded
+		expect(room.lastDice).toHaveLength(2);
+		expect(room.lastDiceRoller).toBe(p.userId);
 	});
 
 	it('buyCurrent sets turn phase based on doubles', () => {

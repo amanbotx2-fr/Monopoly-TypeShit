@@ -82,9 +82,9 @@ describe('noPayload', () => {
 
 describe('oneObjectPayload', () => {
 	it('accepts one object', () => {
-		const r = validation.oneObjectPayload([{ x: 1 }], 'test');
-		expect(r.ok).toBe(true);
-		expect(r.value).toEqual({ x: 1 });
+		const result = validation.oneObjectPayload([{ x: 1 }], 'test');
+		expect(result.ok).toBe(true);
+		expect(result.value).toEqual({ x: 1 });
 	});
 
 	it('rejects non-object', () => {
@@ -95,11 +95,6 @@ describe('oneObjectPayload', () => {
 
 // ─── String / number / boolean fields ────────────────────────────────────────
 describe('stringField', () => {
-	it('validates a string within bounds', () => {
-		const r = validation.finiteNumber; // Use exports
-	});
-
-	// We can test these indirectly via the public validators
 	it('roomCode validates correctly', () => {
 		expect(validation.roomCode('ABCDEF').ok).toBe(true);
 		expect(validation.roomCode('abcdef').ok).toBe(true);

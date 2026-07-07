@@ -4,13 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const require = createRequire(import.meta.url);
 
 const {
-	positiveInt,
-	hashId,
 	checkRateLimit,
 	socketRateLimit,
 	socketConnectionRateLimit,
 	resetRateLimitState,
-	abuseLog,
 } = require('../abuse/rateLimit');
 const { activeRooms, deleteRoom } = require('../game/state');
 

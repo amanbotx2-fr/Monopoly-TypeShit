@@ -18,7 +18,7 @@ const {
 	socketRateLimit,
 	abuseLog,
 } = require('../abuse/rateLimit');
-const { activeRooms, deleteRoom, createRoom } = require('../game/state');
+const { activeRooms, deleteRoom } = require('../game/state');
 
 beforeEach(() => {
 	for (const [code] of activeRooms) deleteRoom(code);

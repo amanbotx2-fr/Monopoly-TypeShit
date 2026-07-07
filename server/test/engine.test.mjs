@@ -773,7 +773,7 @@ describe('resolveLanding', () => {
 		const p = room.players[0];
 		p.position = 0;
 		room.turnPhase = 'moving';
-		const events = engine.resolveLanding(room, p, [2, 3]);
+		engine.resolveLanding(room, p, [2, 3]);
 		expect(room.turnPhase).toBe('moving');
 	});
 
@@ -876,7 +876,7 @@ describe('resolveLanding', () => {
 		const p = room.players[0];
 		p.position = 30;
 		room.turnPhase = 'moving';
-		const events = engine.resolveLanding(room, p, [2, 3]);
+		engine.resolveLanding(room, p, [2, 3]);
 		expect(p.inJail).toBe(true);
 		expect(p.position).toBe(10);
 	});
@@ -995,7 +995,7 @@ describe('applyCardEffect', () => {
 		const room = makeRoom();
 		const p = room.players[0];
 		const card = { id: 'x', deck: 'chance', effect: { kind: 'money', amount: 50 }, text: 't' };
-		const { events, reland } = engine.applyCardEffect(room, p, card);
+		const { reland } = engine.applyCardEffect(room, p, card);
 		expect(p.cash).toBe(1550);
 		expect(reland).toBe(false);
 	});
@@ -1152,7 +1152,7 @@ describe('applyCardEffect', () => {
 			effect: { kind: 'moveToNearest', target: 'station', rentMult: 2 },
 			text: 't',
 		};
-		const { reland } = engine.applyCardEffect(room, p, card);
+		engine.applyCardEffect(room, p, card);
 		expect(p.position).toBe(5);
 	});
 
@@ -1166,7 +1166,7 @@ describe('applyCardEffect', () => {
 			effect: { kind: 'moveToNearest', target: 'utility', rentMult: 10 },
 			text: 't',
 		};
-		const { reland } = engine.applyCardEffect(room, p, card);
+		engine.applyCardEffect(room, p, card);
 		expect(p.position).toBe(12);
 	});
 
@@ -1180,7 +1180,7 @@ describe('applyCardEffect', () => {
 			effect: { kind: 'moveToNearest', target: 'station', rentMult: 2 },
 			text: 't',
 		};
-		const { reland } = engine.applyCardEffect(room, p, card);
+		engine.applyCardEffect(room, p, card);
 		expect(p.position).toBe(5);
 	});
 

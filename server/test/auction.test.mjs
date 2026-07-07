@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 
@@ -171,7 +171,7 @@ describe('resolveAuction', () => {
 		const room = makeRoom();
 		auction.startAuction(room, 1);
 		auction.pass(room, room.players[0]);
-		const r = auction.pass(room, room.players[1]);
+		auction.pass(room, room.players[1]);
 		expect(room.turnPhase).not.toBe('auctioning');
 	});
 
@@ -228,8 +228,8 @@ describe('maybeCloseOnTimeout', () => {
 		const room = makeRoom();
 		auction.startAuction(room, 1);
 		room.auction.endsAt = Date.now() - 1;
-		const r = auction.maybeCloseOnTimeout(room);
-		expect(r).not.toBeNull();
-		expect(r.ok).toBe(true);
+		const result = auction.maybeCloseOnTimeout(room);
+		expect(result).not.toBeNull();
+		expect(result.ok).toBe(true);
 	});
 });

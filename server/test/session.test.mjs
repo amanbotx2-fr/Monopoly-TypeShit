@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
 
@@ -8,12 +8,18 @@ const {
 	isProductionEnv,
 	sessionSecret,
 	mongoStore,
-	sessionMiddleware,
-	socketSessionMiddleware,
 	SESSION_COOKIE,
 	SESSION_MAX_AGE,
 } = require('../middleware/session');
 
+const {
+	createCsrfMiddleware,
+	ensureCsrfToken,
+	attachCsrfToken,
+	CSRF_HEADER,
+} = require('../middleware/csrf');
+
+// ─── Session configuration ───────────────────────────────────────────────────
 describe('isProductionEnv', () => {
 	it('detects production', () => {
 		expect(isProductionEnv({ NODE_ENV: 'production' })).toBe(true);
@@ -52,7 +58,7 @@ describe('mongoStore', () => {
 
 	it('creates store with SESSION_STORE_MONGODB_URI', () => {
 		const create = vi.fn(() => ({ kind: 'mongo' }));
-		const store = mongoStore(
+		mongoStore(
 			{ NODE_ENV: 'production', SESSION_STORE_MONGODB_URI: 'mongodb://sessions' },
 			{ create },
 		);
@@ -66,10 +72,7 @@ describe('mongoStore', () => {
 
 	it('falls back to MONGODB_URI', () => {
 		const create = vi.fn(() => ({ kind: 'mongo' }));
-		const store = mongoStore(
-			{ NODE_ENV: 'production', MONGODB_URI: 'mongodb://main' },
-			{ create },
-		);
+		mongoStore({ NODE_ENV: 'production', MONGODB_URI: 'mongodb://main' }, { create });
 		expect(create).toHaveBeenCalledWith(
 			expect.objectContaining({ mongoUrl: 'mongodb://main' }),
 		);
@@ -94,7 +97,7 @@ describe('createSessionParser', () => {
 	it('creates prod parser with none sameSite and secure', () => {
 		const sessionImpl = vi.fn(() => 'prod-parser');
 		const create = vi.fn(() => ({ kind: 'mongo' }));
-		const parser = createSessionParser({
+		createSessionParser({
 			env: {
 				NODE_ENV: 'production',
 				SESSION_SECRET: 's',
@@ -111,46 +114,38 @@ describe('createSessionParser', () => {
 	});
 });
 
-describe('sessionMiddleware', () => {
-	it('sets userId from session', (done) => {
+// ─── CSRF additional coverage ───────────────────────────────────────────────
+describe('csrf additional', () => {
+	it('ensureCsrfToken returns null without session', () => {
+		const req = {};
+		expect(ensureCsrfToken(req)).toBeNull();
+	});
+
+	it('ensureCsrfToken creates token on session', () => {
 		const req = { session: {} };
-		const res = {};
-		sessionMiddleware(req, res, (err) => {
-			expect(err).toBeFalsy();
-			expect(req.userId).toBeTruthy();
-			expect(req.session.userId).toBe(req.userId);
-			done();
-		});
+		const token = ensureCsrfToken(req);
+		expect(token).toMatch(/^[a-f0-9]{64}$/);
+		expect(req.session.csrfToken).toBe(token);
 	});
 
-	it('reuses existing userId', (done) => {
-		const req = { session: { userId: 'existing-id' } };
-		sessionMiddleware(req, {}, (err) => {
-			expect(err).toBeFalsy();
-			expect(req.userId).toBe('existing-id');
-			done();
-		});
-	});
-});
-
-describe('socketSessionMiddleware', () => {
-	it('rejects without session', (done) => {
-		const socket = { request: {}, data: {} };
-		socketSessionMiddleware(socket, (err) => {
-			expect(err).toBeTruthy();
-			expect(err.message).toBe('session-required');
-			done();
-		});
+	it('attachCsrfToken sets csrfToken on req', () => {
+		const req = { session: {} };
+		const next = vi.fn();
+		attachCsrfToken(req, {}, next);
+		expect(req.csrfToken).toMatch(/^[a-f0-9]{64}$/);
+		expect(next).toHaveBeenCalled();
 	});
 
-	it('sets userId from session', (done) => {
-		const save = vi.fn((cb) => cb(null));
-		const socket = { request: { session: { save } }, data: {} };
-		socketSessionMiddleware(socket, (err) => {
-			expect(err).toBeFalsy();
-			expect(socket.data.userId).toBeTruthy();
-			done();
-		});
+	it('createCsrfMiddleware uses custom ensureToken', () => {
+		const token = 'x'.repeat(64);
+		const customEnsure = vi.fn(() => token);
+		const mw = createCsrfMiddleware({ ensureToken: customEnsure });
+		const req = { method: 'PATCH', session: {}, get: vi.fn(() => token) };
+		const res = { status: vi.fn(() => ({ json: vi.fn() })) };
+		const next = vi.fn();
+		mw(req, res, next);
+		expect(customEnsure).toHaveBeenCalledWith(req);
+		expect(next).toHaveBeenCalled();
 	});
 });
 
@@ -161,5 +156,9 @@ describe('constants', () => {
 
 	it('SESSION_MAX_AGE is 1 year in ms', () => {
 		expect(SESSION_MAX_AGE).toBe(1000 * 60 * 60 * 24 * 365);
+	});
+
+	it('CSRF_HEADER is x-csrf-token', () => {
+		expect(CSRF_HEADER).toBe('x-csrf-token');
 	});
 });

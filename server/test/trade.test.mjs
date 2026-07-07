@@ -234,7 +234,7 @@ describe('executeTrade', () => {
 		});
 		// Manually bypass validation
 		room.trades[0].offer.cash = 99999;
-		const exec = trade.acceptTrade(room, from, prop.trade.id);
+		trade.acceptTrade(room, from, prop.trade.id);
 		// The trade should execute when both accept
 	});
 
