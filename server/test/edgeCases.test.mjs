@@ -25,6 +25,7 @@ function makeRoom() {
 	});
 	room.players.push(p2);
 	room.started = true;
+	room.turnPhase = 'awaiting-roll';
 	return room;
 }
 
