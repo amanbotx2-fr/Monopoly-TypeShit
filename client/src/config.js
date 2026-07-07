@@ -1,7 +1,9 @@
 const DEFAULT_BACKEND_URL = 'http://localhost:5004';
 
 function normalizeBaseUrl(url) {
-	return String(url || '').trim().replace(/\/+$/, '');
+	return String(url || '')
+		.trim()
+		.replace(/\/+$/, '');
 }
 
 function resolveBackendUrl(value, name) {

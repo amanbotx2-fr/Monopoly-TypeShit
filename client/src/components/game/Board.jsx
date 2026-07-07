@@ -17,13 +17,28 @@ export default function Board({
 	me,
 	isMyTurn,
 	onTileClick,
+	hoveredPlayer,
+	onHoverPlayer,
 }) {
 	const [hovered, setHovered] = useState(null);
-	const [hoveredPlayer, setHoveredPlayer] = useState(null);
 	const tiles = room?.board?.tiles || [];
 	const tileState = room?.tileState || [];
 	const players = room?.players || [];
 	const active = room?.players?.[room?.turnIndex];
+
+	// Compute which tiles to highlight when hovering a player token.
+	// Includes the player's current position and all owned properties.
+	const highlightTiles = (() => {
+		if (!hoveredPlayer) return {};
+		const p = hoveredPlayer.player;
+		const set = {};
+		// Player position gets a different highlight type.
+		if (p.position != null) set[p.position] = 'position';
+		for (const pos of p.owned || []) {
+			if (!(pos in set)) set[pos] = 'owned';
+		}
+		return set;
+	})();
 
 	return (
 		<div className="board">
@@ -35,6 +50,8 @@ export default function Board({
 					players={players}
 					onClick={() => onTileClick?.(i)}
 					onHover={(e, def) => setHovered(def ? { def, state: tileState[i], e } : null)}
+					highlight={highlightTiles[i] || null}
+					highlightColor={hoveredPlayer?.player?.color}
 				/>
 			))}
 
@@ -65,12 +82,14 @@ export default function Board({
 							isActive={active?.userId === p.userId && room?.started}
 							stackIndex={stackIdx}
 							events={events}
-							onHover={(e, pl) => setHoveredPlayer(pl ? { player: pl, e } : null)}
+							onHover={(e, pl) => onHoverPlayer(pl ? { player: pl, e } : null)}
 						/>
 					);
 				})}
 
 			<BoardOverlay room={room} events={events} players={players} />
+
+			{hoveredPlayer && <div className="board-dim" />}
 
 			{hovered && (
 				<PropertyCard

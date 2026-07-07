@@ -24,6 +24,7 @@ export default function Game({ userId, pushToast }) {
 	const { roomCode, room, events, chat, connected, act, sendChat } = useRoom({ userId });
 
 	const [diceRolling, setDiceRolling] = useState(false);
+	const [hoveredPlayer, setHoveredPlayer] = useState(null);
 	const [tradeWith, setTradeWith] = useState(null);
 	const [peekTradeId, setPeekTradeId] = useState(null);
 	const [openPropertyPos, setOpenPropertyPos] = useState(null);
@@ -172,7 +173,12 @@ export default function Game({ userId, pushToast }) {
 					<SoundToggle />
 				</header>
 
-				<PlayerStrip room={room} me={me} onTrade={(uid) => setTradeWith(uid)} />
+				<PlayerStrip
+					room={room}
+					me={me}
+					onTrade={(uid) => setTradeWith(uid)}
+					onHover={(p) => setHoveredPlayer(p)}
+				/>
 
 				<main
 					style={{
@@ -199,6 +205,8 @@ export default function Game({ userId, pushToast }) {
 							isMyTurn={isMyTurn}
 							act={act}
 							onTileClick={(pos) => setOpenPropertyPos(pos)}
+							hoveredPlayer={hoveredPlayer}
+							onHoverPlayer={setHoveredPlayer}
 						/>
 					</div>
 				</main>
@@ -279,6 +287,7 @@ export default function Game({ userId, pushToast }) {
 							isActive={active?.userId === p.userId}
 							room={room}
 							onTrade={() => setTradeWith(p.userId)}
+							onHover={(pl) => setHoveredPlayer(pl)}
 						/>
 					))}
 				</div>
@@ -321,6 +330,8 @@ export default function Game({ userId, pushToast }) {
 							isMyTurn={isMyTurn}
 							act={act}
 							onTileClick={(pos) => setOpenPropertyPos(pos)}
+							hoveredPlayer={hoveredPlayer}
+							onHoverPlayer={setHoveredPlayer}
 						/>
 					</div>
 				</div>
