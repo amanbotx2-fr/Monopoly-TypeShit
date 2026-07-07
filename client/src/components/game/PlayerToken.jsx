@@ -18,7 +18,7 @@ function stackOffset(side, idx) {
 // walks across each tile instead of teleporting.
 const STEP_MS = 160;
 
-export default function PlayerToken({ player, isActive, stackIndex, events, onHover }) {
+export default function PlayerToken({ player, isActive, stackIndex, events, onHover, boardInfo }) {
 	const [displayPos, setDisplayPos] = useState(player.position);
 	const [isJailShaking, setJailShaking] = useState(false);
 	const queueRef = useRef([]);
@@ -93,8 +93,8 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 		}
 	}, [player.position]);
 
-	const [xPct, yPct] = tokenCenter(displayPos);
-	const side = tileRect(displayPos).side;
+	const [xPct, yPct] = tokenCenter(displayPos, boardInfo);
+	const side = tileRect(displayPos, boardInfo).side;
 	const off = stackOffset(side, stackIndex);
 	const initial = (player.username || '?').trim()[0]?.toUpperCase() || '?';
 	const isLight = ['#FFFFFF', '#FACC15', '#FEF200'].includes(player.color?.toUpperCase());

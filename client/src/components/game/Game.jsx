@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
 import Board from './Board';
+import { DICE_TOTAL_MS } from './Dice';
 import PlayerPanel from './PlayerPanel';
 import PlayerStrip from './PlayerStrip';
 import ChatPanel from './ChatPanel';
@@ -38,7 +39,7 @@ export default function Game({ userId, pushToast }) {
 		if (!last) return;
 		if (last.type === 'roll') {
 			const t1 = setTimeout(() => setDiceRolling(true));
-			const t2 = setTimeout(() => setDiceRolling(false), 1150);
+			const t2 = setTimeout(() => setDiceRolling(false), DICE_TOTAL_MS);
 			return () => {
 				clearTimeout(t1);
 				clearTimeout(t2);
