@@ -1,17 +1,35 @@
 import React from 'react';
+import { flagUrl } from '../../flagUtils.js';
 
 // Detailed property info — rent table, mortgage value, houses. Used as a
 // hover popup on the board and inside the trade / property panels.
 export default function PropertyCard({ def, state, players, style, compact: _compact }) {
 	if (!def) return null;
 	const owner = state?.owner ? players?.find((p) => p.userId === state.owner) : null;
+	const flag = flagUrl(def.name);
 
 	if (def.type === 'property') {
 		return (
 			<div className="prop-popup fade-in" style={style}>
 				<div style={{ background: def.color, height: 20 }} />
 				<div style={{ padding: 12 }}>
-					<div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{def.name}</div>
+					<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+						{flag && (
+							<img
+								src={flag}
+								alt=""
+								style={{
+									width: 20,
+									height: 20,
+									borderRadius: '50%',
+									objectFit: 'cover',
+									flexShrink: 0,
+									border: '1px solid rgba(255,255,255,0.15)',
+								}}
+							/>
+						)}
+						<div style={{ fontSize: 14, fontWeight: 700 }}>{def.name}</div>
+					</div>
 					<div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
 						Price ${def.price} · Mortgage ${def.mortgage} · House ${def.houseCost}
 					</div>
