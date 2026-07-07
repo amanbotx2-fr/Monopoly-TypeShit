@@ -39,6 +39,9 @@ coverage/
 .cache/
 .parcel-cache/
 
+# vite
+.vite/
+
 # local dbs / dumps
 *.sqlite
 *.sqlite3
