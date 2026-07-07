@@ -1,6 +1,6 @@
 // Thin fetch wrapper for the monopoly REST routes. Socket traffic is handled
-// separately in socket.js. Deployed clients use VITE_API_URL; local dev
-// falls back to the Node backend on localhost:5004.
+// separately in socket.js. Deployed clients must provide VITE_API_URL; local
+// dev falls back to the Node backend on localhost:5004.
 
 import { API_BASE } from './config';
 
