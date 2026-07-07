@@ -8,9 +8,9 @@ import {
 	Coins,
 	Car,
 	PlayCircle,
-	Lock,
 	Palmtree,
 } from 'lucide-react';
+import { flagUrl } from '../../flagUtils.js';
 
 // Side is passed in from Board.jsx — no hardcoded position logic here.
 export default function Tile({ def, side, gridArea, state, players, onClick, onHover, highlight, highlightColor }) {
@@ -66,6 +66,13 @@ export default function Tile({ def, side, gridArea, state, players, onClick, onH
 			{def.type === 'property' && def.color && (
 				<div className="tile-color-bar" style={{ background: def.color }}>
 					<HouseRow state={state} side={side} />
+				</div>
+			)}
+
+			{/* Flag circle at inner edge (properties only, like RichUp) */}
+			{def.type === 'property' && flagUrl(def.name) && (
+				<div className="tile-flag">
+					<img src={flagUrl(def.name)} alt={def.name} loading="lazy" />
 				</div>
 			)}
 
