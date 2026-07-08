@@ -18,7 +18,7 @@ import {
 //   • name + price stacked in the tile body, horizontally centered
 //   • a reserved strip on the inner edge holds houses + token slot so they
 //     never overlap the name
-export default function Tile({ def, state, players, onClick, onHover }) {
+export default function Tile({ def, state, players, onClick, onHover, highlight, highlightColor }) {
 	const rect = tileRect(def.pos);
 	const inner = innerEdge(rect.side);
 	const mortgaged = state?.mortgaged;
@@ -33,15 +33,29 @@ export default function Tile({ def, state, players, onClick, onHover }) {
 		height: rect.height + '%',
 	};
 
+	const tileClass = [
+		'tile',
+		rect.side,
+		mortgaged ? 'mortgaged' : '',
+		isClickable ? 'clickable' : '',
+		highlight ? `highlight-${highlight}` : '',
+	]
+		.filter(Boolean)
+		.join(' ');
+
 	return (
 		<div
-			className={`tile ${rect.side} ${mortgaged ? 'mortgaged' : ''} ${isClickable ? 'clickable' : ''}`}
+			className={tileClass}
 			style={baseStyle}
 			onClick={isClickable ? onClick : undefined}
 			onMouseEnter={(e) => isClickable && onHover?.(e, def)}
 			onMouseLeave={() => onHover?.(null, null)}
 		>
 			{ownerColor && <OwnerStripe side={rect.side} color={ownerColor} />}
+
+			{highlight === 'position' && (
+				<div className="position-highlight" style={{ '--hl-color': highlightColor }} />
+			)}
 
 			{rect.side === 'corner' ? (
 				<CornerContent def={def} />

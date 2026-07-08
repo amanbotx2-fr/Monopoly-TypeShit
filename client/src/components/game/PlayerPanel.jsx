@@ -1,7 +1,7 @@
 import React from 'react';
 import { Handshake, Lock } from 'lucide-react';
 
-export default function PlayerPanel({ p, isMe, isActive, room, onTrade }) {
+export default function PlayerPanel({ p, isMe, isActive, room, onTrade, onHover }) {
 	const ownedCount = p.owned?.length || 0;
 	const jailCards =
 		(room.jailFreeLedger?.[p.userId]?.chance || 0) +
@@ -17,6 +17,8 @@ export default function PlayerPanel({ p, isMe, isActive, room, onTrade }) {
 				opacity: p.bankrupt ? 0.4 : 1,
 				transition: 'border-color 0.2s, box-shadow 0.2s',
 			}}
+			onMouseEnter={() => onHover?.({ player: p })}
+			onMouseLeave={() => onHover?.(null)}
 		>
 			<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 				<div

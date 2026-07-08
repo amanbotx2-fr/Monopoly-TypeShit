@@ -3,7 +3,7 @@ import { Handshake, Lock } from 'lucide-react';
 
 // Compact horizontal player list for mobile. Each chip shows color dot, name,
 // cash, and a trade button for other players. Active turn is highlighted.
-export default function PlayerStrip({ room, me, onTrade }) {
+export default function PlayerStrip({ room, me, onTrade, onHover }) {
 	const active = room.players[room.turnIndex];
 	return (
 		<div
@@ -38,6 +38,8 @@ export default function PlayerStrip({ room, me, onTrade }) {
 							scrollSnapAlign: 'start',
 							position: 'relative',
 						}}
+						onMouseEnter={() => onHover?.({ player: p })}
+						onMouseLeave={() => onHover?.(null)}
 					>
 						<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
 							<span
