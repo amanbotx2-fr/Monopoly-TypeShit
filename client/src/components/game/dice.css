@@ -37,13 +37,59 @@
 	transform: rotateX(35deg) rotateZ(45deg);
 }
 
-/* ── Cube — CSS transition does ALL animation ──────────────────────── */
+/* ── Cube ─────────────────────────────────────────────────────────── */
 .dice-cube {
 	position: relative;
 	width: var(--ds);
 	height: var(--ds);
 	transform-style: preserve-3d;
-	transition: transform 1s cubic-bezier(0, 0, 0, 1);
+	will-change: transform;
+	/* transform + transition are managed entirely by JS (Dice.jsx) */
+}
+
+/* Spin animations — NO CSS custom properties in keyframes (they break) */
+/* !important beats theme.css @media (prefers-reduced-motion) 1ms override */
+.dice-spin {
+	animation: dice-spin 0.15s ease-in-out infinite !important;
+}
+.dice-spin-alt {
+	animation: dice-spin-alt 0.13s ease-in-out infinite !important;
+}
+
+@keyframes dice-spin {
+	0% {
+		transform: rotateZ(0deg) rotateX(0deg) rotateY(0deg);
+	}
+	25% {
+		transform: rotateZ(60deg) rotateX(180deg) rotateY(90deg);
+	}
+	50% {
+		transform: rotateZ(-40deg) rotateX(270deg) rotateY(200deg);
+	}
+	75% {
+		transform: rotateZ(80deg) rotateX(330deg) rotateY(300deg);
+	}
+	100% {
+		transform: rotateZ(0deg) rotateX(360deg) rotateY(360deg);
+	}
+}
+
+@keyframes dice-spin-alt {
+	0% {
+		transform: rotateZ(0deg) rotateX(0deg) rotateY(0deg);
+	}
+	25% {
+		transform: rotateZ(-70deg) rotateX(-160deg) rotateY(-100deg);
+	}
+	50% {
+		transform: rotateZ(50deg) rotateX(-260deg) rotateY(-210deg);
+	}
+	75% {
+		transform: rotateZ(-90deg) rotateX(-310deg) rotateY(-310deg);
+	}
+	100% {
+		transform: rotateZ(0deg) rotateX(-360deg) rotateY(-360deg);
+	}
 }
 
 /* ── Faces ─────────────────────────────────────────────────────────── */

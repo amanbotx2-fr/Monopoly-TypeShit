@@ -28,7 +28,6 @@ export default function Board({
 	const tileState = room?.tileState || [];
 	const players = room?.players || [];
 	const active = room?.players?.[room?.turnIndex];
-
 	// Analyze board once — derives corner positions and side count from tile types.
 	const boardInfo = useMemo(() => analyzeBoard(tiles), [tiles]);
 
@@ -48,9 +47,7 @@ export default function Board({
 	const cornerTiles = useMemo(() => {
 		if (!boardInfo) return [];
 		const { goPos, jailPos, parkingPos, gotoprisonPos } = boardInfo;
-		return tiles.filter((t) =>
-			[goPos, jailPos, parkingPos, gotoprisonPos].includes(t.pos),
-		);
+		return tiles.filter((t) => [goPos, jailPos, parkingPos, gotoprisonPos].includes(t.pos));
 	}, [tiles, boardInfo]);
 
 	const topTiles = useMemo(() => {
@@ -102,24 +99,16 @@ export default function Board({
 			{cornerTiles.map(renderTile)}
 
 			{/* Top row */}
-			<div className="side-row side-row-top">
-				{topTiles.map(renderTile)}
-			</div>
+			<div className="side-row side-row-top">{topTiles.map(renderTile)}</div>
 
 			{/* Right column */}
-			<div className="side-col side-col-right">
-				{rightTiles.map(renderTile)}
-			</div>
+			<div className="side-col side-col-right">{rightTiles.map(renderTile)}</div>
 
 			{/* Bottom row */}
-			<div className="side-row side-row-bottom">
-				{bottomTiles.map(renderTile)}
-			</div>
+			<div className="side-row side-row-bottom">{bottomTiles.map(renderTile)}</div>
 
 			{/* Left column */}
-			<div className="side-col side-col-left">
-				{leftTiles.map(renderTile)}
-			</div>
+			<div className="side-col side-col-left">{leftTiles.map(renderTile)}</div>
 
 			{/* Center area */}
 			<div className="board-center">
@@ -128,7 +117,8 @@ export default function Board({
 					<Dice dice={room?.lastDice} rolling={diceRolling} />
 					{room?.lastDiceRoller && (
 						<div className="dice-roller">
-							{players.find((p) => p.userId === room.lastDiceRoller)?.username || '—'} rolled
+							{players.find((p) => p.userId === room.lastDiceRoller)?.username || '—'}{' '}
+							rolled
 						</div>
 					)}
 					<ActionBar room={room} me={me} isMyTurn={isMyTurn} act={act} />
