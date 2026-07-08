@@ -101,10 +101,7 @@
 
 ---
 
-- [xgit add docs/Tasks.md
-git commit -m "docs(tasks): mark T6 as completed"
-git push -u origin aman/tasks-update-t6
-] T6: After dice animation and after the player moves to the new position, the turn options should appear — not before that.
+- [x] T6: After dice animation and after the player moves to the new position, the turn options should appear — not before that.
 
 ---
 
