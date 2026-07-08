@@ -1,4 +1,27 @@
-// City → ISO 3166-1 alpha-2 country codes for flag images.
+/**
+ * Returns the icon path for a tile def, or null.
+ *
+ * Priority:
+ *   1. `def.icon` — set by the board definition (supports custom maps).
+ *   2. Country-flag fallback for legacy property tiles without explicit icon.
+ *
+ * Paths are relative to the public/ folder (e.g. "flags/eg.svg").
+ *
+ * @param {{ icon?: string, type?: string, name?: string }} def
+ * @returns {string|null}
+ */
+export function tileIcon(def) {
+	if (!def) return null;
+	if (def.icon) return def.icon;
+	// Legacy fallback for default-board property tiles
+	if (def.type === 'property') {
+		const code = CITY_COUNTRY[def.name];
+		return code ? `/flags/${code}.svg` : null;
+	}
+	return null;
+}
+
+// City → ISO 3166-1 alpha-2 country codes (used as fallback when def.icon is unset).
 const CITY_COUNTRY = {
 	Cairo: 'eg',
 	Lagos: 'ng',
@@ -24,12 +47,3 @@ const CITY_COUNTRY = {
 	Tokyo: 'jp',
 };
 
-/**
- * Returns a flagcdn.com URL for the given city name, or null if unknown.
- * @param {string} cityName
- * @returns {string|null}
- */
-export function flagUrl(cityName) {
-	const code = CITY_COUNTRY[cityName];
-	return code ? `https://flagcdn.com/w80/${code}.png` : null;
-}

@@ -28,6 +28,34 @@ const GROUPS = {
 	dblue: '#0072BB',
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// City → ISO 3166-1 alpha-2 country codes for flag SVGs.
+const CITY_COUNTRY = {
+	Cairo: 'eg',
+	Lagos: 'ng',
+	Bangkok: 'th',
+	Jakarta: 'id',
+	Manila: 'ph',
+	Lisbon: 'pt',
+	Madrid: 'es',
+	Barcelona: 'es',
+	Vienna: 'at',
+	Prague: 'cz',
+	Warsaw: 'pl',
+	Dubai: 'ae',
+	Mumbai: 'in',
+	Delhi: 'in',
+	Seoul: 'kr',
+	Osaka: 'jp',
+	Singapore: 'sg',
+	Stockholm: 'se',
+	Amsterdam: 'nl',
+	Paris: 'fr',
+	London: 'gb',
+	Tokyo: 'jp',
+};
+
 // Rent structure: [base, 1h, 2h, 3h, 4h, hotel]. Classic Monopoly values; the
 // rent math isn't copyrightable but the street names are, so we rename tiles.
 function property(pos, name, group, price, rent, houseCost, mortgage = null) {
@@ -41,43 +69,47 @@ function property(pos, name, group, price, rent, houseCost, mortgage = null) {
 		houseCost, // cost per house AND per hotel (hotel = 4h + 1 more)
 		mortgage: mortgage ?? Math.floor(price / 2),
 		color: GROUPS[group],
+		icon: CITY_COUNTRY[name] ? `/flags/${CITY_COUNTRY[name]}.svg` : undefined,
 	};
 }
 
 function station(pos, name, price = 200) {
-	return { pos, type: 'station', name, price, mortgage: price / 2 };
+	return { pos, type: 'station', name, price, mortgage: price / 2, icon: '/icons/station.svg' };
 }
 
 function utility(pos, name, price = 150) {
-	return { pos, type: 'utility', name, price, mortgage: price / 2 };
+	const icon = name.toLowerCase().includes('electric')
+		? '/icons/utility-power.svg'
+		: '/icons/utility-water.svg';
+	return { pos, type: 'utility', name, price, mortgage: price / 2, icon };
 }
 
 // ─── Default board: "World Tour" ──────────────────────────────────────────────
 // 40 tiles, indexed 0..39 clockwise from GO (bottom-right corner).
 const WORLD_TOUR_TILES = [
-	{ pos: 0, type: 'go', name: 'GO' },
+	{ pos: 0, type: 'go', name: 'GO', icon: '/icons/go.svg' },
 	property(1, 'Cairo', 'brown', 60, [2, 10, 30, 90, 160, 250], 50),
-	{ pos: 2, type: 'chest', name: 'Community Chest' },
+	{ pos: 2, type: 'chest', name: 'Community Chest', icon: '/icons/chest.svg' },
 	property(3, 'Lagos', 'brown', 60, [4, 20, 60, 180, 320, 450], 50),
-	{ pos: 4, type: 'tax', name: 'Income Tax', amount: 200 },
+	{ pos: 4, type: 'tax', name: 'Income Tax', amount: 200, icon: '/icons/tax-income.svg' },
 	station(5, 'Istanbul'),
 	property(6, 'Bangkok', 'lblue', 100, [6, 30, 90, 270, 400, 550], 50),
-	{ pos: 7, type: 'chance', name: 'Chance' },
+	{ pos: 7, type: 'chance', name: 'Chance', icon: '/icons/chance.svg' },
 	property(8, 'Jakarta', 'lblue', 100, [6, 30, 90, 270, 400, 550], 50),
 	property(9, 'Manila', 'lblue', 120, [8, 40, 100, 300, 450, 600], 50),
-	{ pos: 10, type: 'jail', name: 'Jail / Just Visiting' },
+	{ pos: 10, type: 'jail', name: 'Jail / Just Visiting', icon: '/icons/jail.svg' },
 	property(11, 'Lisbon', 'pink', 140, [10, 50, 150, 450, 625, 750], 100),
 	utility(12, 'Electric Co.'),
 	property(13, 'Madrid', 'pink', 140, [10, 50, 150, 450, 625, 750], 100),
 	property(14, 'Barcelona', 'pink', 160, [12, 60, 180, 500, 700, 900], 100),
 	station(15, 'Beijing'),
 	property(16, 'Vienna', 'orange', 180, [14, 70, 200, 550, 750, 950], 100),
-	{ pos: 17, type: 'chest', name: 'Community Chest' },
+	{ pos: 17, type: 'chest', name: 'Community Chest', icon: '/icons/chest.svg' },
 	property(18, 'Prague', 'orange', 180, [14, 70, 200, 550, 750, 950], 100),
 	property(19, 'Warsaw', 'orange', 200, [16, 80, 220, 600, 800, 1000], 100),
-	{ pos: 20, type: 'parking', name: 'Free Parking' },
+	{ pos: 20, type: 'parking', name: 'Free Parking', icon: '/icons/parking.svg' },
 	property(21, 'Dubai', 'red', 220, [18, 90, 250, 700, 875, 1050], 150),
-	{ pos: 22, type: 'chance', name: 'Chance' },
+	{ pos: 22, type: 'chance', name: 'Chance', icon: '/icons/chance.svg' },
 	property(23, 'Mumbai', 'red', 220, [18, 90, 250, 700, 875, 1050], 150),
 	property(24, 'Delhi', 'red', 240, [20, 100, 300, 750, 925, 1100], 150),
 	station(25, 'Sydney'),
@@ -85,15 +117,15 @@ const WORLD_TOUR_TILES = [
 	property(27, 'Osaka', 'yellow', 260, [22, 110, 330, 800, 975, 1150], 150),
 	utility(28, 'Water Works'),
 	property(29, 'Singapore', 'yellow', 280, [24, 120, 360, 850, 1025, 1200], 150),
-	{ pos: 30, type: 'gotojail', name: 'Go to Jail' },
+	{ pos: 30, type: 'gotojail', name: 'Go to Jail', icon: '/icons/gotojail.svg' },
 	property(31, 'Stockholm', 'green', 300, [26, 130, 390, 900, 1100, 1275], 200),
 	property(32, 'Amsterdam', 'green', 300, [26, 130, 390, 900, 1100, 1275], 200),
-	{ pos: 33, type: 'chest', name: 'Community Chest' },
+	{ pos: 33, type: 'chest', name: 'Community Chest', icon: '/icons/chest.svg' },
 	property(34, 'Paris', 'green', 320, [28, 150, 450, 1000, 1200, 1400], 200),
 	station(35, 'JFK'),
-	{ pos: 36, type: 'chance', name: 'Chance' },
+	{ pos: 36, type: 'chance', name: 'Chance', icon: '/icons/chance.svg' },
 	property(37, 'London', 'dblue', 350, [35, 175, 500, 1100, 1300, 1500], 200),
-	{ pos: 38, type: 'tax', name: 'Luxury Tax', amount: 100 },
+	{ pos: 38, type: 'tax', name: 'Luxury Tax', amount: 100, icon: '/icons/tax-luxury.svg' },
 	property(39, 'Tokyo', 'dblue', 400, [50, 200, 600, 1400, 1700, 2000], 200),
 ];
 

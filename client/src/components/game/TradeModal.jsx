@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Handshake, Send, X, Check, Eye } from 'lucide-react';
-import { flagUrl } from '../../flagUtils.js';
+import { tileIcon } from '../../flagUtils.js';
 
 // Two-sided editor with a read-only "peek" mode for non-party observers.
 // Each side picks properties + cash + jail cards. Edits bump the server's
@@ -391,17 +391,17 @@ function Side({ title, bundle, props, onToggle, onCash, cashLimit, readOnly }) {
 									style={{ background: def.color, width: 10, height: 10 }}
 								/>
 							)}
-							{def.type === 'property' && flagUrl(def.name) && (
+							{tileIcon(def) && (
 								<img
-									src={flagUrl(def.name)}
+									src={tileIcon(def)}
 									alt=""
 									style={{
 										width: 18,
 										height: 18,
-										borderRadius: '50%',
+										borderRadius: def.type === 'property' ? '50%' : 4,
 										objectFit: 'cover',
 										flexShrink: 0,
-										border: '1px solid rgba(255,255,255,0.15)',
+										border: def.type === 'property' ? '1px solid rgba(255,255,255,0.15)' : 'none',
 									}}
 								/>
 							)}

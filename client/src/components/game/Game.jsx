@@ -308,18 +308,18 @@ export default function Game({ userId, pushToast }) {
 			>
 				<div
 					style={{
-						flex: 1,
-						minHeight: 0,
+						width: '100%',
+						height: '100%',
 						display: 'grid',
 						placeItems: 'center',
-						padding: 12,
 					}}
 				>
 					<div
 						style={{
-							width: 'min(100%, 100vh - 32px)',
+							width: 'min(100%, 100% - 24px)',
 							aspectRatio: '1 / 1',
-							maxHeight: 'calc(100vh - 32px)',
+							maxWidth: 'calc(100vh - 64px)',
+							maxHeight: '100%',
 						}}
 					>
 						<Board

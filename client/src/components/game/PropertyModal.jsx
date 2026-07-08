@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Hammer, Trash2, Lock, Unlock, Train, Lightbulb, Droplet } from 'lucide-react';
-import { flagUrl } from '../../flagUtils.js';
+import { tileIcon } from '../../flagUtils.js';
 
 // Click a tile → open this. Renders inline (not via PropertyCard — that one's
 // positioned absolutely for hover popups and breaks flex layout).
@@ -49,26 +49,31 @@ export default function PropertyModal({ pos, room, me, act, onClose }) {
 
 				<div style={{ padding: '14px 18px 10px' }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-						{def.type === 'station' && <Train size={16} color="var(--text-3)" />}
-						{def.type === 'utility' &&
-							(def.name.toLowerCase().includes('electric') ? (
-								<Lightbulb size={16} color="var(--warning)" />
-							) : (
-								<Droplet size={16} color="var(--accent-2)" />
-							))}					{def.type === 'property' && flagUrl(def.name) && (
-						<img
-							src={flagUrl(def.name)}
-							alt=""
-							style={{
-								width: 22,
-								height: 22,
-								borderRadius: '50%',
-								objectFit: 'cover',
-								flexShrink: 0,
-								border: '1px solid rgba(255,255,255,0.15)',
-							}}
-						/>
-					)}						<div style={{ fontSize: 20, fontWeight: 800 }}>{def.name}</div>
+						{tileIcon(def) ? (
+							<img
+								src={tileIcon(def)}
+								alt=""
+								style={{
+									width: 22,
+									height: 22,
+									borderRadius: def.type === 'property' ? '50%' : 4,
+									objectFit: 'cover',
+									flexShrink: 0,
+									border: def.type === 'property' ? '1px solid rgba(255,255,255,0.15)' : 'none',
+								}}
+							/>
+						) : (
+							<>
+								{def.type === 'station' && <Train size={16} color="var(--text-3)" />}
+								{def.type === 'utility' &&
+									(def.name.toLowerCase().includes('electric') ? (
+										<Lightbulb size={16} color="var(--warning)" />
+									) : (
+										<Droplet size={16} color="var(--accent-2)" />
+									))}
+							</>
+						)}
+						<div style={{ fontSize: 20, fontWeight: 800 }}>{def.name}</div>
 					</div>
 					<div className="cluster" style={{ fontSize: 11, color: 'var(--text-3)' }}>
 						<span>

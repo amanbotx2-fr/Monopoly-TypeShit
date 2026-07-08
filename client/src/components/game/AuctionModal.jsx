@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Gavel, X } from 'lucide-react';
-import { flagUrl } from '../../flagUtils.js';
+import { tileIcon } from '../../flagUtils.js';
 
 export default function AuctionModal({ room, me, act }) {
 	const a = room.auction;
@@ -36,20 +36,22 @@ export default function AuctionModal({ room, me, act }) {
 				<div style={{ background: def.color || 'var(--auction)', height: 5 }} />
 				<div style={{ padding: 24 }}>
 					<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-						<Gavel size={20} color="var(--warning)" />					{def.type === 'property' && flagUrl(def.name) && (
+					<Gavel size={20} color="var(--warning)" />
+					{tileIcon(def) && (
 						<img
-							src={flagUrl(def.name)}
+							src={tileIcon(def)}
 							alt=""
 							style={{
 								width: 24,
 								height: 24,
-								borderRadius: '50%',
+								borderRadius: def.type === 'property' ? '50%' : 4,
 								objectFit: 'cover',
 								flexShrink: 0,
-								border: '1px solid rgba(255,255,255,0.15)',
+								border: def.type === 'property' ? '1px solid rgba(255,255,255,0.15)' : 'none',
 							}}
 						/>
-					)}						<div style={{ fontSize: 20, fontWeight: 800 }}>Auction: {def.name}</div>
+					)}
+					<div style={{ fontSize: 20, fontWeight: 800 }}>Auction: {def.name}</div>
 						<div style={{ flex: 1 }} />
 						<div
 							className="chip mono"
