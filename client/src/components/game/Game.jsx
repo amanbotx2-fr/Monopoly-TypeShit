@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
@@ -25,6 +25,7 @@ export default function Game({ userId, pushToast }) {
 	const { roomCode, room, events, chat, connected, act, sendChat } = useRoom({ userId });
 
 	const [diceRolling, setDiceRolling] = useState(false);
+	const processedEventCount = useRef(0);
 	const [hoveredPlayer, setHoveredPlayer] = useState(null);
 	const [tradeWith, setTradeWith] = useState(null);
 	const [peekTradeId, setPeekTradeId] = useState(null);
@@ -35,19 +36,23 @@ export default function Game({ userId, pushToast }) {
 	const [logOpen, setLogOpen] = useState(false);
 
 	useEffect(() => {
-		const last = events[events.length - 1];
-		if (!last) return;
-		if (last.type === 'roll') {
-			const t1 = setTimeout(() => setDiceRolling(true));
+		// Server sends roll as the FIRST event in a batch (followed by move/land events).
+		// Checking only events[last] always misses it — scan the whole new slice instead.
+		const newEvents = events.slice(processedEventCount.current);
+		processedEventCount.current = events.length;
+		if (!newEvents.length) return;
+
+		const rollEvt = newEvents.find((e) => e.type === 'roll');
+		const cardEvt = newEvents.find((e) => e.type === 'draw-card');
+
+		if (rollEvt) {
+			setDiceRolling(true);
 			const t2 = setTimeout(() => setDiceRolling(false), DICE_TOTAL_MS);
-			return () => {
-				clearTimeout(t1);
-				clearTimeout(t2);
-			};
+			return () => clearTimeout(t2);
 		}
-		if (last.type === 'draw-card') {
+		if (cardEvt) {
 			const t = setTimeout(() =>
-				setDrawnCard({ deck: last.deck, cardId: last.cardId, text: last.text }),
+				setDrawnCard({ deck: cardEvt.deck, cardId: cardEvt.cardId, text: cardEvt.text }),
 			);
 			return () => clearTimeout(t);
 		}

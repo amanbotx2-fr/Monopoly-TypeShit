@@ -1,19 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import './dice.css';
 
-// ── 3D CSS cube dice — richup.io EXACT approach ──────────────────────────────
-// NO @keyframes, NO setInterval, NO rAF, NO refs.
-// Just useState + CSS transition: 1s cubic-bezier(0,0,0,1).
-// Change inline transform → browser animates everything.
-// ──────────────────────────────────────────────────────────────────────────────
-
+// Face transforms — which rotation shows that pip face to the viewer.
+// These are applied as inline el.style.transform (no CSS var() in keyframes).
 const FACE = {
-	1: { x: 180, y: 0 },
-	2: { x: -90, y: 0 },
-	3: { x: 0, y: 90 },
-	4: { x: 0, y: -90 },
-	5: { x: 90, y: 0 },
-	6: { x: 0, y: 0 },
+	1: 'rotateX(180deg)',
+	2: 'rotateX(-90deg)',
+	3: 'rotateY(90deg)',
+	4: 'rotateY(-90deg)',
+	5: 'rotateX(90deg)',
+	6: 'rotateX(0deg)',
 };
 
 const PIPS = {
@@ -28,35 +24,53 @@ const PIPS = {
 export default function Dice({ dice, rolling }) {
 	return (
 		<div className={`dice-wrap${!dice ? ' dimmed' : ''}`}>
-			<Die value={dice?.[0] ?? 1} rolling={rolling} />
-			<Die value={dice?.[1] ?? 1} rolling={rolling} />
+			<Die value={dice?.[0] ?? 1} rolling={rolling} altSpin={false} />
+			<Die value={dice?.[1] ?? 1} rolling={rolling} altSpin={true} />
 		</div>
 	);
 }
 
-function Die({ value, rolling }) {
-	const [spin, setSpin] = useState({ x: 0, y: 0, z: 0 });
+function Die({ value, rolling, altSpin }) {
+	const cubeRef = useRef(null);
+	// Tracks state between renders without causing re-renders
+	const s = useRef({ mounted: false, wasRolling: false });
 
 	useEffect(() => {
-		const f = FACE[value] ?? FACE[6];
-		if (rolling) {
-			const r = () => Math.floor(Math.random() * 7) - 3;
-			setSpin({
-				x: f.x + r() * 360,
-				y: f.y + r() * 360,
-				z: r() * 90 + (Math.floor(Math.random() * 51) - 25),
-			});
-		} else {
-			setSpin({ x: f.x, y: f.y, z: 0 });
-		}
-	}, [rolling, value]);
+		const el = cubeRef.current;
+		if (!el) return;
 
-	const t = `rotateZ(${spin.z}deg) rotateX(${spin.x}deg) rotateY(${spin.y}deg)`;
+		if (rolling) {
+			// ── Start spin ──────────────────────────────────────────
+			s.current.wasRolling = true;
+			el.style.setProperty('transition', 'none', 'important');
+			el.style.removeProperty('transform');
+			el.classList.remove('dice-spin', 'dice-spin-alt');
+			// Force reflow so re-adding the class restarts the animation
+			void el.offsetHeight;
+			el.classList.add(altSpin ? 'dice-spin-alt' : 'dice-spin');
+		} else {
+			const justSettling = s.current.wasRolling;
+			s.current.wasRolling = false;
+			el.classList.remove('dice-spin', 'dice-spin-alt');
+			void el.offsetHeight;
+			// Only update the face when:
+			// • First mount (show initial face, no transition)
+			// • Just finished rolling (settle with ease-out transition)
+			// Otherwise the server updates lastDice BEFORE rolling=true fires,
+			// which would instantly reveal the result before any spin.
+			if (!s.current.mounted || justSettling) {
+				const tr = justSettling ? 'transform 0.1s ease-out' : 'none';
+				el.style.setProperty('transition', tr, 'important');
+				s.current.mounted = true;
+				el.style.setProperty('transform', FACE[value] ?? FACE[6], 'important');
+			}
+		}
+	}, [rolling, value, altSpin]);
 
 	return (
 		<div className="dice-outer">
 			<div className="dice-inner">
-				<div className="dice-cube" style={{ transform: t }}>
+				<div className="dice-cube" ref={cubeRef}>
 					{[1, 2, 3, 4, 5, 6].map((s) => (
 						<div key={s} className="dice-face" data-side={s}>
 							{PIPS[s].map((a, i) => (
@@ -73,4 +87,5 @@ function Die({ value, rolling }) {
 	);
 }
 
-export const DICE_TOTAL_MS = 1200;
+// Intentionally slow while testing. Increase speed later.
+export const DICE_TOTAL_MS = 350;

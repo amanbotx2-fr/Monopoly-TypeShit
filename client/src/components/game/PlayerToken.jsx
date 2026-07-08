@@ -16,7 +16,7 @@ function stackOffset(side, idx) {
 // Tile-by-tile walk. Watches incoming events for this player's `move` events
 // and steps the displayed position along the `path` so the token visibly
 // walks across each tile instead of teleporting.
-const STEP_MS = 160;
+const STEP_MS = 30;
 
 export default function PlayerToken({ player, isActive, stackIndex, events, onHover, boardInfo }) {
 	const [displayPos, setDisplayPos] = useState(player.position);
