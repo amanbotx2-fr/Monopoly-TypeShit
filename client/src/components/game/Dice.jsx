@@ -8,9 +8,12 @@ import './dice.css';
 // ──────────────────────────────────────────────────────────────────────────────
 
 const FACE = {
-	1: { x: 180, y:   0 }, 2: { x: -90, y:   0 },
-	3: { x:   0, y:  90 }, 4: { x:   0, y: -90 },
-	5: { x:  90, y:   0 }, 6: { x:   0, y:   0 },
+	1: { x: 180, y: 0 },
+	2: { x: -90, y: 0 },
+	3: { x: 0, y: 90 },
+	4: { x: 0, y: -90 },
+	5: { x: 90, y: 0 },
+	6: { x: 0, y: 0 },
 };
 
 const PIPS = {
@@ -37,17 +40,12 @@ function Die({ value, rolling }) {
 	useEffect(() => {
 		const f = FACE[value] ?? FACE[6];
 		if (rolling) {
-			// rAF defers the spin until after the browser paints the current
-			// state — essential for the CSS transition to have a "from" value.
-			const id = requestAnimationFrame(() => {
-				const r = () => Math.floor(Math.random() * 7) - 3;
-				setSpin({
-					x: f.x + r() * 360,
-					y: f.y + r() * 360,
-					z: r() * 90 + (Math.floor(Math.random() * 51) - 25),
-				});
+			const r = () => Math.floor(Math.random() * 7) - 3;
+			setSpin({
+				x: f.x + r() * 360,
+				y: f.y + r() * 360,
+				z: r() * 90 + (Math.floor(Math.random() * 51) - 25),
 			});
-			return () => cancelAnimationFrame(id);
 		} else {
 			setSpin({ x: f.x, y: f.y, z: 0 });
 		}
@@ -59,10 +57,10 @@ function Die({ value, rolling }) {
 		<div className="dice-outer">
 			<div className="dice-inner">
 				<div className="dice-cube" style={{ transform: t }}>
-					{[1,2,3,4,5,6].map(s => (
+					{[1, 2, 3, 4, 5, 6].map((s) => (
 						<div key={s} className="dice-face" data-side={s}>
-							{PIPS[s].map((a,i) => (
-								<div key={i} className="dice-dot" style={{gridArea:a}} />
+							{PIPS[s].map((a, i) => (
+								<div key={i} className="dice-dot" style={{ gridArea: a }} />
 							))}
 						</div>
 					))}
