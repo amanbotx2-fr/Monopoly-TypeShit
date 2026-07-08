@@ -88,3 +88,33 @@
         - Room owner leaves: auction continues normally.
 
 ---
+
+- [ ] T4: Block card with an icon and large font, and the price in a square to make it clear. Icon must be SVG and appear as a blurred background of the card as well. When clicking on the block/tile, show all its info with the same SVG as a blurred background.
+
+    ![Block card placeholder](./tasks-media/block-card.png)
+
+---
+
+- [ ] T5: Treasure, Vacation, Go to Prison, Start, Surprise, Earning Tax, Premium Tax should have clear icons in the middle of the tile.
+
+    ![Special tiles placeholder](./tasks-media/special-tiles.png)
+
+---
+
+- [ ] T6: After dice animation and after the player moves to the new position, the turn options should appear — not before that.
+
+---
+
+- [ ] T7: When a player's turn comes, it should indicate clearly on the avatar with a white waving circle around the avatar and a distinct sound.
+
+---
+
+- [ ] T8: Make the purchased property colors larger and more visible.
+
+    ![Property colors placeholder](./tasks-media/property-colors.png)
+
+---
+
+- [ ] T9: "My Properties" section should list all properties owned by the player, and when clicked it should open the same card view as clicking on the tile.
+
+    ![My properties placeholder](./tasks-media/my-properties.png)
