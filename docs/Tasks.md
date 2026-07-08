@@ -109,7 +109,7 @@
 
 ---
 
-- [ ] T8: Make the purchased property colors larger and more visible.
+- [x] T8: Make the purchased property colors larger and more visible.
 
     ![Property colors placeholder](./tasks-media/property-colors.png)
 
