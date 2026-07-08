@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
    Board Styles — richup-inspired dark theme with CSS grid layout.
-   
+
    Grid areas (visual layout):
      "go         top      jail"        ← GO(0), top row(1-9), Jail(10)
      "left       center   right"       ← left(31-39), center, right(11-19)
@@ -16,9 +16,9 @@
 
 	display: grid;
 	grid-template-areas:
-		"go         top      jail"
-		"left       center   right"
-		"gotoprison bottom   parking";
+		'go         top      jail'
+		'left       center   right'
+		'gotoprison bottom   parking';
 	grid-template-columns: var(--corner) 1fr var(--corner);
 	grid-template-rows: var(--corner) 1fr var(--corner);
 	gap: 2px;
@@ -34,16 +34,48 @@
 }
 
 /* ─── Side row / column flex containers ────────────────────────────────────── */
-.side-row-top    { grid-area: top;    display: flex; flex-direction: row;      height: 100%; gap: 2px; }
-.side-row-bottom { grid-area: bottom; display: flex; flex-direction: row-reverse; height: 100%; gap: 2px; }
-.side-col-right  { grid-area: right;  display: flex; flex-direction: column;    width: 100%;  gap: 2px; }
-.side-col-left   { grid-area: left;   display: flex; flex-direction: column-reverse; width: 100%; gap: 2px; }
+.side-row-top {
+	grid-area: top;
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+	gap: 2px;
+}
+.side-row-bottom {
+	grid-area: bottom;
+	display: flex;
+	flex-direction: row-reverse;
+	height: 100%;
+	gap: 2px;
+}
+.side-col-right {
+	grid-area: right;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	gap: 2px;
+}
+.side-col-left {
+	grid-area: left;
+	display: flex;
+	flex-direction: column-reverse;
+	width: 100%;
+	gap: 2px;
+}
 
 /* Side tiles fill available space in their flex container */
-.side-row-top    > .tile,
-.side-row-bottom > .tile { flex: 1 1 0; min-width: 0; height: 100%; }
-.side-col-right  > .tile,
-.side-col-left   > .tile { flex: 1 1 0; min-height: 0; width: 100%; }
+.side-row-top > .tile,
+.side-row-bottom > .tile {
+	flex: 1 1 0;
+	min-width: 0;
+	height: 100%;
+}
+.side-col-right > .tile,
+.side-col-left > .tile {
+	flex: 1 1 0;
+	min-height: 0;
+	width: 100%;
+}
 
 /* ─── Tile base ────────────────────────────────────────────────────────────── */
 .tile {
@@ -57,24 +89,37 @@
 	border-radius: 0.5em;
 	border: 1px solid rgba(255, 255, 255, 0.06);
 	position: relative;
-	transition: opacity 0.2s, box-shadow 0.2s, background 0.15s;
+	transition:
+		opacity 0.2s,
+		box-shadow 0.2s,
+		background 0.15s;
 }
 
 /* Directional tile overrides — all tiles read naturally left-to-right.
    Color bar on the inner edge provides the visual cue for orientation. */
-.tile-side-top    { /* natural */ }
-.tile-side-bottom { /* natural */ }
-.tile-side-right  { /* natural */ }
-.tile-side-left   { /* natural */ }
+.tile-side-top {
+	/* natural */
+}
+.tile-side-bottom {
+	/* natural */
+}
+.tile-side-right {
+	/* natural */
+}
+.tile-side-left {
+	/* natural */
+}
 
 /* Hover / clickable */
-.tile.clickable { cursor: pointer; }
+.tile.clickable {
+	cursor: pointer;
+}
 .tile.clickable:hover {
 	background: var(--tile-hover);
 }
 
 .tile.clickable:hover::before {
-	content: "";
+	content: '';
 	position: absolute;
 	inset: 0;
 	border-radius: inherit;
@@ -93,10 +138,30 @@
 	z-index: 0;
 	overflow: hidden;
 }
-.tile-side-top    .tile-color-bar { left: 0; right: 0; bottom: 0; height: var(--bar-size); }
-.tile-side-bottom .tile-color-bar { left: 0; right: 0; top: 0;    height: var(--bar-size); }
-.tile-side-left   .tile-color-bar { right: 0; top: 0; bottom: 0;  width: var(--bar-size); }
-.tile-side-right  .tile-color-bar { left: 0;  top: 0; bottom: 0;  width: var(--bar-size); }
+.tile-side-top .tile-color-bar {
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: var(--bar-size);
+}
+.tile-side-bottom .tile-color-bar {
+	left: 0;
+	right: 0;
+	top: 0;
+	height: var(--bar-size);
+}
+.tile-side-left .tile-color-bar {
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: var(--bar-size);
+}
+.tile-side-right .tile-color-bar {
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: var(--bar-size);
+}
 
 /* ─── Flag circle (inner edge, half outside tile toward center) ───────────── */
 .tile-flag {
@@ -117,10 +182,26 @@
 	display: block;
 }
 /* Half outside tile (inner edge = toward board center) */
-.tile-side-top    .tile-flag { bottom: -20px; left: 50%; transform: translateX(-50%); }
-.tile-side-bottom .tile-flag { top: -20px;    left: 50%; transform: translateX(-50%); }
-.tile-side-right  .tile-flag { left: -20px;   top: 50%;  transform: translateY(-50%); }
-.tile-side-left   .tile-flag { right: -20px;  top: 50%;  transform: translateY(-50%); }
+.tile-side-top .tile-flag {
+	bottom: -20px;
+	left: 50%;
+	transform: translateX(-50%);
+}
+.tile-side-bottom .tile-flag {
+	top: -20px;
+	left: 50%;
+	transform: translateX(-50%);
+}
+.tile-side-right .tile-flag {
+	left: -20px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.tile-side-left .tile-flag {
+	right: -20px;
+	top: 50%;
+	transform: translateY(-50%);
+}
 
 /* ─── Tile body (text/icon area) ───────────────────────────────────────────── */
 .tile-body {
@@ -138,10 +219,18 @@
 	width: 100%;
 }
 
-.tile-side-top    .tile-body { padding-bottom: calc(var(--bar-size) + 6%); }
-.tile-side-bottom .tile-body { padding-top:    calc(var(--bar-size) + 6%); }
-.tile-side-left   .tile-body { padding-right:  calc(var(--bar-size) + 6%); }
-.tile-side-right  .tile-body { padding-left:   calc(var(--bar-size) + 6%); }
+.tile-side-top .tile-body {
+	padding-bottom: calc(var(--bar-size) + 6%);
+}
+.tile-side-bottom .tile-body {
+	padding-top: calc(var(--bar-size) + 6%);
+}
+.tile-side-left .tile-body {
+	padding-right: calc(var(--bar-size) + 6%);
+}
+.tile-side-right .tile-body {
+	padding-left: calc(var(--bar-size) + 6%);
+}
 
 .tile-name {
 	font-size: clamp(6px, 1.1cqi, 10px);
@@ -170,7 +259,11 @@
 	line-height: 1;
 	margin-top: 2px;
 }
-.tile-price::before { content: "$"; opacity: 0.75; font-weight: 400; }
+.tile-price::before {
+	content: '$';
+	opacity: 0.75;
+	font-weight: 400;
+}
 
 .tile-icon {
 	width: clamp(14px, 2.4cqi, 22px);
@@ -205,8 +298,12 @@
 }
 
 /* ─── Special tile types ───────────────────────────────────────────────────── */
-.tile-chance { color: #ff95bc; }
-.tile-chest  { color: #f2a841; }
+.tile-chance {
+	color: #ff95bc;
+}
+.tile-chest {
+	color: #f2a841;
+}
 
 /* Station tiles */
 .tile-station {
@@ -243,7 +340,7 @@
 	overflow: hidden;
 }
 .tile-jail .jail-bars::before {
-	content: "";
+	content: '';
 	position: absolute;
 	inset: 0;
 	z-index: 5;
@@ -293,10 +390,14 @@
 	z-index: 2;
 	pointer-events: none;
 }
-.tile-side-top    .tile-houses,
-.tile-side-bottom .tile-houses { flex-direction: row; }
-.tile-side-left   .tile-houses,
-.tile-side-right  .tile-houses { flex-direction: column; }
+.tile-side-top .tile-houses,
+.tile-side-bottom .tile-houses {
+	flex-direction: row;
+}
+.tile-side-left .tile-houses,
+.tile-side-right .tile-houses {
+	flex-direction: column;
+}
 
 .house {
 	width: clamp(5px, 1cqi, 8px);
@@ -328,10 +429,30 @@
 	pointer-events: none;
 	box-shadow: 0 0 8px currentColor;
 }
-.tile-side-top    .owner-stripe { left: 0; right: 0; top: 0;    height: 3px; }
-.tile-side-bottom .owner-stripe { left: 0; right: 0; bottom: 0; height: 3px; }
-.tile-side-left   .owner-stripe { left: 0; top: 0; bottom: 0;   width: 3px; }
-.tile-side-right  .owner-stripe { right: 0; top: 0; bottom: 0;  width: 3px; }
+.tile-side-top .owner-stripe {
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 3px;
+}
+.tile-side-bottom .owner-stripe {
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 3px;
+}
+.tile-side-left .owner-stripe {
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+}
+.tile-side-right .owner-stripe {
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+}
 
 /* ─── Highlight overlays (player hover) ────────────────────────────────────── */
 .tile.highlight-owned {
@@ -360,8 +481,13 @@
 	z-index: 45;
 }
 @keyframes positionHighlightPulse {
-	0%, 100% { opacity: 0.5; }
-	50%      { opacity: 0.85; }
+	0%,
+	100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 0.85;
+	}
 }
 
 /* ─── Board dim overlay ────────────────────────────────────────────────────── */
@@ -375,8 +501,12 @@
 	animation: dimIn 0.2s ease-out;
 }
 @keyframes dimIn {
-	from { opacity: 0; }
-	to   { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -478,15 +608,29 @@
 }
 
 /* Face positions — translateZ = half of cube width (50px/2 = 25px) */
-.dice-face-front  { transform: translateZ(25px); }
-.dice-face-back   { transform: rotateX(180deg) translateZ(25px); }
-.dice-face-right  { transform: rotateY(90deg)  translateZ(25px); }
-.dice-face-left   { transform: rotateY(-90deg) translateZ(25px); }
-.dice-face-top    { transform: rotateX(90deg)  translateZ(25px); }
-.dice-face-bottom { transform: rotateX(-90deg) translateZ(25px); }
+.dice-face-front {
+	transform: translateZ(25px);
+}
+.dice-face-back {
+	transform: rotateX(180deg) translateZ(25px);
+}
+.dice-face-right {
+	transform: rotateY(90deg) translateZ(25px);
+}
+.dice-face-left {
+	transform: rotateY(-90deg) translateZ(25px);
+}
+.dice-face-top {
+	transform: rotateX(90deg) translateZ(25px);
+}
+.dice-face-bottom {
+	transform: rotateX(-90deg) translateZ(25px);
+}
 
 /* Dimmed dice (before first roll) */
-.dice-wrap.dimmed { opacity: 0.3; }
+.dice-wrap.dimmed {
+	opacity: 0.3;
+}
 
 /* Roller label */
 .dice-roller {
@@ -519,21 +663,27 @@
 	font-weight: 600;
 }
 .board-btn::before {
-	content: "";
+	content: '';
 	position: absolute;
 	inset: 0;
 	background: #fff;
 	transition: inherit;
 	opacity: 0;
 }
-.board-btn:hover::before { opacity: 0.1; }
-.board-btn:active::before { opacity: 0.18; }
+.board-btn:hover::before {
+	opacity: 0.1;
+}
+.board-btn:active::before {
+	opacity: 0.18;
+}
 .board-btn:disabled {
 	cursor: not-allowed;
 	opacity: 0.5;
 	filter: grayscale(0.5);
 }
-.board-btn:disabled:hover::before { opacity: 0; }
+.board-btn:disabled:hover::before {
+	opacity: 0;
+}
 .board-btn.danger {
 	background-color: #e74c3c;
 	background-image: linear-gradient(to top left, #e74c3c, #c0392b);
@@ -542,11 +692,13 @@
 	background: rgba(255, 255, 255, 0.08);
 	color: #cec6e1;
 }
-.board-btn.ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.board-btn.ghost:hover {
+	background: rgba(255, 255, 255, 0.14);
+}
 
 /* Shine animation on primary buttons */
 .board-btn.primary::after {
-	content: "";
+	content: '';
 	pointer-events: none;
 	position: absolute;
 	inset: 0 0 0 -200%;
@@ -561,8 +713,12 @@
 	animation: btnShine 3s infinite;
 }
 @keyframes btnShine {
-	66%  { left: -200%; }
-	100% { left: 200%; }
+	66% {
+		left: -200%;
+	}
+	100% {
+		left: 200%;
+	}
 }
 
 .board-action-bar {
@@ -607,7 +763,9 @@
 	box-shadow:
 		0 2px 6px rgba(0, 0, 0, 0.6),
 		0 0 0 3px rgba(0, 0, 0, 0.25);
-	transition: left 0.15s ease-in-out, top 0.15s ease-in-out;
+	transition:
+		left 0.15s ease-in-out,
+		top 0.15s ease-in-out;
 	display: grid;
 	place-items: center;
 	font-size: clamp(9px, 1.5cqi, 12px);
@@ -632,18 +790,36 @@
 	animation: tokenPulse 1.4s ease-in-out infinite;
 }
 @keyframes tokenPulse {
-	0%, 100% { transform: translate(-50%, -50%) scale(1); }
-	50%      { transform: translate(-50%, -50%) scale(1.18); }
+	0%,
+	100% {
+		transform: translate(-50%, -50%) scale(1);
+	}
+	50% {
+		transform: translate(-50%, -50%) scale(1.18);
+	}
 }
 
 .token.shake {
 	animation: tokenShake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 @keyframes tokenShake {
-	10%, 90% { transform: translate(calc(-50% - 2px), -50%); }
-	20%, 80% { transform: translate(calc(-50% + 3px), -50%); }
-	30%, 50%, 70% { transform: translate(calc(-50% - 5px), -50%); }
-	40%, 60% { transform: translate(calc(-50% + 5px), -50%); }
+	10%,
+	90% {
+		transform: translate(calc(-50% - 2px), -50%);
+	}
+	20%,
+	80% {
+		transform: translate(calc(-50% + 3px), -50%);
+	}
+	30%,
+	50%,
+	70% {
+		transform: translate(calc(-50% - 5px), -50%);
+	}
+	40%,
+	60% {
+		transform: translate(calc(-50% + 5px), -50%);
+	}
 }
 
 /* ─── Property card popup (hover tooltip on tiles) ─────────────────────────── */
@@ -653,15 +829,26 @@
 	background: #1e1a2e;
 	border: 1px solid rgba(255, 255, 255, 0.08);
 	border-radius: 8px;
-	box-shadow: 0 22px 58px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3);
+	box-shadow:
+		0 22px 58px rgba(0, 0, 0, 0.5),
+		0 2px 10px rgba(0, 0, 0, 0.3);
 	min-width: 260px;
 	overflow: hidden;
 	pointer-events: none;
 	color: #e6e3f0;
 }
-.prop-popup table { width: 100%; font-size: 12px; border-collapse: collapse; }
-.prop-popup td { padding: 2px 0; }
-.prop-popup td:last-child { text-align: right; font-weight: 600; }
+.prop-popup table {
+	width: 100%;
+	font-size: 12px;
+	border-collapse: collapse;
+}
+.prop-popup td {
+	padding: 2px 0;
+}
+.prop-popup td:last-child {
+	text-align: right;
+	font-weight: 600;
+}
 
 /* ─── Game modals — richup dark theme overrides ────────────────────────────── */
 .game-modal {
@@ -700,14 +887,32 @@
 	box-shadow: var(--shadow);
 	white-space: nowrap;
 }
-.money-pop.positive { color: var(--success); border-color: var(--success); }
-.money-pop.negative { color: var(--danger);  border-color: var(--danger); }
+.money-pop.positive {
+	color: var(--success);
+	border-color: var(--success);
+}
+.money-pop.negative {
+	color: var(--danger);
+	border-color: var(--danger);
+}
 
 @keyframes moneyPop {
-	0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
-	20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-	80%  { opacity: 1; transform: translate(-50%, calc(-50% - 40px)) scale(1); }
-	100% { opacity: 0; transform: translate(-50%, calc(-50% - 64px)) scale(0.95); }
+	0% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0.7);
+	}
+	20% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1.1);
+	}
+	80% {
+		opacity: 1;
+		transform: translate(-50%, calc(-50% - 40px)) scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-50%, calc(-50% - 64px)) scale(0.95);
+	}
 }
 
 .go-burst {
@@ -722,11 +927,24 @@
 	pointer-events: none;
 }
 @keyframes goBurst {
-	0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
-	15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
-	30%  { transform: translate(-50%, -50%) scale(1); }
-	80%  { opacity: 1; }
-	100% { opacity: 0; transform: translate(-50%, calc(-50% - 80px)) scale(0.9); }
+	0% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0.3);
+	}
+	15% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1.4);
+	}
+	30% {
+		transform: translate(-50%, -50%) scale(1);
+	}
+	80% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-50%, calc(-50% - 80px)) scale(0.9);
+	}
 }
 
 .jail-flash {
@@ -737,8 +955,13 @@
 	pointer-events: none;
 }
 @keyframes jailFlash {
-	0%, 100% { opacity: 0; }
-	30%      { opacity: 1; }
+	0%,
+	100% {
+		opacity: 0;
+	}
+	30% {
+		opacity: 1;
+	}
 }
 
 .buy-sparkle {
@@ -751,9 +974,21 @@
 	pointer-events: none;
 }
 @keyframes buySparkle {
-	0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); box-shadow: 0 0 0 0 currentColor; }
-	40%  { opacity: 1; transform: translate(-50%, -50%) scale(1);   box-shadow: 0 0 0 12px currentColor; }
-	100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); box-shadow: 0 0 0 24px transparent; }
+	0% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0.5);
+		box-shadow: 0 0 0 0 currentColor;
+	}
+	40% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+		box-shadow: 0 0 0 12px currentColor;
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(1.4);
+		box-shadow: 0 0 0 24px transparent;
+	}
 }
 
 .banner {
@@ -769,8 +1004,20 @@
 	text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
 }
 @keyframes bannerIn {
-	0%   { opacity: 0; transform: translate(-50%, -50%) scale(2.5); }
-	25%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-	75%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-	100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+	0% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(2.5);
+	}
+	25% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
+	75% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(1.2);
+	}
 }
