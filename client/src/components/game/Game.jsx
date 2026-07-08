@@ -18,6 +18,14 @@ import Victory from './Victory';
 import BrandLogo from '../common/BrandLogo';
 import { LogOut, Copy, ScrollText } from 'lucide-react';
 
+const DESKTOP_GAME_PADDING = 16;
+const DESKTOP_PANEL_BORDER_WIDTH = 1;
+const DESKTOP_PANEL_BORDER = `${DESKTOP_PANEL_BORDER_WIDTH}px solid var(--border)`;
+const BOARD_STAGE_PADDING = 12;
+const DESKTOP_BOARD_VIEWPORT_OFFSET =
+	DESKTOP_GAME_PADDING * 2 + DESKTOP_PANEL_BORDER_WIDTH * 2 + BOARD_STAGE_PADDING * 2;
+const DESKTOP_BOARD_MAX_SIZE = `calc(100vh - ${DESKTOP_BOARD_VIEWPORT_OFFSET}px)`;
+
 export default function Game({ userId, pushToast }) {
 	const nav = useNavigate();
 	const isMobile = useIsMobile();
@@ -230,7 +238,7 @@ export default function Game({ userId, pushToast }) {
 				display: 'grid',
 				gridTemplateColumns: 'minmax(270px, 310px) 1fr minmax(290px, 350px)',
 				gap: 16,
-				padding: 16,
+				padding: DESKTOP_GAME_PADDING,
 				height: '100vh',
 				overflow: 'hidden',
 				background: 'var(--bg)',
@@ -244,7 +252,7 @@ export default function Game({ userId, pushToast }) {
 					minHeight: 0,
 					padding: 12,
 					background: 'var(--surface)',
-					border: '1px solid var(--border)',
+					border: DESKTOP_PANEL_BORDER,
 					borderRadius: 'var(--radius-lg)',
 				}}
 			>
@@ -298,7 +306,7 @@ export default function Game({ userId, pushToast }) {
 					display: 'flex',
 					flexDirection: 'column',
 					minHeight: 0,
-					border: '1px solid var(--border)',
+					border: DESKTOP_PANEL_BORDER,
 					borderRadius: 'var(--radius-lg)',
 					background: 'var(--bg-1)',
 					boxShadow: 'var(--shadow-lg)',
@@ -311,14 +319,14 @@ export default function Game({ userId, pushToast }) {
 						minHeight: 0,
 						display: 'grid',
 						placeItems: 'center',
-						padding: 12,
+						padding: BOARD_STAGE_PADDING,
 					}}
 				>
 					<div
 						style={{
-							width: 'min(100%, 100vh - 32px)',
+							width: `min(100%, ${DESKTOP_BOARD_MAX_SIZE})`,
 							aspectRatio: '1 / 1',
-							maxHeight: 'calc(100vh - 32px)',
+							maxHeight: DESKTOP_BOARD_MAX_SIZE,
 						}}
 					>
 						<Board
@@ -345,7 +353,7 @@ export default function Game({ userId, pushToast }) {
 					minHeight: 0,
 					padding: 12,
 					background: 'var(--surface)',
-					border: '1px solid var(--border)',
+					border: DESKTOP_PANEL_BORDER,
 					borderRadius: 'var(--radius-lg)',
 				}}
 			>

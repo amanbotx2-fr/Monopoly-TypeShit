@@ -12,6 +12,16 @@ import {
 	Lock,
 } from 'lucide-react';
 
+const OWNER_BAND_SIZE = '14%';
+const OWNER_BAND_INSET = '8%';
+const OWNER_BAND_RADIUS = 6;
+const OWNED_CONTENT_OFFSETS = {
+	top: 8,
+	bottom: 8,
+	left: 10,
+	right: 10,
+};
+
 // Tile renderer — all text upright regardless of side. Layout:
 //   • color bar (if property) pinned to the inner edge (facing board center)
 //   • houses also on the inner edge (above/next to the color bar)
@@ -71,14 +81,58 @@ function OwnerStripe({ side, color }) {
 		position: 'absolute',
 		background: color,
 		boxShadow: `0 0 8px ${color}`,
+		pointerEvents: 'none',
 		zIndex: 2,
+		borderRadius: OWNER_BAND_RADIUS,
 	};
-	if (side === 'top') return <div style={{ ...common, left: 0, right: 0, top: 0, height: 3 }} />;
+	if (side === 'top')
+		return (
+			<div
+				style={{
+					...common,
+					left: OWNER_BAND_INSET,
+					right: OWNER_BAND_INSET,
+					top: 0,
+					height: OWNER_BAND_SIZE,
+				}}
+			/>
+		);
 	if (side === 'bottom')
-		return <div style={{ ...common, left: 0, right: 0, bottom: 0, height: 3 }} />;
-	if (side === 'left') return <div style={{ ...common, left: 0, top: 0, bottom: 0, width: 3 }} />;
+		return (
+			<div
+				style={{
+					...common,
+					left: OWNER_BAND_INSET,
+					right: OWNER_BAND_INSET,
+					bottom: 0,
+					height: OWNER_BAND_SIZE,
+				}}
+			/>
+		);
+	if (side === 'left')
+		return (
+			<div
+				style={{
+					...common,
+					left: 0,
+					top: OWNER_BAND_INSET,
+					bottom: OWNER_BAND_INSET,
+					width: OWNER_BAND_SIZE,
+				}}
+			/>
+		);
 	if (side === 'right')
-		return <div style={{ ...common, right: 0, top: 0, bottom: 0, width: 3 }} />;
+		return (
+			<div
+				style={{
+					...common,
+					right: 0,
+					top: OWNER_BAND_INSET,
+					bottom: OWNER_BAND_INSET,
+					width: OWNER_BAND_SIZE,
+				}}
+			/>
+		);
 	return null;
 }
 
@@ -87,6 +141,16 @@ function OwnerStripe({ side, color }) {
 // 700×700 board (~59px tile width for top/bottom).
 function SideContent({ def, state, side, inner }) {
 	const isVertical = side === 'left' || side === 'right';
+	const ownedContentPadding =
+		state?.owner && side === 'top'
+			? { paddingTop: OWNED_CONTENT_OFFSETS.top }
+			: state?.owner && side === 'bottom'
+				? { paddingBottom: OWNED_CONTENT_OFFSETS.bottom }
+				: state?.owner && side === 'left'
+					? { paddingLeft: OWNED_CONTENT_OFFSETS.left }
+					: state?.owner && side === 'right'
+						? { paddingRight: OWNED_CONTENT_OFFSETS.right }
+						: null;
 
 	// Color-bar strip placement.
 	const barSide = inner; // 'top' | 'bottom' | 'left' | 'right'
@@ -109,20 +173,21 @@ function SideContent({ def, state, side, inner }) {
 		justifyContent: 'center',
 		padding: '3%',
 		gap: '2px',
-		...(isVertical
-			? {
-					top: 0,
-					bottom: 0,
-					[barSide === 'left' ? 'left' : 'right']: TOKEN_STRIP_END_PCT + '%',
-					[barSide === 'left' ? 'right' : 'left']: 0,
-				}
-			: {
-					left: 0,
-					right: 0,
-					[barSide === 'top' ? 'top' : 'bottom']: TOKEN_STRIP_END_PCT + '%',
-					[barSide === 'top' ? 'bottom' : 'top']: 0,
-				}),
-	};
+			...(isVertical
+				? {
+						top: 0,
+						bottom: 0,
+						[barSide === 'left' ? 'left' : 'right']: TOKEN_STRIP_END_PCT + '%',
+						[barSide === 'left' ? 'right' : 'left']: 0,
+					}
+				: {
+						left: 0,
+						right: 0,
+						[barSide === 'top' ? 'top' : 'bottom']: TOKEN_STRIP_END_PCT + '%',
+						[barSide === 'top' ? 'bottom' : 'top']: 0,
+					}),
+			...(ownedContentPadding || {}),
+		};
 
 	return (
 		<>
