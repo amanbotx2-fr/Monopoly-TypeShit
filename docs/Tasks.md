@@ -101,7 +101,7 @@
 
 ---
 
-- [ ] T6: After dice animation and after the player moves to the new position, the turn options should appear — not before that.
+- [x] T6: After dice animation and after the player moves to the new position, the turn options should appear — not before that.
 
 ---
 
