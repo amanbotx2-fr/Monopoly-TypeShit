@@ -42,10 +42,15 @@ const CYCLE_MS = 90;
 const SHAKE_END_MS = 800; // stop cycling; freeze on the real result
 const TOTAL_MS = 1100; // matches diceRoll keyframes in board.css
 
-export default function Dice({ dice, rolling }) {
+export default function Dice({ dice, rolling, onRollComplete }) {
 	const [shown, setShown] = useState(dice || [1, 1]);
 	const timerRef = useRef(null);
 	const prevDice = useRef(dice);
+	const completedDiceRef = useRef(0);
+
+	useEffect(() => {
+		if (rolling) completedDiceRef.current = 0;
+	}, [rolling]);
 
 	// Sync display with real dice when not rolling.
 	useEffect(() => {
@@ -100,8 +105,17 @@ export default function Dice({ dice, rolling }) {
 			</div>
 		);
 	}
+
+	function handleAnimationEnd(e) {
+		if (!rolling || !e.target.classList?.contains('die')) return;
+		completedDiceRef.current += 1;
+		if (completedDiceRef.current < 2) return;
+		completedDiceRef.current = 0;
+		onRollComplete?.();
+	}
+
 	return (
-		<div className="dice-wrap">
+		<div className="dice-wrap" onAnimationEnd={handleAnimationEnd}>
 			<Die value={shown[0]} rolling={rolling} />
 			<Die value={shown[1]} rolling={rolling} />
 		</div>

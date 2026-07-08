@@ -19,6 +19,9 @@ export default function Board({
 	onTileClick,
 	hoveredPlayer,
 	onHoverPlayer,
+	onDiceAnimationComplete,
+	onTokenMotionComplete,
+	actionsUnlocked,
 }) {
 	const [hovered, setHovered] = useState(null);
 	const tiles = room?.board?.tiles || [];
@@ -58,14 +61,24 @@ export default function Board({
 			<div className="board-center">
 				<div className="brand">MONOPOLY</div>
 				<div className="center-stack">
-					<Dice dice={room?.lastDice} rolling={diceRolling} />
+					<Dice
+						dice={room?.lastDice}
+						rolling={diceRolling}
+						onRollComplete={onDiceAnimationComplete}
+					/>
 					{room?.lastDiceRoller && (
 						<div style={{ fontSize: 11, color: 'var(--text-3)' }}>
 							{players.find((p) => p.userId === room.lastDiceRoller)?.username || '—'}{' '}
 							rolled
 						</div>
 					)}
-					<ActionBar room={room} me={me} isMyTurn={isMyTurn} act={act} />
+					<ActionBar
+						room={room}
+						me={me}
+						isMyTurn={isMyTurn}
+						act={act}
+						actionsUnlocked={actionsUnlocked}
+					/>
 				</div>
 			</div>
 
@@ -83,6 +96,7 @@ export default function Board({
 							stackIndex={stackIdx}
 							events={events}
 							onHover={(e, pl) => onHoverPlayer(pl ? { player: pl, e } : null)}
+							onMotionComplete={onTokenMotionComplete}
 						/>
 					);
 				})}

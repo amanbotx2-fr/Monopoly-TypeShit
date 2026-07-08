@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
@@ -26,12 +26,30 @@ const DESKTOP_BOARD_VIEWPORT_OFFSET =
 	DESKTOP_GAME_PADDING * 2 + DESKTOP_PANEL_BORDER_WIDTH * 2 + BOARD_STAGE_PADDING * 2;
 const DESKTOP_BOARD_MAX_SIZE = `calc(100vh - ${DESKTOP_BOARD_VIEWPORT_OFFSET}px)`;
 
+function isAnimatedMoveEvent(event) {
+	return (
+		event?.type === 'move' &&
+		event.animate !== false &&
+		Array.isArray(event.path) &&
+		event.path.length > 0
+	);
+}
+
+function appendMissing(existing, incoming) {
+	let next = existing;
+	for (const key of incoming) {
+		if (!key || next.includes(key)) continue;
+		if (next === existing) next = existing.slice();
+		next.push(key);
+	}
+	return next;
+}
+
 export default function Game({ userId, pushToast }) {
 	const nav = useNavigate();
 	const isMobile = useIsMobile();
 	const { roomCode, room, events, chat, connected, act, sendChat } = useRoom({ userId });
 
-	const [diceRolling, setDiceRolling] = useState(false);
 	const [hoveredPlayer, setHoveredPlayer] = useState(null);
 	const [tradeWith, setTradeWith] = useState(null);
 	const [peekTradeId, setPeekTradeId] = useState(null);
@@ -40,24 +58,63 @@ export default function Game({ userId, pushToast }) {
 	const handleTradeClick = useCallback((id) => setPeekTradeId(id), []);
 	const [chatOpen, setChatOpen] = useState(false);
 	const [logOpen, setLogOpen] = useState(false);
+	const drawCardCursorRef = useRef(null);
+	const [completedAnimationKeys, setCompletedAnimationKeys] = useState({
+		rolls: [],
+		moves: [],
+	});
+
+	const pendingRollKeys = useMemo(
+		() =>
+			events
+				.filter(
+					(event) =>
+						event.type === 'roll' && !completedAnimationKeys.rolls.includes(event._k),
+				)
+				.map((event) => event._k),
+		[events, completedAnimationKeys.rolls],
+	);
+	const pendingMoveKeys = useMemo(
+		() =>
+			events
+				.filter(
+					(event) =>
+						isAnimatedMoveEvent(event) &&
+						!completedAnimationKeys.moves.includes(event._k),
+				)
+				.map((event) => event._k),
+		[events, completedAnimationKeys.moves],
+	);
+	const diceRolling = pendingRollKeys.length > 0;
+	const actionsUnlocked = pendingRollKeys.length === 0 && pendingMoveKeys.length === 0;
+
+	const handleDiceAnimationComplete = useCallback(() => {
+		if (!pendingRollKeys.length) return;
+		setCompletedAnimationKeys((keys) => ({
+			...keys,
+			rolls: appendMissing(keys.rolls, pendingRollKeys),
+		}));
+	}, [pendingRollKeys]);
+
+	const handleTokenMotionComplete = useCallback((eventKey) => {
+		if (!eventKey) return;
+		setCompletedAnimationKeys((keys) => {
+			if (keys.moves.includes(eventKey)) return keys;
+			return {
+				...keys,
+				moves: keys.moves.concat(eventKey),
+			};
+		});
+	}, []);
 
 	useEffect(() => {
-		const last = events[events.length - 1];
-		if (!last) return;
-		if (last.type === 'roll') {
-			const t1 = setTimeout(() => setDiceRolling(true));
-			const t2 = setTimeout(() => setDiceRolling(false), 1150);
-			return () => {
-				clearTimeout(t1);
-				clearTimeout(t2);
-			};
-		}
-		if (last.type === 'draw-card') {
-			const t = setTimeout(() =>
-				setDrawnCard({ deck: last.deck, cardId: last.cardId, text: last.text }),
-			);
-			return () => clearTimeout(t);
-		}
+		const drawn = [...events].reverse().find((e) => e.type === 'draw-card');
+		if (!drawn || drawn._k === drawCardCursorRef.current) return;
+		drawCardCursorRef.current = drawn._k;
+		const t = setTimeout(() =>
+			setDrawnCard({ deck: drawn.deck, cardId: drawn.cardId, text: drawn.text }),
+		);
+		return () => clearTimeout(t);
 	}, [events]);
 
 	if (!room) {
@@ -215,6 +272,9 @@ export default function Game({ userId, pushToast }) {
 							onTileClick={(pos) => setOpenPropertyPos(pos)}
 							hoveredPlayer={hoveredPlayer}
 							onHoverPlayer={setHoveredPlayer}
+							onDiceAnimationComplete={handleDiceAnimationComplete}
+							onTokenMotionComplete={handleTokenMotionComplete}
+							actionsUnlocked={actionsUnlocked}
 						/>
 					</div>
 				</main>
@@ -340,6 +400,9 @@ export default function Game({ userId, pushToast }) {
 							onTileClick={(pos) => setOpenPropertyPos(pos)}
 							hoveredPlayer={hoveredPlayer}
 							onHoverPlayer={setHoveredPlayer}
+							onDiceAnimationComplete={handleDiceAnimationComplete}
+							onTokenMotionComplete={handleTokenMotionComplete}
+							actionsUnlocked={actionsUnlocked}
 						/>
 					</div>
 				</div>

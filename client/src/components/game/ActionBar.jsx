@@ -4,7 +4,7 @@ import { Dice5, ShoppingCart, X, Check, Gavel, Coins, Key } from 'lucide-react';
 // Lives inside the board's center area. Tall, full-width so button text never
 // truncates. Always renders a status line so the player knows what's happening
 // even when no buttons apply to them.
-export default function ActionBar({ room, me, isMyTurn, act }) {
+export default function ActionBar({ room, me, isMyTurn, act, actionsUnlocked = true }) {
 	if (!room || !me) return null;
 
 	const phase = room.turnPhase;
@@ -13,7 +13,10 @@ export default function ActionBar({ room, me, isMyTurn, act }) {
 
 	const actions = [];
 
-	if (me.inJail && isMyTurn && phase === 'awaiting-roll') {
+	if (!actionsUnlocked) {
+		// The server state is already authoritative; the local UI waits until
+		// dice and token animations have caught up before exposing turn actions.
+	} else if (me.inJail && isMyTurn && phase === 'awaiting-roll') {
 		actions.push({
 			key: 'jail-pay',
 			icon: Coins,
@@ -82,6 +85,7 @@ export default function ActionBar({ room, me, isMyTurn, act }) {
 
 	const status = (() => {
 		if (room.ended) return 'Game over';
+		if (!actionsUnlocked) return 'Resolving move...';
 		if (phase === 'auctioning') return 'Auction in progress…';
 		if (phase === 'trading') return 'Trade negotiation…';
 		if (isMyTurn) return phase === 'buying' ? 'Your decision' : 'Your turn';
