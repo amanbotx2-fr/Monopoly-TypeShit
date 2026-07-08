@@ -18,7 +18,14 @@ function stackOffset(side, idx) {
 // walks across each tile instead of teleporting.
 const STEP_MS = 160;
 
-export default function PlayerToken({ player, isActive, stackIndex, events, onHover }) {
+export default function PlayerToken({
+	player,
+	isActive,
+	stackIndex,
+	events,
+	onHover,
+	onMotionComplete,
+}) {
 	const [displayPos, setDisplayPos] = useState(player.position);
 	const [isJailShaking, setJailShaking] = useState(false);
 	const queueRef = useRef([]);
@@ -33,9 +40,17 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 
 		if (next.kind === 'walk') {
 			const path = next.path || [];
+			if (next.animate === false || path.length === 0) {
+				if (path.length > 0) setDisplayPos(path[path.length - 1]);
+				onMotionComplete?.(next.eventKey);
+				runningRef.current = false;
+				drain();
+				return;
+			}
 			let i = 0;
 			const step = () => {
 				if (i >= path.length) {
+					onMotionComplete?.(next.eventKey);
 					runningRef.current = false;
 					drain();
 					return;
@@ -72,7 +87,12 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 		if (newEvents.length) lastSeenVersion.current = newEvents[newEvents.length - 1]._k;
 		for (const e of newEvents) {
 			if (e.type === 'move' && e.userId === player.userId) {
-				queueRef.current.push({ kind: 'walk', path: e.path });
+				queueRef.current.push({
+					kind: 'walk',
+					path: e.path,
+					animate: e.animate,
+					eventKey: e._k,
+				});
 			}
 			if (e.type === 'jail' && e.userId === player.userId) {
 				queueRef.current.push({ kind: 'jail' });
