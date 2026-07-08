@@ -1,64 +1,58 @@
-/* ═══════════════════════════════════════════════════════════════════════════════
-   3D CSS DICE — richup.io style
-   Transform + CSS transition (no keyframes, no JS animation loops).
-   ═══════════════════════════════════════════════════════════════════════════════ */
+/* 3D CSS DICE — richup.io exact approach */
 
 .dice-wrap {
 	display: flex;
-	gap: clamp(16px, 4cqi, 24px);
-	padding: 8px;
+	gap: clamp(10px, 2.5cqi, 24px);
+	padding: clamp(2px, 0.8cqi, 8px);
 }
+.dice-wrap.dimmed { opacity: 0.3; }
 
-/* Dimmed dice (before first roll) */
-.dice-wrap.dimmed {
-	opacity: 0.3;
-}
-
-/* ── Outer: perspective + floor shadow ──────────────────────────────────── */
+/* ── Outer: perspective + floor shadow ─────────────────────────────── */
 .dice-outer {
+	--ds: clamp(36px, 10cqi, 68px);
+	--dh: calc(var(--ds) / 2);
 	perspective: 1000px;
 	position: relative;
-	padding: 0.8rem 0.6rem;
+	padding: calc(var(--ds) * 0.18) calc(var(--ds) * 0.12);
 }
 .dice-outer::before {
-	content: "";
+	content: '';
 	position: absolute;
-	bottom: 0.4rem;
-	right: 0;
-	left: 0;
+	bottom: calc(var(--ds) * 0.1);
+	right: 0; left: 0;
 	margin: 0 auto;
 	width: 85%;
 	height: 25%;
 	border-radius: 100%;
-	background: rgba(255, 255, 255, 0.12);
-	transform-origin: center;
+	background: rgba(255,255,255,0.15);
 	pointer-events: none;
 }
 
-/* ── Inner: 3D tilt ─────────────────────────────────────────────────────── */
+/* ── Tilt ──────────────────────────────────────────────────────────── */
 .dice-inner {
 	transform-style: preserve-3d;
 	transform: rotateX(35deg) rotateZ(45deg);
 }
 
-/* ── Cube: CSS transition does ALL animation ─────────────────────────────── */
+/* ── Cube — CSS transition does ALL animation ──────────────────────── */
 .dice-cube {
 	position: relative;
-	width: 64px;
-	height: 64px;
+	width: var(--ds);
+	height: var(--ds);
 	transform-style: preserve-3d;
 	transition: transform 1s cubic-bezier(0, 0, 0, 1);
 }
 
-/* ── Faces ───────────────────────────────────────────────────────────────── */
+/* ── Faces ─────────────────────────────────────────────────────────── */
 .dice-face {
 	position: absolute;
-	width: 64px;
-	height: 64px;
+	width: var(--ds);
+	height: var(--ds);
 	background: #fff;
-	border-radius: 14px;
+	box-shadow: inset 0 0 1em 0.25em #d9d9d9;
+	border-radius: calc(var(--ds) * 0.22);
 	display: grid;
-	grid-template-areas: "a b c" "d e f" "g h i";
+	grid-template-areas: 'a b c' 'd e f' 'g h i';
 	grid-template-columns: repeat(3, 1fr);
 	grid-template-rows: repeat(3, 1fr);
 	align-items: center;
@@ -68,43 +62,43 @@
 	z-index: 1;
 	transform-style: preserve-3d;
 	backface-visibility: hidden;
-	box-shadow: inset 0 0 0.8em 0.2em rgba(0, 0, 0, 0.06);
 }
-/* Solid back-face so you don't see through the cube at seams */
+/* Solid back-face (richup uses ::after with rotateY(180deg)) */
 .dice-face::after {
-	content: "";
+	content: '';
 	position: absolute;
 	inset: 0;
-	background: #e0e0e0;
+	background: #d9d9d9;
 	border-radius: inherit;
 	transform: rotateY(180deg);
 	backface-visibility: hidden;
 }
 
-/* Edge fillers — flat gray rectangles that fill the triangular gaps
-   where rounded face corners don't meet at the cube edges. */
+.dice-dot {
+	width: calc(var(--ds) * 0.15);
+	height: calc(var(--ds) * 0.15);
+	border-radius: 50%;
+	background: #1a1a1a;
+}
+
+/* Face 3D positions */
+.dice-face[data-side='1'] { transform: rotateX(-180deg) translateZ(var(--dh)); }
+.dice-face[data-side='2'] { transform: rotateX(90deg)   translateZ(var(--dh)); }
+.dice-face[data-side='3'] { transform: rotateY(90deg)   translateZ(var(--dh)); }
+.dice-face[data-side='4'] { transform: rotateY(-90deg)  translateZ(var(--dh)); }
+.dice-face[data-side='5'] { transform: rotateX(-90deg)  translateZ(var(--dh)); }
+.dice-face[data-side='6'] { transform: translateZ(var(--dh)); }
+
+/* ── Edge fillers (skeleton) ───────────────────────────────────────── */
 .dice-edge {
 	position: absolute;
-	width: 64px;
-	height: 64px;
-	background: #dcdcdc;
+	width: var(--ds);
+	height: var(--ds);
+	background: #d9d9d9;
+	border-radius: 0;
 	backface-visibility: hidden;
 }
 .d-edge-x { transform: rotateX(90deg); }
 .d-edge-y { transform: rotateY(90deg); }
 .d-edge-z { transform: rotateZ(90deg); }
 
-.dice-dot {
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	background: #1a1a1a;
-}
-
-/* Face 3D positions — translateZ = half cube width (32px) */
-.dice-face[data-side="1"] { transform: rotateX(-180deg) translateZ(32px); }
-.dice-face[data-side="2"] { transform: rotateX(90deg)   translateZ(32px); }
-.dice-face[data-side="3"] { transform: rotateY(90deg)   translateZ(32px); }
-.dice-face[data-side="4"] { transform: rotateY(-90deg)  translateZ(32px); }
-.dice-face[data-side="5"] { transform: rotateX(-90deg)  translateZ(32px); }
-.dice-face[data-side="6"] { transform: translateZ(32px); }
