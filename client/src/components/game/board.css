@@ -163,6 +163,36 @@
 	width: var(--bar-size);
 }
 
+/* ─── Blurred flag background (richup-style glow) ──────────────────────────── */
+.tile-flag-bg {
+	position: absolute;
+	z-index: 0;
+	inset: 0;
+	opacity: 0.175;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: inherit;
+	overflow: hidden;
+	pointer-events: none;
+}
+.tile-flag-bg-inner {
+	position: absolute;
+	inset: 0;
+	filter: blur(2px);
+	overflow: hidden;
+	border-radius: inherit;
+}
+.tile-flag-bg-inner img {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 125%;
+	height: 125%;
+	object-fit: cover;
+}
+
 /* ─── Flag circle (inner edge, half outside tile toward center) ───────────── */
 .tile-flag {
 	position: absolute;
@@ -233,8 +263,8 @@
 }
 
 .tile-name {
-	font-size: clamp(6px, 1.1cqi, 10px);
-	font-weight: 600;
+	font-size: clamp(7px, 1.3cqi, 12px);
+	font-weight: 700;
 	line-height: 1.1;
 	color: #fff;
 	text-align: center;

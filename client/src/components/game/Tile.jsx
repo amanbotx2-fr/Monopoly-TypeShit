@@ -40,6 +40,15 @@ export default function Tile({
 			onMouseEnter={(e) => isClickable && onHover?.(e, def)}
 			onMouseLeave={() => onHover?.(null, null)}
 		>
+			{/* Blurred flag background (richup-style glow) */}
+			{cfg?.badge === 'flag' && icon && (
+				<div className="tile-flag-bg">
+					<div className="tile-flag-bg-inner">
+						<img src={icon} alt="" aria-hidden="true" />
+					</div>
+				</div>
+			)}
+
 			{/* Owner glow stripe on outer edge */}
 			{ownerColor && (
 				<div
