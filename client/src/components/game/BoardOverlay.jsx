@@ -7,7 +7,7 @@ import { tileCenter } from './layout';
 // Each effect has a unique key and auto-removes after its CSS animation ends.
 const LIFESPAN_MS = 2200;
 
-export default function BoardOverlay({ room, events, players }) {
+export default function BoardOverlay({ room, events, players, boardInfo }) {
 	const [effects, setEffects] = useState([]);
 	const seenRef = useRef(new Set());
 
@@ -34,7 +34,7 @@ export default function BoardOverlay({ room, events, players }) {
 		}
 	}, [events, room, players]);
 
-	return <div className="board-overlay">{effects.map((fx) => renderEffect(fx))}</div>;
+	return <div className="board-overlay">{effects.map((fx) => renderEffect(fx, boardInfo))}</div>;
 }
 
 let _id = 0;
@@ -103,9 +103,9 @@ function anchorPos(e, room) {
 	return p ? p.position : null;
 }
 
-function renderEffect(fx) {
+function renderEffect(fx, boardInfo) {
 	if (fx.kind === 'money') {
-		const [x, y] = tileCenter(fx.pos);
+		const [x, y] = tileCenter(fx.pos, boardInfo);
 		return (
 			<div
 				key={fx.id}
@@ -117,7 +117,8 @@ function renderEffect(fx) {
 		);
 	}
 	if (fx.kind === 'go-burst') {
-		const [x, y] = tileCenter(0); // GO tile center
+		const goPos = boardInfo?.goPos ?? 0;
+		const [x, y] = tileCenter(goPos, boardInfo);
 		return (
 			<div key={fx.id} className="go-burst" style={{ left: x + '%', top: y + '%' }}>
 				+${fx.amount}
@@ -125,7 +126,7 @@ function renderEffect(fx) {
 		);
 	}
 	if (fx.kind === 'buy-sparkle') {
-		const [x, y] = tileCenter(fx.pos);
+		const [x, y] = tileCenter(fx.pos, boardInfo);
 		return (
 			<div
 				key={fx.id}

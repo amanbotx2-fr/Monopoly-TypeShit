@@ -1,54 +1,33 @@
 import React from 'react';
-import { tileRect, innerEdge, BAR_PCT, TOKEN_STRIP_END_PCT } from './layout';
-import {
-	Train,
-	Lightbulb,
-	Droplet,
-	HelpCircle,
-	Package,
-	Coins,
-	Car,
-	PlayCircle,
-	Lock,
-} from 'lucide-react';
+import { getTileConfig, resolveIcon } from '../../tileRegistry.jsx';
 
-const OWNER_BAND_SIZE = '14%';
-const OWNER_BAND_INSET = '8%';
-const OWNER_BAND_RADIUS = 6;
-const OWNED_CONTENT_OFFSETS = {
-	top: 8,
-	bottom: 8,
-	left: 10,
-	right: 10,
-};
-
-// Tile renderer — all text upright regardless of side. Layout:
-//   • color bar (if property) pinned to the inner edge (facing board center)
-//   • houses also on the inner edge (above/next to the color bar)
-//   • name + price stacked in the tile body, horizontally centered
-//   • a reserved strip on the inner edge holds houses + token slot so they
-//     never overlap the name
-export default function Tile({ def, state, players, onClick, onHover, highlight, highlightColor }) {
-	const rect = tileRect(def.pos);
-	const inner = innerEdge(rect.side);
+// Side is passed in from Board.jsx — no hardcoded position logic here.
+export default function Tile({
+	def,
+	side,
+	gridArea,
+	state,
+	players,
+	onClick,
+	onHover,
+	highlight,
+	highlightColor,
+}) {
 	const mortgaged = state?.mortgaged;
-	const isClickable = ['property', 'station', 'utility'].includes(def.type);
+	const cfg = getTileConfig(def.type);
+	const isClickable = cfg?.clickable ?? false;
 	const ownerColor = state?.owner ? players.find((p) => p.userId === state.owner)?.color : null;
-
-	const baseStyle = {
-		position: 'absolute',
-		left: rect.left + '%',
-		top: rect.top + '%',
-		width: rect.width + '%',
-		height: rect.height + '%',
-	};
+	const icon = resolveIcon(def);
 
 	const tileClass = [
 		'tile',
-		rect.side,
+		`tile-side-${side}`,
+		side === 'corner' ? 'tile-corner' : '',
 		mortgaged ? 'mortgaged' : '',
 		isClickable ? 'clickable' : '',
 		highlight ? `highlight-${highlight}` : '',
+		cfg?.cssClass || '',
+		typeof cfg?.cssClassFn === 'function' ? cfg.cssClassFn(def) : '',
 	]
 		.filter(Boolean)
 		.join(' ');
@@ -56,319 +35,85 @@ export default function Tile({ def, state, players, onClick, onHover, highlight,
 	return (
 		<div
 			className={tileClass}
-			style={baseStyle}
+			style={gridArea ? { gridArea } : undefined}
 			onClick={isClickable ? onClick : undefined}
 			onMouseEnter={(e) => isClickable && onHover?.(e, def)}
 			onMouseLeave={() => onHover?.(null, null)}
 		>
-			{ownerColor && <OwnerStripe side={rect.side} color={ownerColor} />}
+			{/* Blurred flag background (richup-style glow) */}
+			{cfg?.badge === 'flag' && icon && (
+				<div className="tile-flag-bg">
+					<div className="tile-flag-bg-inner">
+						<img src={icon} alt="" aria-hidden="true" />
+					</div>
+				</div>
+			)}
 
-			{highlight === 'position' && (
+			{/* Owner glow stripe on outer edge */}
+			{ownerColor && (
+				<div
+					className="owner-stripe"
+					style={{ color: ownerColor, background: ownerColor }}
+				/>
+			)}
+
+			{/* Player hover highlight ring */}
+			{(highlight === 'position' || highlight === 'owned') && (
 				<div className="position-highlight" style={{ '--hl-color': highlightColor }} />
 			)}
 
-			{rect.side === 'corner' ? (
-				<CornerContent def={def} />
+			{/* Color bar (property tiles) */}
+			{cfg?.colorBar && def.color && (
+				<div className="tile-color-bar" style={{ background: def.color }}>
+					<HouseRow state={state} side={side} />
+				</div>
+			)}
+
+			{/* Flag badge at inner edge */}
+			{cfg?.badge === 'flag' && icon && (
+				<div className="tile-flag">
+					<img src={icon} alt={def.name} loading="lazy" />
+				</div>
+			)}
+
+			{/* Tile content */}
+			{cfg?.corner ? (
+				<CornerBody def={def} cfg={cfg} icon={icon} />
 			) : (
-				<SideContent def={def} state={state} side={rect.side} inner={inner} />
+				<SideBody def={def} state={state} cfg={cfg} icon={icon} />
 			)}
 		</div>
 	);
 }
 
-function OwnerStripe({ side, color }) {
-	const common = {
-		position: 'absolute',
-		background: color,
-		boxShadow: `0 0 8px ${color}`,
-		pointerEvents: 'none',
-		zIndex: 2,
-		borderRadius: OWNER_BAND_RADIUS,
-	};
-	if (side === 'top')
-		return (
-			<div
-				style={{
-					...common,
-					left: OWNER_BAND_INSET,
-					right: OWNER_BAND_INSET,
-					top: 0,
-					height: OWNER_BAND_SIZE,
-				}}
-			/>
-		);
-	if (side === 'bottom')
-		return (
-			<div
-				style={{
-					...common,
-					left: OWNER_BAND_INSET,
-					right: OWNER_BAND_INSET,
-					bottom: 0,
-					height: OWNER_BAND_SIZE,
-				}}
-			/>
-		);
-	if (side === 'left')
-		return (
-			<div
-				style={{
-					...common,
-					left: 0,
-					top: OWNER_BAND_INSET,
-					bottom: OWNER_BAND_INSET,
-					width: OWNER_BAND_SIZE,
-				}}
-			/>
-		);
-	if (side === 'right')
-		return (
-			<div
-				style={{
-					...common,
-					right: 0,
-					top: OWNER_BAND_INSET,
-					bottom: OWNER_BAND_INSET,
-					width: OWNER_BAND_SIZE,
-				}}
-			/>
-		);
-	return null;
+// ─── Side tile body ──────────────────────────────────────────────────────────
+function SideBody({ def, state, cfg, icon }) {
+	if (!cfg) return null;
+	return <div className="tile-body">{cfg.body(def, state, icon)}</div>;
 }
 
-// Side tiles: color-bar strip on inner edge, content stacked upright.
-// Proportions chosen so a 9-char name fits comfortably on one line on a
-// 700×700 board (~59px tile width for top/bottom).
-function SideContent({ def, state, side, inner }) {
-	const isVertical = side === 'left' || side === 'right';
-	const ownedContentPadding =
-		state?.owner && side === 'top'
-			? { paddingTop: OWNED_CONTENT_OFFSETS.top }
-			: state?.owner && side === 'bottom'
-				? { paddingBottom: OWNED_CONTENT_OFFSETS.bottom }
-				: state?.owner && side === 'left'
-					? { paddingLeft: OWNED_CONTENT_OFFSETS.left }
-					: state?.owner && side === 'right'
-						? { paddingRight: OWNED_CONTENT_OFFSETS.right }
-						: null;
-
-	// Color-bar strip placement.
-	const barSide = inner; // 'top' | 'bottom' | 'left' | 'right'
-	const barStyle = {
-		position: 'absolute',
-		background: def.color || 'transparent',
-		[barSide]: 0,
-		...(isVertical
-			? { top: 0, bottom: 0, width: BAR_PCT + '%' }
-			: { left: 0, right: 0, height: BAR_PCT + '%' }),
-	};
-
-	// Body sits past the token strip from the inner edge — that way tokens
-	// have their own reserved zone and never sit on top of text.
-	const bodyStyle = {
-		position: 'absolute',
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-		justifyContent: 'center',
-		padding: '3%',
-		gap: '2px',
-			...(isVertical
-				? {
-						top: 0,
-						bottom: 0,
-						[barSide === 'left' ? 'left' : 'right']: TOKEN_STRIP_END_PCT + '%',
-						[barSide === 'left' ? 'right' : 'left']: 0,
-					}
-				: {
-						left: 0,
-						right: 0,
-						[barSide === 'top' ? 'top' : 'bottom']: TOKEN_STRIP_END_PCT + '%',
-						[barSide === 'top' ? 'bottom' : 'top']: 0,
-					}),
-			...(ownedContentPadding || {}),
-		};
-
-	return (
-		<>
-			{def.type === 'property' && (
-				<div style={barStyle}>
-					<HouseRow state={state} side={side} />
-				</div>
-			)}
-			<div style={bodyStyle}>
-				<TileInnerContent def={def} />
-			</div>
-		</>
-	);
+// ─── Corner tile body ────────────────────────────────────────────────────────
+function CornerBody({ def, cfg, icon }) {
+	if (!cfg) return null;
+	return <div className="tile-corner-body">{cfg.cornerBody(def, icon)}</div>;
 }
 
-// Stacked icon / name / price, scales with board size, always upright.
-function TileInnerContent({ def }) {
-	if (def.type === 'property') {
-		return (
-			<>
-				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">${def.price}</div>
-			</>
-		);
-	}
-	if (def.type === 'station') {
-		return (
-			<>
-				<Train style={{ width: 18, height: 18 }} color="var(--text-2)" />
-				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">${def.price}</div>
-			</>
-		);
-	}
-	if (def.type === 'utility') {
-		const Icon = def.name.toLowerCase().includes('electric') ? Lightbulb : Droplet;
-		return (
-			<>
-				<Icon
-					style={{ width: 18, height: 18 }}
-					color={
-						def.name.toLowerCase().includes('electric')
-							? 'var(--warning)'
-							: 'var(--accent-2)'
-					}
-				/>
-				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">${def.price}</div>
-			</>
-		);
-	}
-	if (def.type === 'chance') {
-		return (
-			<>
-				<HelpCircle style={{ width: 20, height: 20 }} color="var(--warning)" />
-				<div className="tile-name" style={{ color: 'var(--warning)' }}>
-					Chance
-				</div>
-			</>
-		);
-	}
-	if (def.type === 'chest') {
-		return (
-			<>
-				<Package style={{ width: 20, height: 20 }} color="var(--accent-2)" />
-				<div className="tile-name" style={{ color: 'var(--accent-2)' }}>
-					Chest
-				</div>
-			</>
-		);
-	}
-	if (def.type === 'tax') {
-		return (
-			<>
-				<Coins style={{ width: 19, height: 19 }} color="var(--danger)" />
-				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">-${def.amount}</div>
-			</>
-		);
-	}
-	return null;
-}
-
-// ─── Corner tiles ────────────────────────────────────────────────────────────
-function CornerContent({ def }) {
-	const wrap = {
-		width: '100%',
-		height: '100%',
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-		justifyContent: 'center',
-		padding: 6,
-		gap: 4,
-		textAlign: 'center',
-	};
-	if (def.type === 'go') {
-		return (
-			<div style={wrap}>
-				<PlayCircle style={{ width: 28, height: 28 }} color="var(--success)" />
-				<div
-					style={{
-						fontSize: 14,
-						fontWeight: 900,
-						color: 'var(--success)',
-						lineHeight: 1,
-					}}
-				>
-					GO
-				</div>
-				<div style={{ fontSize: 9, color: 'var(--text-3)' }}>Collect salary</div>
-			</div>
-		);
-	}
-	if (def.type === 'jail') {
-		return (
-			<div style={wrap}>
-				<Lock style={{ width: 24, height: 24 }} color="var(--warning)" />
-				<div
-					style={{
-						fontSize: 12,
-						fontWeight: 800,
-						color: 'var(--warning)',
-						lineHeight: 1,
-					}}
-				>
-					JAIL
-				</div>
-				<div style={{ fontSize: 9, color: 'var(--text-3)' }}>Just visiting</div>
-			</div>
-		);
-	}
-	if (def.type === 'parking') {
-		return (
-			<div style={wrap}>
-				<Car style={{ width: 24, height: 24 }} color="var(--text-2)" />
-				<div style={{ fontSize: 11, fontWeight: 800, lineHeight: 1.1 }}>Free Parking</div>
-			</div>
-		);
-	}
-	if (def.type === 'gotojail') {
-		return (
-			<div style={wrap}>
-				<Car style={{ width: 24, height: 24 }} color="var(--danger)" />
-				<div
-					style={{
-						fontSize: 11,
-						fontWeight: 800,
-						color: 'var(--danger)',
-						lineHeight: 1.1,
-					}}
-				>
-					Go to Jail
-				</div>
-			</div>
-		);
-	}
-	return null;
-}
-
+// ─── Houses / Hotel row ──────────────────────────────────────────────────────
 function HouseRow({ state, side }) {
 	if (!state || state.houses === 0) return null;
 	const isVertical = side === 'left' || side === 'right';
-	const style = {
-		display: 'flex',
-		flexDirection: isVertical ? 'column' : 'row',
-		gap: 2,
-		alignItems: 'center',
-		justifyContent: 'center',
-		width: '100%',
-		height: '100%',
-	};
-	if (state.houses >= 5)
+	const dir = isVertical ? 'column' : 'row';
+
+	if (state.houses >= 5) {
 		return (
-			<div style={style}>
-				<div className="hotel" title="Hotel" />
+			<div className="tile-houses" style={{ flexDirection: dir }}>
+				<div className="hotel" />
 			</div>
 		);
+	}
 	return (
-		<div style={style}>
-			{Array.from({ length: state.houses }).map((_, i) => (
+		<div className="tile-houses" style={{ flexDirection: dir }}>
+			{Array.from({ length: state.houses }, (_, i) => (
 				<div key={i} className="house" />
 			))}
 		</div>

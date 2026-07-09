@@ -491,6 +491,7 @@ function validateBoardTiles(tiles) {
 				'houseCost',
 				'mortgage',
 				'amount',
+				'icon',
 			],
 			`tile ${i}`,
 		);

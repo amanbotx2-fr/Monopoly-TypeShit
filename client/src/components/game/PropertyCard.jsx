@@ -1,17 +1,35 @@
 import React from 'react';
+import { tileIcon } from '../../flagUtils.js';
 
 // Detailed property info — rent table, mortgage value, houses. Used as a
 // hover popup on the board and inside the trade / property panels.
 export default function PropertyCard({ def, state, players, style, compact: _compact }) {
 	if (!def) return null;
 	const owner = state?.owner ? players?.find((p) => p.userId === state.owner) : null;
+	const icon = tileIcon(def);
 
 	if (def.type === 'property') {
 		return (
 			<div className="prop-popup fade-in" style={style}>
 				<div style={{ background: def.color, height: 20 }} />
 				<div style={{ padding: 12 }}>
-					<div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{def.name}</div>
+					<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+						{icon && (
+							<img
+								src={icon}
+								alt=""
+								style={{
+									width: 20,
+									height: 20,
+									borderRadius: def.type === 'property' ? '50%' : 4,
+									objectFit: 'cover',
+									flexShrink: 0,
+									border: def.type === 'property' ? '1px solid rgba(255,255,255,0.15)' : 'none',
+								}}
+							/>
+						)}
+						<div style={{ fontSize: 14, fontWeight: 700 }}>{def.name}</div>
+					</div>
 					<div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10 }}>
 						Price ${def.price} · Mortgage ${def.mortgage} · House ${def.houseCost}
 					</div>

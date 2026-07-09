@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Tile from './Tile';
 import PlayerToken from './PlayerToken';
 import Dice from './Dice';
@@ -6,8 +6,11 @@ import PropertyCard from './PropertyCard';
 import BoardOverlay from './BoardOverlay';
 import PlayerHoverCard from './PlayerHoverCard';
 import ActionBar from './ActionBar';
+import { analyzeBoard, tileSide, gridArea } from './layout';
 import './board.css';
 
+// CSS Grid-based board. All tile grouping is derived from tile types
+// so custom maps with different arrangements just work.
 export default function Board({
 	room,
 	userId: _userId,
@@ -19,23 +22,20 @@ export default function Board({
 	onTileClick,
 	hoveredPlayer,
 	onHoverPlayer,
-	onDiceAnimationComplete,
-	onTokenMotionComplete,
-	actionsUnlocked,
 }) {
 	const [hovered, setHovered] = useState(null);
 	const tiles = room?.board?.tiles || [];
 	const tileState = room?.tileState || [];
 	const players = room?.players || [];
 	const active = room?.players?.[room?.turnIndex];
+	// Analyze board once — derives corner positions and side count from tile types.
+	const boardInfo = useMemo(() => analyzeBoard(tiles), [tiles]);
 
-	// Compute which tiles to highlight when hovering a player token.
-	// Includes the player's current position and all owned properties.
+	// Compute highlight set when hovering a player token.
 	const highlightTiles = (() => {
 		if (!hoveredPlayer) return {};
 		const p = hoveredPlayer.player;
 		const set = {};
-		// Player position gets a different highlight type.
 		if (p.position != null) set[p.position] = 'position';
 		for (const pos of p.owned || []) {
 			if (!(pos in set)) set[pos] = 'owned';
@@ -43,65 +43,117 @@ export default function Board({
 		return set;
 	})();
 
+	// Split tiles by side, driven by tile types not magic numbers.
+	const cornerTiles = useMemo(() => {
+		if (!boardInfo) return [];
+		const { goPos, jailPos, parkingPos, gotoprisonPos } = boardInfo;
+		return tiles.filter((t) => [goPos, jailPos, parkingPos, gotoprisonPos].includes(t.pos));
+	}, [tiles, boardInfo]);
+
+	const topTiles = useMemo(() => {
+		if (!boardInfo) return [];
+		const { goPos, jailPos } = boardInfo;
+		return tiles.filter((t) => t.pos > goPos && t.pos < jailPos);
+	}, [tiles, boardInfo]);
+
+	const rightTiles = useMemo(() => {
+		if (!boardInfo) return [];
+		const { jailPos, parkingPos } = boardInfo;
+		return tiles.filter((t) => t.pos > jailPos && t.pos < parkingPos);
+	}, [tiles, boardInfo]);
+
+	const bottomTiles = useMemo(() => {
+		if (!boardInfo) return [];
+		const { parkingPos, gotoprisonPos } = boardInfo;
+		return tiles.filter((t) => t.pos > parkingPos && t.pos < gotoprisonPos);
+	}, [tiles, boardInfo]);
+
+	const leftTiles = useMemo(() => {
+		if (!boardInfo) return [];
+		const { gotoprisonPos, goPos } = boardInfo;
+		return tiles.filter((t) => t.pos > gotoprisonPos || t.pos < goPos);
+	}, [tiles, boardInfo]);
+
+	const renderTile = (t) => {
+		const side = boardInfo ? tileSide(t.pos, boardInfo) : 'corner';
+		const area = boardInfo ? gridArea(t.pos, boardInfo) : null;
+		return (
+			<Tile
+				key={t.pos}
+				def={t}
+				side={side}
+				gridArea={area}
+				state={tileState[t.pos]}
+				players={players}
+				onClick={() => onTileClick?.(t.pos)}
+				onHover={(e, def) => setHovered(def ? { def, state: tileState[t.pos], e } : null)}
+				highlight={highlightTiles[t.pos] || null}
+				highlightColor={hoveredPlayer?.player?.color}
+			/>
+		);
+	};
+
 	return (
 		<div className="board">
-			{tiles.map((t, i) => (
-				<Tile
-					key={i}
-					def={t}
-					state={tileState[i]}
-					players={players}
-					onClick={() => onTileClick?.(i)}
-					onHover={(e, def) => setHovered(def ? { def, state: tileState[i], e } : null)}
-					highlight={highlightTiles[i] || null}
-					highlightColor={hoveredPlayer?.player?.color}
-				/>
-			))}
+			{/* Corner tiles (placed by grid-area) */}
+			{cornerTiles.map(renderTile)}
 
+			{/* Top row */}
+			<div className="side-row side-row-top">{topTiles.map(renderTile)}</div>
+
+			{/* Right column */}
+			<div className="side-col side-col-right">{rightTiles.map(renderTile)}</div>
+
+			{/* Bottom row */}
+			<div className="side-row side-row-bottom">{bottomTiles.map(renderTile)}</div>
+
+			{/* Left column */}
+			<div className="side-col side-col-left">{leftTiles.map(renderTile)}</div>
+
+			{/* Center area */}
 			<div className="board-center">
-				<div className="brand">MONOPOLY</div>
+				<div className="board-brand">MONOPOLY</div>
 				<div className="center-stack">
-					<Dice
-						dice={room?.lastDice}
-						rolling={diceRolling}
-						onRollComplete={onDiceAnimationComplete}
-					/>
+					<Dice dice={room?.lastDice} rolling={diceRolling} />
 					{room?.lastDiceRoller && (
-						<div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+						<div className="dice-roller">
 							{players.find((p) => p.userId === room.lastDiceRoller)?.username || '—'}{' '}
 							rolled
 						</div>
 					)}
-					<ActionBar
-						room={room}
-						me={me}
-						isMyTurn={isMyTurn}
-						act={act}
-						actionsUnlocked={actionsUnlocked}
-					/>
+					<ActionBar room={room} me={me} isMyTurn={isMyTurn} act={act} />
 				</div>
+
+				{room?.lastDice && !diceRolling && (
+					<div className="dice-roller" style={{ marginTop: 4 }}>
+						{room.lastDice[0]} + {room.lastDice[1]}
+					</div>
+				)}
 			</div>
 
-			{players
-				.filter((p) => !p.bankrupt)
-				.map((p) => {
-					const stackIdx = players
-						.filter((x) => !x.bankrupt && x.position === p.position)
-						.findIndex((x) => x.userId === p.userId);
-					return (
-						<PlayerToken
-							key={p.userId}
-							player={p}
-							isActive={active?.userId === p.userId && room?.started}
-							stackIndex={stackIdx}
-							events={events}
-							onHover={(e, pl) => onHoverPlayer(pl ? { player: pl, e } : null)}
-							onMotionComplete={onTokenMotionComplete}
-						/>
-					);
-				})}
+			{/* Player tokens overlay */}
+			<div className="board-tokens">
+				{players
+					.filter((p) => !p.bankrupt)
+					.map((p) => {
+						const stackIdx = players
+							.filter((x) => !x.bankrupt && x.position === p.position)
+							.findIndex((x) => x.userId === p.userId);
+						return (
+							<PlayerToken
+								key={p.userId}
+								player={p}
+								isActive={active?.userId === p.userId && room?.started}
+								stackIndex={stackIdx}
+								events={events}
+								boardInfo={boardInfo}
+								onHover={(e, pl) => onHoverPlayer(pl ? { player: pl, e } : null)}
+							/>
+						);
+					})}
+			</div>
 
-			<BoardOverlay room={room} events={events} players={players} />
+			<BoardOverlay room={room} events={events} players={players} boardInfo={boardInfo} />
 
 			{hoveredPlayer && <div className="board-dim" />}
 

@@ -1,144 +1,91 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import './dice.css';
 
-// Pip positions for each face (1..6) in a 3x3 grid.
-const PIPS = {
-	1: [[1, 1]],
-	2: [
-		[0, 0],
-		[2, 2],
-	],
-	3: [
-		[0, 0],
-		[1, 1],
-		[2, 2],
-	],
-	4: [
-		[0, 0],
-		[0, 2],
-		[2, 0],
-		[2, 2],
-	],
-	5: [
-		[0, 0],
-		[0, 2],
-		[1, 1],
-		[2, 0],
-		[2, 2],
-	],
-	6: [
-		[0, 0],
-		[0, 2],
-		[1, 0],
-		[1, 2],
-		[2, 0],
-		[2, 2],
-	],
+// Face transforms — which rotation shows that pip face to the viewer.
+// These are applied as inline el.style.transform (no CSS var() in keyframes).
+const FACE = {
+	1: 'rotateX(180deg)',
+	2: 'rotateX(-90deg)',
+	3: 'rotateY(90deg)',
+	4: 'rotateY(-90deg)',
+	5: 'rotateX(90deg)',
+	6: 'rotateX(0deg)',
 };
 
-// Cycle through random faces while the dice shake. We freeze on the real
-// result a bit before the CSS animation ends so the final pop lands on the
-// actual number.
-const CYCLE_MS = 90;
-const SHAKE_END_MS = 800; // stop cycling; freeze on the real result
-const TOTAL_MS = 1100; // matches diceRoll keyframes in board.css
+const PIPS = {
+	1: ['e'],
+	2: ['a', 'i'],
+	3: ['a', 'e', 'i'],
+	4: ['a', 'c', 'g', 'i'],
+	5: ['a', 'c', 'e', 'g', 'i'],
+	6: ['a', 'c', 'd', 'f', 'g', 'i'],
+};
 
-export default function Dice({ dice, rolling, onRollComplete }) {
-	const [shown, setShown] = useState(dice || [1, 1]);
-	const timerRef = useRef(null);
-	const prevDice = useRef(dice);
-	const completedDiceRef = useRef(0);
+export default function Dice({ dice, rolling }) {
+	return (
+		<div className={`dice-wrap${!dice ? ' dimmed' : ''}`}>
+			<Die value={dice?.[0] ?? 1} rolling={rolling} altSpin={false} />
+			<Die value={dice?.[1] ?? 1} rolling={rolling} altSpin={true} />
+		</div>
+	);
+}
+
+function Die({ value, rolling, altSpin }) {
+	const cubeRef = useRef(null);
+	// Tracks state between renders without causing re-renders
+	const s = useRef({ mounted: false, wasRolling: false });
 
 	useEffect(() => {
-		if (rolling) completedDiceRef.current = 0;
-	}, [rolling]);
+		const el = cubeRef.current;
+		if (!el) return;
 
-	// Sync display with real dice when not rolling.
-	useEffect(() => {
-		if (!rolling && dice) {
-			const t = setTimeout(() => setShown(dice));
-			return () => clearTimeout(t);
-		}
-	}, [rolling, dice]);
-
-	// Rolling animation — flicker through random faces then freeze on result.
-	useEffect(() => {
-		if (!rolling) return;
-		const start = Date.now();
-		const tick = () => {
-			const elapsed = Date.now() - start;
-			if (elapsed < SHAKE_END_MS) {
-				// Keep flickering — ensure each tick actually changes at least
-				// one value so the eye sees motion.
-				setShown((prev) => {
-					let a = 1 + Math.floor(Math.random() * 6);
-					let b = 1 + Math.floor(Math.random() * 6);
-					if (prev && a === prev[0] && b === prev[1]) a = 1 + (a % 6);
-					return [a, b];
-				});
-				timerRef.current = setTimeout(tick, CYCLE_MS);
-			} else if (dice) {
-				// Lock the final value well before the rotation finishes, so
-				// the tumble visibly settles on the actual result.
-				setShown(dice);
+		if (rolling) {
+			// ── Start spin ──────────────────────────────────────────
+			s.current.wasRolling = true;
+			el.style.setProperty('transition', 'none', 'important');
+			el.style.removeProperty('transform');
+			el.classList.remove('dice-spin', 'dice-spin-alt');
+			// Force reflow so re-adding the class restarts the animation
+			void el.offsetHeight;
+			el.classList.add(altSpin ? 'dice-spin-alt' : 'dice-spin');
+		} else {
+			const justSettling = s.current.wasRolling;
+			s.current.wasRolling = false;
+			el.classList.remove('dice-spin', 'dice-spin-alt');
+			void el.offsetHeight;
+			// Only update the face when:
+			// • First mount (show initial face, no transition)
+			// • Just finished rolling (settle with ease-out transition)
+			// Otherwise the server updates lastDice BEFORE rolling=true fires,
+			// which would instantly reveal the result before any spin.
+			if (!s.current.mounted || justSettling) {
+				const tr = justSettling ? 'transform 0.1s ease-out' : 'none';
+				el.style.setProperty('transition', tr, 'important');
+				s.current.mounted = true;
+				el.style.setProperty('transform', FACE[value] ?? FACE[6], 'important');
 			}
-		};
-		tick();
-		return () => {
-			if (timerRef.current) clearTimeout(timerRef.current);
-		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [rolling]);
-
-	// If a new dice value arrives while not rolling (e.g. reconnect), adopt it.
-	useEffect(() => {
-		if (!rolling && dice && prevDice.current !== dice) {
-			setShown(dice);
-			prevDice.current = dice;
 		}
-	}, [dice, rolling]);
-
-	if (!shown || shown[0] == null) {
-		return (
-			<div className="dice-wrap" style={{ opacity: 0.3 }}>
-				<Die value={1} rolling={false} />
-				<Die value={1} rolling={false} />
-			</div>
-		);
-	}
-
-	function handleAnimationEnd(e) {
-		if (!rolling || !e.target.classList?.contains('die')) return;
-		completedDiceRef.current += 1;
-		if (completedDiceRef.current < 2) return;
-		completedDiceRef.current = 0;
-		onRollComplete?.();
-	}
+	}, [rolling, value, altSpin]);
 
 	return (
-		<div className="dice-wrap" onAnimationEnd={handleAnimationEnd}>
-			<Die value={shown[0]} rolling={rolling} />
-			<Die value={shown[1]} rolling={rolling} />
-		</div>
-	);
-}
-
-function Die({ value, rolling }) {
-	const pips = PIPS[value] || [];
-	const grid = Array.from({ length: 9 }).map((_, i) => {
-		const row = Math.floor(i / 3),
-			col = i % 3;
-		return pips.some(([r, c]) => r === row && c === col);
-	});
-	return (
-		<div className={`die ${rolling ? 'rolling' : ''}`}>
-			{grid.map((on, i) => (
-				<div key={i} style={{ padding: 2, display: 'grid', placeItems: 'center' }}>
-					{on && <span className="die-pip" />}
+		<div className="dice-outer">
+			<div className="dice-inner">
+				<div className="dice-cube" ref={cubeRef}>
+					{[1, 2, 3, 4, 5, 6].map((s) => (
+						<div key={s} className="dice-face" data-side={s}>
+							{PIPS[s].map((a, i) => (
+								<div key={i} className="dice-dot" style={{ gridArea: a }} />
+							))}
+						</div>
+					))}
+					<div className="dice-edge d-edge-x" />
+					<div className="dice-edge d-edge-y" />
+					<div className="dice-edge d-edge-z" />
 				</div>
-			))}
+			</div>
 		</div>
 	);
 }
 
-// Export so Game.js can keep its setTimeout in sync with the CSS total.
-export const DICE_TOTAL_MS = TOTAL_MS;
+// Intentionally slow while testing. Increase speed later.
+export const DICE_TOTAL_MS = 350;

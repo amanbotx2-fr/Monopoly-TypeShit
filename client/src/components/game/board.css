@@ -1,125 +1,741 @@
-/* ─── Board layout ──────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Board Styles — richup-inspired dark theme with CSS grid layout.
+
+   Grid areas (visual layout):
+     "go         top      jail"        ← GO(0), top row(1-9), Jail(10)
+     "left       center   right"       ← left(31-39), center, right(11-19)
+     "gotoprison bottom   parking"     ← GoToJail(30), bottom(21-29), Parking(20)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Board container ──────────────────────────────────────────────────────── */
 .board {
-	position: relative;
+	--corner: 13%;
+	--tile-bg: linear-gradient(to bottom right, #2a2e54, #332a54);
+	--tile-hover: linear-gradient(to bottom right, #32365c, #3b325c);
+	--board-center-bg: #130f1d;
+
+	display: grid;
+	grid-template-areas:
+		'go         top      jail'
+		'left       center   right'
+		'gotoprison bottom   parking';
+	grid-template-columns: var(--corner) 1fr var(--corner);
+	grid-template-rows: var(--corner) 1fr var(--corner);
+	gap: 2px;
 	width: 100%;
 	aspect-ratio: 1 / 1;
-	background: linear-gradient(160deg, var(--bg-1), var(--bg));
-	border-radius: var(--radius-lg);
-	border: 1px solid var(--border);
-	box-shadow:
-		var(--shadow-lg),
-		inset 0 0 40px rgba(0, 0, 0, 0.4);
+	border-radius: 0.5em;
+	background: var(--board-center-bg);
+	box-shadow: 0 0 0 0.5em #130f1d;
 	user-select: none;
+	position: relative;
 	overflow: hidden;
+	container-type: inline-size;
 }
 
-.tile {
-	background: var(--surface);
-	border: 1px solid var(--border);
-	overflow: hidden;
-	transition:
-		background 0.15s ease,
-		box-shadow 0.15s ease;
+/* ─── Side row / column flex containers ────────────────────────────────────── */
+.side-row-top {
+	grid-area: top;
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+	gap: 2px;
 }
+.side-row-bottom {
+	grid-area: bottom;
+	display: flex;
+	flex-direction: row-reverse;
+	height: 100%;
+	gap: 2px;
+}
+.side-col-right {
+	grid-area: right;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	gap: 2px;
+}
+.side-col-left {
+	grid-area: left;
+	display: flex;
+	flex-direction: column-reverse;
+	width: 100%;
+	gap: 2px;
+}
+
+/* Side tiles fill available space in their flex container */
+.side-row-top > .tile,
+.side-row-bottom > .tile {
+	flex: 1 1 0;
+	min-width: 0;
+	height: 100%;
+}
+.side-col-right > .tile,
+.side-col-left > .tile {
+	flex: 1 1 0;
+	min-height: 0;
+	width: 100%;
+}
+
+/* ─── Tile base ────────────────────────────────────────────────────────────── */
+.tile {
+	--bar-size: 20%;
+	background: var(--tile-bg);
+	color: #fff;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	box-sizing: border-box;
+	border-radius: 0.5em;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	position: relative;
+	transition:
+		opacity 0.2s,
+		box-shadow 0.2s,
+		background 0.15s;
+}
+
+/* Directional tile overrides — all tiles read naturally left-to-right.
+   Color bar on the inner edge provides the visual cue for orientation. */
+.tile-side-top {
+	/* natural */
+}
+.tile-side-bottom {
+	/* natural */
+}
+.tile-side-right {
+	/* natural */
+}
+.tile-side-left {
+	/* natural */
+}
+
+/* Hover / clickable */
 .tile.clickable {
 	cursor: pointer;
 }
 .tile.clickable:hover {
-	background: var(--surface-2);
-	box-shadow: inset 0 0 0 1px var(--accent);
-	z-index: 5;
+	background: var(--tile-hover);
 }
+
+.tile.clickable:hover::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: #fff;
+	opacity: 0.05;
+	pointer-events: none;
+}
+
 .tile.mortgaged {
 	filter: grayscale(0.75) brightness(0.55);
 }
 
+/* ─── Color bar (inner edge of property tiles) ─────────────────────────────── */
+.tile-color-bar {
+	position: absolute;
+	z-index: 0;
+	overflow: hidden;
+}
+.tile-side-top .tile-color-bar {
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: var(--bar-size);
+}
+.tile-side-bottom .tile-color-bar {
+	left: 0;
+	right: 0;
+	top: 0;
+	height: var(--bar-size);
+}
+.tile-side-left .tile-color-bar {
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: var(--bar-size);
+}
+.tile-side-right .tile-color-bar {
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: var(--bar-size);
+}
+
+/* ─── Blurred flag background (richup-style glow) ──────────────────────────── */
+.tile-flag-bg {
+	position: absolute;
+	z-index: 0;
+	inset: 0;
+	opacity: 0.175;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: inherit;
+	overflow: hidden;
+	pointer-events: none;
+}
+.tile-flag-bg-inner {
+	position: absolute;
+	inset: 0;
+	filter: blur(2px);
+	overflow: hidden;
+	border-radius: inherit;
+}
+.tile-flag-bg-inner img {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 125%;
+	height: 125%;
+	object-fit: cover;
+}
+
+/* ─── Flag circle (inner edge, half outside tile toward center) ───────────── */
+.tile-flag {
+	position: absolute;
+	z-index: 6;
+	width: clamp(30px, 5cqi, 40px);
+	height: clamp(30px, 5cqi, 40px);
+	border-radius: 50%;
+	overflow: hidden;
+	pointer-events: none;
+	box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+	border: 1.5px solid rgba(255, 255, 255, 0.25);
+}
+.tile-flag img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+/* Half outside tile (inner edge = toward board center) */
+.tile-side-top .tile-flag {
+	bottom: -20px;
+	left: 50%;
+	transform: translateX(-50%);
+}
+.tile-side-bottom .tile-flag {
+	top: -20px;
+	left: 50%;
+	transform: translateX(-50%);
+}
+.tile-side-right .tile-flag {
+	left: -20px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.tile-side-left .tile-flag {
+	right: -20px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+/* ─── Tile body (text/icon area) ───────────────────────────────────────────── */
+.tile-body {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	/* Reserve space so tokens never overlap text:
+	   token strip is on the inner ~38% of the tile. */
+	padding: 4px;
+	flex: 1;
+	width: 100%;
+}
+
+.tile-side-top .tile-body {
+	padding-bottom: calc(var(--bar-size) + 6%);
+}
+.tile-side-bottom .tile-body {
+	padding-top: calc(var(--bar-size) + 6%);
+}
+.tile-side-left .tile-body {
+	padding-right: calc(var(--bar-size) + 6%);
+}
+.tile-side-right .tile-body {
+	padding-left: calc(var(--bar-size) + 6%);
+}
+
 .tile-name {
-	font-size: 8px;
+	font-size: clamp(7px, 1.3cqi, 12px);
 	font-weight: 700;
-	line-height: 1.08;
-	color: var(--text);
-	text-transform: uppercase;
+	line-height: 1.1;
+	color: #fff;
 	text-align: center;
-	padding: 0 2px;
-	max-width: 100%;
-	/* Allow multi-word names to break at spaces onto a second line; never
-       split inside a word. If even two lines aren't enough, ellipsis. */
-	white-space: normal;
-	word-break: keep-all;
-	overflow-wrap: break-word;
-	hyphens: none;
+	text-shadow: 0 0 0.5em #262a4c;
+	/* 2-line clamp */
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
 	line-clamp: 2;
 	overflow: hidden;
 	text-overflow: ellipsis;
-}
-.tile-price {
-	font-size: 9px;
-	font-family: var(--font-mono);
-	font-weight: 700;
-	color: var(--text-2);
-}
-
-.houses-row {
-	display: flex;
-	gap: 2px;
-	align-items: center;
-	justify-content: center;
-	padding: 1px 0;
-	flex-wrap: wrap;
+	word-break: break-word;
 	max-width: 100%;
 }
-.house {
-	width: 7px;
-	height: 7px;
-	background: var(--g-green);
-	border: 1px solid rgba(0, 0, 0, 0.4);
-	border-radius: 1px;
-	box-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.4),
-		inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+
+.tile-price {
+	font-size: clamp(7px, 1.2cqi, 11px);
+	font-weight: 600;
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 0.25em;
+	padding: 2px 6px;
+	line-height: 1;
+	margin-top: 2px;
 }
-.hotel {
-	width: 12px;
-	height: 7px;
-	background: var(--g-red);
-	border: 1px solid rgba(0, 0, 0, 0.4);
-	border-radius: 1px;
-	box-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.4),
-		inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+.tile-price::before {
+	content: '$';
+	opacity: 0.75;
+	font-weight: 400;
 }
 
-/* ─── Player tokens ─────────────────────────────────────────────────────────── */
+.tile-icon {
+	width: clamp(14px, 2.4cqi, 22px);
+	height: clamp(14px, 2.4cqi, 22px);
+	flex-shrink: 0;
+}
+
+/* ─── Corner tile content ──────────────────────────────────────────────────── */
+.tile-corner-body {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 8px;
+	gap: 4px;
+	text-align: center;
+	z-index: 1;
+}
+
+.tile-corner-label {
+	font-size: clamp(10px, 1.8cqi, 16px);
+	font-weight: 700;
+	line-height: 1;
+}
+
+.tile-corner-sub {
+	font-size: clamp(7px, 1.2cqi, 10px);
+	opacity: 0.55;
+	line-height: 1.2;
+}
+
+/* ─── Special tile types ───────────────────────────────────────────────────── */
+.tile-chance {
+	color: #ff95bc;
+}
+.tile-chest {
+	color: #f2a841;
+}
+
+/* Station tiles */
+.tile-station {
+	background-image: radial-gradient(circle, transparent, rgba(151, 217, 202, 0.5) 200%);
+}
+.tile-station .station-icon {
+	color: #97d9ca;
+	filter: drop-shadow(0 3px 6px rgba(151, 217, 202, 0.5));
+}
+
+/* Utility tiles */
+.tile-utility-power {
+	background-image: radial-gradient(circle, transparent, #00bcd4 200%);
+}
+.tile-utility-water {
+	background-image: radial-gradient(circle, transparent, #00bcd4 200%);
+}
+
+/* Tax tiles */
+.tile-tax .tile-tax-amount {
+	font-size: clamp(10px, 1.8cqi, 16px);
+	font-weight: 700;
+	opacity: 0.7;
+}
+
+/* Jail tile — bars overlay */
+.tile-jail .jail-bars {
+	width: 60%;
+	height: 60%;
+	border-bottom-left-radius: inherit;
+	border-top-right-radius: 0.25em;
+	background-color: #607d8b;
+	position: relative;
+	overflow: hidden;
+}
+.tile-jail .jail-bars::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	background: repeating-linear-gradient(
+		to right,
+		transparent 0,
+		transparent 0.25em,
+		#c8c8c8 0.3em,
+		#c8c8c8 0.4em,
+		transparent 0.45em
+	);
+	pointer-events: none;
+}
+.tile-jail .jail-label {
+	font-size: clamp(7px, 1.2cqi, 10px);
+	font-weight: 600;
+}
+
+/* GO tile */
+.tile-go {
+	background-image: radial-gradient(transparent 50%, rgba(0, 0, 0, 0.3));
+	background-blend-mode: overlay;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5em 0.25em 0.25em;
+	gap: 0.25em;
+}
+
+/* Vacation / Free Parking */
+.tile-parking .parking-image {
+	font-size: clamp(20px, 4cqi, 36px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ─── Houses (on the color bar) ────────────────────────────────────────────── */
+.tile-houses {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	flex-wrap: wrap;
+	padding: 2px;
+	z-index: 2;
+	pointer-events: none;
+}
+.tile-side-top .tile-houses,
+.tile-side-bottom .tile-houses {
+	flex-direction: row;
+}
+.tile-side-left .tile-houses,
+.tile-side-right .tile-houses {
+	flex-direction: column;
+}
+
+.house {
+	width: clamp(5px, 1cqi, 8px);
+	height: clamp(5px, 1cqi, 8px);
+	background: #1fb25a;
+	border: 1px solid rgba(0, 0, 0, 0.4);
+	border-radius: 1px;
+	box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.4),
+		inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+	flex-shrink: 0;
+}
+.hotel {
+	width: clamp(9px, 1.8cqi, 14px);
+	height: clamp(5px, 1cqi, 8px);
+	background: #ed1b24;
+	border: 1px solid rgba(0, 0, 0, 0.4);
+	border-radius: 1px;
+	box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.4),
+		inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+	flex-shrink: 0;
+}
+
+/* ─── Owner stripe (border glow on owned tiles) ────────────────────────────── */
+.owner-stripe {
+	position: absolute;
+	z-index: 3;
+	pointer-events: none;
+	box-shadow: 0 0 8px currentColor;
+}
+.tile-side-top .owner-stripe {
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 3px;
+}
+.tile-side-bottom .owner-stripe {
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 3px;
+}
+.tile-side-left .owner-stripe {
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+}
+.tile-side-right .owner-stripe {
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+}
+
+/* ─── Highlight overlays (player hover) ────────────────────────────────────── */
+.tile.highlight-owned {
+	z-index: 8;
+	box-shadow:
+		inset 0 0 14px 2px rgba(255, 255, 255, 0.22),
+		inset 0 0 4px 1px rgba(255, 255, 255, 0.14);
+	filter: brightness(1.15);
+}
+.tile.highlight-position {
+	z-index: 8;
+	filter: brightness(1.15);
+}
+
+.position-highlight {
+	position: absolute;
+	inset: 2px;
+	border-radius: 8px;
+	border: 2px solid var(--hl-color, #6647e0);
+	box-shadow:
+		0 0 14px 3px var(--hl-color, #6647e0),
+		inset 0 0 10px 2px var(--hl-color, #6647e0);
+	opacity: 0.5;
+	animation: positionHighlightPulse 0.9s ease-in-out infinite;
+	pointer-events: none;
+	z-index: 45;
+}
+@keyframes positionHighlightPulse {
+	0%,
+	100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 0.85;
+	}
+}
+
+/* ─── Board dim overlay ────────────────────────────────────────────────────── */
+.board-dim {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.55);
+	border-radius: 0.5em;
+	z-index: 10;
+	pointer-events: none;
+	animation: dimIn 0.2s ease-out;
+}
+@keyframes dimIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CENTER AREA
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.board-center {
+	grid-area: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	min-height: 0;
+	padding: 1em;
+	position: relative;
+	border-radius: 0.5em;
+}
+
+/* MONOPOLY watermark */
+.board-brand {
+	position: absolute;
+	font-weight: 900;
+	font-size: clamp(32px, 8cqi, 64px);
+	color: rgba(255, 255, 255, 0.04);
+	transform: rotate(-45deg);
+	pointer-events: none;
+	white-space: nowrap;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.center-stack {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1.5vmin;
+	height: 100%;
+	width: 100%;
+	z-index: 1;
+	padding: clamp(12px, 3cqi, 24px) 0;
+}
+
+/* Roller label */
+.dice-roller {
+	font-size: clamp(9px, 1.5cqi, 12px);
+	color: #cec6e1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACTION BUTTONS (richup gradient style)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.board-btn {
+	background-color: #6647e0;
+	background-image: linear-gradient(to top left, #6647e0, #8c47e0);
+	color: #fff;
+	border: 0;
+	border-radius: 0.25em;
+	margin: 0.25em;
+	padding: 0.75em 1em;
+	line-height: 1em;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5em;
+	position: relative;
+	overflow: hidden;
+	transition: 0.2s;
+	word-break: break-word;
+	user-select: none;
+	font-size: clamp(11px, 1.8cqi, 14px);
+	font-weight: 600;
+}
+.board-btn::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: #fff;
+	transition: inherit;
+	opacity: 0;
+}
+.board-btn:hover::before {
+	opacity: 0.1;
+}
+.board-btn:active::before {
+	opacity: 0.18;
+}
+.board-btn:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+	filter: grayscale(0.5);
+}
+.board-btn:disabled:hover::before {
+	opacity: 0;
+}
+.board-btn.danger {
+	background-color: #e74c3c;
+	background-image: linear-gradient(to top left, #e74c3c, #c0392b);
+}
+.board-btn.ghost {
+	background: rgba(255, 255, 255, 0.08);
+	color: #cec6e1;
+}
+.board-btn.ghost:hover {
+	background: rgba(255, 255, 255, 0.14);
+}
+
+/* Shine animation on primary buttons */
+.board-btn.primary::after {
+	content: '';
+	pointer-events: none;
+	position: absolute;
+	inset: 0 0 0 -200%;
+	width: 200%;
+	transform: skew(-20deg);
+	background-image: linear-gradient(
+		to right,
+		transparent,
+		rgba(255, 255, 255, 0.25) 80%,
+		transparent
+	);
+	animation: btnShine 3s infinite;
+}
+@keyframes btnShine {
+	66% {
+		left: -200%;
+	}
+	100% {
+		left: 200%;
+	}
+}
+
+.board-action-bar {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 6px;
+	width: 100%;
+	max-width: 360px;
+}
+
+.board-action-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 4px;
+}
+
+.board-turn-status {
+	font-size: clamp(9px, 1.5cqi, 12px);
+	color: #cec6e1;
+	text-align: center;
+	padding: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PLAYER TOKENS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.board-tokens {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 20;
+}
+
 .token {
 	position: absolute;
-	width: 2.4vmin;
-	height: 2.4vmin;
-	min-width: 20px;
-	min-height: 20px;
+	width: clamp(20px, 3cqi, 28px);
+	height: clamp(20px, 3cqi, 28px);
 	border-radius: 50%;
 	border: 2px solid rgba(255, 255, 255, 0.85);
 	box-shadow:
 		0 2px 6px rgba(0, 0, 0, 0.6),
 		0 0 0 3px rgba(0, 0, 0, 0.25);
 	transition:
-		left 0.15s ease-in-out,
-		top 0.15s ease-in-out;
-	z-index: 20;
+		left 0.08s ease-in-out,
+		top 0.08s ease-in-out;
 	display: grid;
 	place-items: center;
-	font-size: 10px;
+	font-size: clamp(9px, 1.5cqi, 12px);
 	font-weight: 800;
 	transform: translate(-50%, -50%);
 	will-change: left, top;
+	pointer-events: auto;
+	cursor: pointer;
 }
+.token:hover {
+	z-index: 30;
+	transform: translate(-50%, -50%) scale(1.2);
+	transition: transform 0.12s;
+}
+
 .token.active {
-	border-color: white;
+	border-color: #fff;
 	box-shadow:
 		0 0 0 3px rgba(255, 255, 255, 0.6),
-		0 0 16px 4px var(--accent),
+		0 0 16px 4px #6647e0,
 		0 2px 6px rgba(0, 0, 0, 0.5);
 	animation: tokenPulse 1.4s ease-in-out infinite;
 }
@@ -132,6 +748,7 @@
 		transform: translate(-50%, -50%) scale(1.18);
 	}
 }
+
 .token.shake {
 	animation: tokenShake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -155,140 +772,49 @@
 	}
 }
 
-/* ─── Center of the board ───────────────────────────────────────────────────── */
-.board-center {
-	position: absolute;
-	left: 13%;
-	top: 13%;
-	width: 74%;
-	height: 74%;
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	justify-content: center;
-	pointer-events: none;
-	padding: 2vmin;
-}
-
-/* Inner stack: dice on top, roller label, then the action bar. Stretched to
-   fill the full center height so the buttons get all the room they need. */
-.center-stack {
-	pointer-events: auto;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: space-between;
-	gap: 2vmin;
-	height: 100%;
-	width: 100%;
-	padding: 2vmin;
-}
-
-.brand {
-	font-weight: 900;
-	font-size: 64px;
-	color: var(--text);
-	transform: rotate(-45deg);
-	opacity: 0.05;
-	position: absolute;
-	pointer-events: none;
-	white-space: nowrap;
-}
-
-/* ─── Dice ──────────────────────────────────────────────────────────────────── */
-.dice-wrap {
-	display: flex;
-	gap: 14px;
-	padding: 10px;
-	pointer-events: auto;
-}
-.die {
-	width: 52px;
-	height: 52px;
-	min-width: 42px;
-	min-height: 42px;
-	background: white;
-	border-radius: 10px;
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	grid-template-rows: repeat(3, 1fr);
-	padding: 6px;
-	box-shadow:
-		0 6px 18px rgba(0, 0, 0, 0.55),
-		inset 0 -3px 4px rgba(0, 0, 0, 0.12);
-}
-/* Roll animation. No pre-roll idle shake — the dice stay still until the
-   player hits Roll. During the roll the dice jitter (translate + scale +
-   tiny wiggle, NO full rotation) so the slot-machine face cycling in
-   Dice.js is always readable. At the end there's a small settle pop on
-   the real face. */
-.die.rolling {
-	animation: diceRoll 1.1s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes diceRoll {
-	0% {
-		transform: translate(0, 0) rotate(0) scale(1);
-	}
-	5% {
-		transform: translate(-6px, 3px) rotate(-5deg) scale(1.08);
-	}
-	12% {
-		transform: translate(5px, -4px) rotate(6deg) scale(1.12);
-	}
-	20% {
-		transform: translate(-7px, 4px) rotate(-7deg) scale(1.1);
-	}
-	28% {
-		transform: translate(6px, -5px) rotate(8deg) scale(1.15);
-	}
-	36% {
-		transform: translate(-5px, 3px) rotate(-6deg) scale(1.12);
-	}
-	44% {
-		transform: translate(7px, -4px) rotate(7deg) scale(1.16);
-	}
-	52% {
-		transform: translate(-4px, 2px) rotate(-4deg) scale(1.14);
-	}
-	60% {
-		transform: translate(3px, -2px) rotate(3deg) scale(1.12);
-	}
-	70% {
-		transform: translate(-2px, 1px) rotate(-2deg) scale(1.1);
-	}
-	/* Settle: center up, big pop on the locked-in face, ease to rest. */
-	80% {
-		transform: translate(0, 0) rotate(0) scale(1.28);
-	}
-	90% {
-		transform: translate(0, 0) rotate(0) scale(0.96);
-	}
-	100% {
-		transform: translate(0, 0) rotate(0) scale(1);
-	}
-}
-.die-pip {
-	background: #111;
-	border-radius: 50%;
-	width: 70%;
-	height: 70%;
-	box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.15);
-}
-
-/* ─── Popups / card ────────────────────────────────────────────────────────── */
+/* ─── Property card popup (hover tooltip on tiles) ─────────────────────────── */
 .prop-popup {
 	position: absolute;
 	z-index: 50;
-	background: var(--surface);
-	border: 1px solid var(--border-2);
-	border-radius: var(--radius-lg);
-	box-shadow: var(--shadow-lg);
+	background: #1e1a2e;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 8px;
+	box-shadow:
+		0 22px 58px rgba(0, 0, 0, 0.5),
+		0 2px 10px rgba(0, 0, 0, 0.3);
 	min-width: 260px;
 	overflow: hidden;
 	pointer-events: none;
+	color: #e6e3f0;
+}
+.prop-popup table {
+	width: 100%;
+	font-size: 12px;
+	border-collapse: collapse;
+}
+.prop-popup td {
+	padding: 2px 0;
+}
+.prop-popup td:last-child {
+	text-align: right;
+	font-weight: 600;
 }
 
-/* ─── Board overlay animations ──────────────────────────────────────────────── */
+/* ─── Game modals — richup dark theme overrides ────────────────────────────── */
+.game-modal {
+	background: #1e1a2e;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 8px;
+	box-shadow: 0 22px 58px rgba(0, 0, 0, 0.5);
+	color: #e6e3f0;
+}
+.game-modal .modal-header {
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   OVERLAY ANIMATIONS (money pops, banners, etc.)
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .board-overlay {
 	position: absolute;
 	inset: 0;
@@ -296,11 +822,12 @@
 	z-index: 30;
 	overflow: hidden;
 }
+
 .money-pop {
 	position: absolute;
 	font-family: var(--font-mono);
 	font-weight: 800;
-	font-size: 14px;
+	font-size: clamp(12px, 2cqi, 16px);
 	padding: 4px 10px;
 	border-radius: 999px;
 	background: rgba(15, 21, 31, 0.9);
@@ -318,6 +845,7 @@
 	color: var(--danger);
 	border-color: var(--danger);
 }
+
 @keyframes moneyPop {
 	0% {
 		opacity: 0;
@@ -342,7 +870,7 @@
 	transform: translate(-50%, -50%);
 	font-weight: 900;
 	color: var(--success);
-	font-size: 24px;
+	font-size: clamp(18px, 3cqi, 28px);
 	font-family: var(--font-mono);
 	text-shadow: 0 0 20px var(--success);
 	animation: goBurst 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -389,8 +917,8 @@
 .buy-sparkle {
 	position: absolute;
 	transform: translate(-50%, -50%);
-	width: 30px;
-	height: 30px;
+	width: clamp(24px, 4cqi, 36px);
+	height: clamp(24px, 4cqi, 36px);
 	border-radius: 50%;
 	animation: buySparkle 0.9s ease-out forwards;
 	pointer-events: none;
@@ -420,7 +948,7 @@
 	transform: translate(-50%, -50%);
 	font-weight: 900;
 	text-transform: uppercase;
-	font-size: 32px;
+	font-size: clamp(24px, 5cqi, 40px);
 	animation: bannerIn 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 	pointer-events: none;
 	text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
@@ -441,70 +969,5 @@
 	100% {
 		opacity: 0;
 		transform: translate(-50%, -50%) scale(1.2);
-	}
-}
-
-/* ─── Player hover highlights ───────────────────────────────────────────────── */
-/* When hovering a player token, tiles they own glow subtly and their
-   current position gets a pulsing ring. The rest of the board dims. */
-
-/* Dim overlay: covers the board, sits above regular tiles but below
-   highlighted ones and player tokens. */
-.board-dim {
-	position: absolute;
-	inset: 0;
-	background: rgba(0, 0, 0, 0.55);
-	border-radius: var(--radius-lg);
-	z-index: 10;
-	pointer-events: none;
-	animation: dimIn 0.2s ease-out;
-}
-
-@keyframes dimIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
-/* Owned property tiles get a soft inner glow and pop above the dim. */
-.tile.highlight-owned {
-	z-index: 15;
-	box-shadow:
-		inset 0 0 14px 2px rgba(255, 255, 255, 0.22),
-		inset 0 0 4px 1px rgba(255, 255, 255, 0.14);
-	background: var(--surface-2);
-	filter: brightness(1.15);
-}
-
-/* The player's current position gets a pulsing colored ring overlay. */
-.tile.highlight-position {
-	z-index: 15;
-	filter: brightness(1.15);
-}
-
-.position-highlight {
-	position: absolute;
-	inset: 2px;
-	border-radius: 10px;
-	border: 2px solid var(--hl-color, var(--accent));
-	box-shadow:
-		0 0 14px 3px var(--hl-color, var(--accent)),
-		inset 0 0 10px 2px var(--hl-color, var(--accent));
-	opacity: 0.5;
-	animation: positionHighlightPulse 0.9s ease-in-out infinite;
-	pointer-events: none;
-	z-index: 45;
-}
-
-@keyframes positionHighlightPulse {
-	0%,
-	100% {
-		opacity: 0.35;
-	}
-	50% {
-		opacity: 0.7;
 	}
 }

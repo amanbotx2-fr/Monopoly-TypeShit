@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
 import Board from './Board';
+import { DICE_TOTAL_MS } from './Dice';
 import PlayerPanel from './PlayerPanel';
 import PlayerStrip from './PlayerStrip';
 import ChatPanel from './ChatPanel';
@@ -18,38 +19,13 @@ import Victory from './Victory';
 import BrandLogo from '../common/BrandLogo';
 import { LogOut, Copy, ScrollText } from 'lucide-react';
 
-const DESKTOP_GAME_PADDING = 16;
-const DESKTOP_PANEL_BORDER_WIDTH = 1;
-const DESKTOP_PANEL_BORDER = `${DESKTOP_PANEL_BORDER_WIDTH}px solid var(--border)`;
-const BOARD_STAGE_PADDING = 12;
-const DESKTOP_BOARD_VIEWPORT_OFFSET =
-	DESKTOP_GAME_PADDING * 2 + DESKTOP_PANEL_BORDER_WIDTH * 2 + BOARD_STAGE_PADDING * 2;
-const DESKTOP_BOARD_MAX_SIZE = `calc(100vh - ${DESKTOP_BOARD_VIEWPORT_OFFSET}px)`;
-
-function isAnimatedMoveEvent(event) {
-	return (
-		event?.type === 'move' &&
-		event.animate !== false &&
-		Array.isArray(event.path) &&
-		event.path.length > 0
-	);
-}
-
-function appendMissing(existing, incoming) {
-	let next = existing;
-	for (const key of incoming) {
-		if (!key || next.includes(key)) continue;
-		if (next === existing) next = existing.slice();
-		next.push(key);
-	}
-	return next;
-}
-
 export default function Game({ userId, pushToast }) {
 	const nav = useNavigate();
 	const isMobile = useIsMobile();
 	const { roomCode, room, events, chat, connected, act, sendChat } = useRoom({ userId });
 
+	const [diceRolling, setDiceRolling] = useState(false);
+	const processedEventCount = useRef(0);
 	const [hoveredPlayer, setHoveredPlayer] = useState(null);
 	const [tradeWith, setTradeWith] = useState(null);
 	const [peekTradeId, setPeekTradeId] = useState(null);
@@ -58,63 +34,28 @@ export default function Game({ userId, pushToast }) {
 	const handleTradeClick = useCallback((id) => setPeekTradeId(id), []);
 	const [chatOpen, setChatOpen] = useState(false);
 	const [logOpen, setLogOpen] = useState(false);
-	const drawCardCursorRef = useRef(null);
-	const [completedAnimationKeys, setCompletedAnimationKeys] = useState({
-		rolls: [],
-		moves: [],
-	});
-
-	const pendingRollKeys = useMemo(
-		() =>
-			events
-				.filter(
-					(event) =>
-						event.type === 'roll' && !completedAnimationKeys.rolls.includes(event._k),
-				)
-				.map((event) => event._k),
-		[events, completedAnimationKeys.rolls],
-	);
-	const pendingMoveKeys = useMemo(
-		() =>
-			events
-				.filter(
-					(event) =>
-						isAnimatedMoveEvent(event) &&
-						!completedAnimationKeys.moves.includes(event._k),
-				)
-				.map((event) => event._k),
-		[events, completedAnimationKeys.moves],
-	);
-	const diceRolling = pendingRollKeys.length > 0;
-	const actionsUnlocked = pendingRollKeys.length === 0 && pendingMoveKeys.length === 0;
-
-	const handleDiceAnimationComplete = useCallback(() => {
-		if (!pendingRollKeys.length) return;
-		setCompletedAnimationKeys((keys) => ({
-			...keys,
-			rolls: appendMissing(keys.rolls, pendingRollKeys),
-		}));
-	}, [pendingRollKeys]);
-
-	const handleTokenMotionComplete = useCallback((eventKey) => {
-		if (!eventKey) return;
-		setCompletedAnimationKeys((keys) => {
-			if (keys.moves.includes(eventKey)) return keys;
-			return {
-				...keys,
-				moves: keys.moves.concat(eventKey),
-			};
-		});
-	}, []);
 
 	useEffect(() => {
-		const drawn = [...events].reverse().find((e) => e.type === 'draw-card');
-		if (!drawn || drawn._k === drawCardCursorRef.current) return;
-		drawCardCursorRef.current = drawn._k;
-		const t = setTimeout(() =>
-			setDrawnCard({ deck: drawn.deck, cardId: drawn.cardId, text: drawn.text }),
-		);
-		return () => clearTimeout(t);
+		// Server sends roll as the FIRST event in a batch (followed by move/land events).
+		// Checking only events[last] always misses it — scan the whole new slice instead.
+		const newEvents = events.slice(processedEventCount.current);
+		processedEventCount.current = events.length;
+		if (!newEvents.length) return;
+
+		const rollEvt = newEvents.find((e) => e.type === 'roll');
+		const cardEvt = newEvents.find((e) => e.type === 'draw-card');
+
+		if (rollEvt) {
+			setDiceRolling(true);
+			const t2 = setTimeout(() => setDiceRolling(false), DICE_TOTAL_MS);
+			return () => clearTimeout(t2);
+		}
+		if (cardEvt) {
+			const t = setTimeout(() =>
+				setDrawnCard({ deck: cardEvt.deck, cardId: cardEvt.cardId, text: cardEvt.text }),
+			);
+			return () => clearTimeout(t);
+		}
 	}, [events]);
 
 	if (!room) {
@@ -272,9 +213,6 @@ export default function Game({ userId, pushToast }) {
 							onTileClick={(pos) => setOpenPropertyPos(pos)}
 							hoveredPlayer={hoveredPlayer}
 							onHoverPlayer={setHoveredPlayer}
-							onDiceAnimationComplete={handleDiceAnimationComplete}
-							onTokenMotionComplete={handleTokenMotionComplete}
-							actionsUnlocked={actionsUnlocked}
 						/>
 					</div>
 				</main>
@@ -298,7 +236,7 @@ export default function Game({ userId, pushToast }) {
 				display: 'grid',
 				gridTemplateColumns: 'minmax(270px, 310px) 1fr minmax(290px, 350px)',
 				gap: 16,
-				padding: DESKTOP_GAME_PADDING,
+				padding: 16,
 				height: '100vh',
 				overflow: 'hidden',
 				background: 'var(--bg)',
@@ -312,7 +250,7 @@ export default function Game({ userId, pushToast }) {
 					minHeight: 0,
 					padding: 12,
 					background: 'var(--surface)',
-					border: DESKTOP_PANEL_BORDER,
+					border: '1px solid var(--border)',
 					borderRadius: 'var(--radius-lg)',
 				}}
 			>
@@ -366,7 +304,7 @@ export default function Game({ userId, pushToast }) {
 					display: 'flex',
 					flexDirection: 'column',
 					minHeight: 0,
-					border: DESKTOP_PANEL_BORDER,
+					border: '1px solid var(--border)',
 					borderRadius: 'var(--radius-lg)',
 					background: 'var(--bg-1)',
 					boxShadow: 'var(--shadow-lg)',
@@ -375,18 +313,18 @@ export default function Game({ userId, pushToast }) {
 			>
 				<div
 					style={{
-						flex: 1,
-						minHeight: 0,
+						width: '100%',
+						height: '100%',
 						display: 'grid',
 						placeItems: 'center',
-						padding: BOARD_STAGE_PADDING,
 					}}
 				>
 					<div
 						style={{
-							width: `min(100%, ${DESKTOP_BOARD_MAX_SIZE})`,
+							width: 'min(100%, 100% - 24px)',
 							aspectRatio: '1 / 1',
-							maxHeight: DESKTOP_BOARD_MAX_SIZE,
+							maxWidth: 'calc(100vh - 64px)',
+							maxHeight: '100%',
 						}}
 					>
 						<Board
@@ -400,9 +338,6 @@ export default function Game({ userId, pushToast }) {
 							onTileClick={(pos) => setOpenPropertyPos(pos)}
 							hoveredPlayer={hoveredPlayer}
 							onHoverPlayer={setHoveredPlayer}
-							onDiceAnimationComplete={handleDiceAnimationComplete}
-							onTokenMotionComplete={handleTokenMotionComplete}
-							actionsUnlocked={actionsUnlocked}
 						/>
 					</div>
 				</div>
@@ -416,7 +351,7 @@ export default function Game({ userId, pushToast }) {
 					minHeight: 0,
 					padding: 12,
 					background: 'var(--surface)',
-					border: DESKTOP_PANEL_BORDER,
+					border: '1px solid var(--border)',
 					borderRadius: 'var(--radius-lg)',
 				}}
 			>

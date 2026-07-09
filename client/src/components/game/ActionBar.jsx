@@ -1,10 +1,8 @@
 import React from 'react';
 import { Dice5, ShoppingCart, X, Check, Gavel, Coins, Key } from 'lucide-react';
 
-// Lives inside the board's center area. Tall, full-width so button text never
-// truncates. Always renders a status line so the player knows what's happening
-// even when no buttons apply to them.
-export default function ActionBar({ room, me, isMyTurn, act, actionsUnlocked = true }) {
+// Richup-style gradient action buttons in the board center.
+export default function ActionBar({ room, me, isMyTurn, act }) {
 	if (!room || !me) return null;
 
 	const phase = room.turnPhase;
@@ -13,10 +11,7 @@ export default function ActionBar({ room, me, isMyTurn, act, actionsUnlocked = t
 
 	const actions = [];
 
-	if (!actionsUnlocked) {
-		// The server state is already authoritative; the local UI waits until
-		// dice and token animations have caught up before exposing turn actions.
-	} else if (me.inJail && isMyTurn && phase === 'awaiting-roll') {
+	if (me.inJail && isMyTurn && phase === 'awaiting-roll') {
 		actions.push({
 			key: 'jail-pay',
 			icon: Coins,
@@ -85,7 +80,6 @@ export default function ActionBar({ room, me, isMyTurn, act, actionsUnlocked = t
 
 	const status = (() => {
 		if (room.ended) return 'Game over';
-		if (!actionsUnlocked) return 'Resolving move...';
 		if (phase === 'auctioning') return 'Auction in progress…';
 		if (phase === 'trading') return 'Trade negotiation…';
 		if (isMyTurn) return phase === 'buying' ? 'Your decision' : 'Your turn';
@@ -94,53 +88,21 @@ export default function ActionBar({ room, me, isMyTurn, act, actionsUnlocked = t
 	})();
 
 	return (
-		<div
-			style={{
-				width: '100%',
-				maxWidth: 460,
-				display: 'flex',
-				flexDirection: 'column',
-				gap: 10,
-				alignItems: 'stretch',
-			}}
-		>
-			<div
-				style={{
-					fontSize: 11,
-					color: 'var(--text-3)',
-					textAlign: 'center',
-					textTransform: 'uppercase',
-					fontWeight: 600,
-					minHeight: 16,
-				}}
-			>
-				{status}
+		<div className="board-action-bar">
+			<div className="board-action-buttons">
+				{actions.map((a) => (
+					<button
+						key={a.key}
+						className={`board-btn${a.primary ? ' primary' : ''}${a.danger ? ' danger' : ''}`}
+						disabled={a.disabled}
+						onClick={a.on}
+					>
+						{a.icon && <a.icon size={14} />}
+						{a.label}
+					</button>
+				))}
 			</div>
-
-			{actions.length > 0 && (
-				<div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-					{actions.map((a) => (
-						<button
-							key={a.key}
-							className={`btn lg ${a.primary ? 'primary' : a.danger ? 'danger' : ''}`}
-							disabled={a.disabled}
-							onClick={a.on}
-							style={{
-								width: '100%',
-								justifyContent: 'center',
-								fontSize: 14,
-								padding: '12px 16px',
-								fontWeight: 700,
-								whiteSpace: 'nowrap',
-								overflow: 'hidden',
-								textOverflow: 'ellipsis',
-							}}
-						>
-							<a.icon size={18} /> {a.label}
-						</button>
-					))}
-				</div>
-			)}
+			<div className="board-turn-status">{status}</div>
 		</div>
 	);
 }
