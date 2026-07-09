@@ -57,8 +57,8 @@ export default function Tile({
 				/>
 			)}
 
-			{/* Position highlight ring */}
-			{highlight === 'position' && (
+			{/* Player hover highlight ring */}
+			{(highlight === 'position' || highlight === 'owned') && (
 				<div className="position-highlight" style={{ '--hl-color': highlightColor }} />
 			)}
 
