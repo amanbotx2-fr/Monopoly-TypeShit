@@ -26,6 +26,11 @@ function IconImg({ src, size = 20 }) {
 	);
 }
 
+// Larger icon for special non-property tiles (chance, chest, station, tax, utility)
+function SpecialIcon({ src, size = 26 }) {
+	return <IconImg src={src} size={size} />;
+}
+
 // ─── Houses / Hotel display (shown under property name when owned) ─────────────
 
 function HousesDisplay({ houses }) {
@@ -37,7 +42,7 @@ function HousesDisplay({ houses }) {
 		);
 	}
 	if (houses === 0) {
-		return <div className="tile-owned-label">Owned</div>;
+		return null;
 	}
 	if (houses === 1) {
 		return (
@@ -77,7 +82,7 @@ const TYPES = {
 		),
 	},
 
-	// ═══ Station / Transport ═════════════════════════════════════════════════
+	// ═══ Airport / Transport ════════════════════════════════════════════════
 	station: {
 		corner: false,
 		clickable: true,
@@ -85,13 +90,23 @@ const TYPES = {
 		badge: null,
 		cssClass: 'tile-station',
 		icon: (def) => def.icon || '/icons/station.svg',
-		body: (def, _state, icon) => (
-			<>
-				{icon ? <IconImg src={icon} /> : <Train className="tile-icon station-icon" />}
-				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">{def.price}</div>
-			</>
-		),
+		body: (def, state, icon, side) => {
+			const owned = state?.owner != null;
+			const isSide = side === 'left' || side === 'right';
+			// When owned: full-size icon, hide price
+			const iconSize = owned ? 30 : isSide ? 22 : 30;
+			return (
+				<>
+					{icon ? (
+						<SpecialIcon src={icon} size={iconSize} />
+					) : (
+						<Train className="tile-icon station-icon" />
+					)}
+					<div className="tile-name tile-airport-name">{def.name}</div>
+					{!owned && <div className="tile-price">{def.price}</div>}
+				</>
+			);
+		},
 	},
 
 	// ═══ Utility ═════════════════════════════════════════════════════════════
@@ -112,7 +127,7 @@ const TYPES = {
 			return (
 				<>
 					{icon ? (
-						<IconImg src={icon} />
+						<SpecialIcon src={icon} size={26} />
 					) : (
 						<LucideIcon className="tile-icon" color={isElectric ? '#ff0' : '#0ff'} />
 					)}
@@ -138,7 +153,7 @@ const TYPES = {
 		body: (_def, _state, icon) => (
 			<>
 				{icon ? (
-					<IconImg src={icon} />
+					<SpecialIcon src={icon} size={28} />
 				) : (
 					<HelpCircle className="tile-icon" color="#ff95bc" />
 				)}
@@ -159,7 +174,11 @@ const TYPES = {
 		icon: (def) => def.icon || '/icons/treasure.png',
 		body: (_def, _state, icon) => (
 			<>
-				{icon ? <IconImg src={icon} /> : <Package className="tile-icon" color="#f2a841" />}
+				{icon ? (
+					<SpecialIcon src={icon} size={28} />
+				) : (
+					<Package className="tile-icon" color="#f2a841" />
+				)}
 				<div className="tile-name" style={{ color: '#f2a841' }}>
 					Treasure
 				</div>
@@ -181,7 +200,11 @@ const TYPES = {
 				: '/icons/tax-luxury.svg'),
 		body: (def, _state, icon) => (
 			<>
-				{icon ? <IconImg src={icon} /> : <Coins className="tile-icon" color="#ff6b6b" />}
+				{icon ? (
+					<SpecialIcon src={icon} size={24} />
+				) : (
+					<Coins className="tile-icon" color="#ff6b6b" />
+				)}
 				<div className="tile-name">{def.name}</div>
 				<div className="tile-tax-amount">${def.amount}</div>
 			</>

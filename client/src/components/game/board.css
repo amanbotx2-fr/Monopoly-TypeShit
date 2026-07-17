@@ -353,13 +353,22 @@
 	color: #f2a841;
 }
 
-/* Station tiles */
+/* Station / Airport tiles */
 .tile-station {
 	background-image: radial-gradient(circle, transparent, rgba(151, 217, 202, 0.5) 200%);
 }
 .tile-station .station-icon {
 	color: #97d9ca;
 	filter: drop-shadow(0 3px 6px rgba(151, 217, 202, 0.5));
+}
+/* Side tiles (left/right): tighter airport icon spacing */
+.tile-side-left.tile-station .tile-body,
+.tile-side-right.tile-station .tile-body {
+	gap: 1px;
+	padding: 2px;
+}
+.tile-airport-name {
+	color: #97d9ca;
 }
 
 /* Utility tiles */
