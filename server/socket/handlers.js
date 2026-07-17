@@ -17,6 +17,7 @@ const engine = require('../game/engine');
 const property = require('../game/property');
 const auction = require('../game/auction');
 const trade = require('../game/trade');
+const devtools = require('../game/devtools');
 const GameRoom = require('../models/GameRoom');
 const validation = require('../validation/payloads');
 const { socketRateLimit, positiveInt } = require('../abuse/rateLimit');
@@ -260,6 +261,9 @@ function emitValidationError(socket, event, result) {
 		details: result.details,
 	});
 	socket.emit('error-msg', result.message || result.error);
+	if (result.details) {
+		socket.emit('error-msg', `  details: ${JSON.stringify(result.details)}`);
+	}
 	return false;
 }
 
@@ -742,38 +746,8 @@ const handlers = {
 		broadcast(io, room, r.events);
 	},
 
-	// Dev commands — only wired in non-production (see registerSocketHandlers).
-	'dev-command': (io, socket, { cmd, userId, pos, amount, d1, d2 }) => {
-		const room = getRoom(socket.data.roomCode);
-		if (!room) return;
-		const target = room.players.find((p) => p.userId === userId);
-		if (!target) return socket.emit('error-msg', 'dev-target-not-found');
-		const caller = room.players.find((p) => p.userId === socket.data.userId);
-		if (!caller) return socket.emit('error-msg', 'dev-caller-not-found');
-
-		let r;
-		switch (cmd) {
-			case 'set-cash':
-				r = engine.devSetCash(room, caller, target, amount);
-				break;
-			case 'set-position':
-				r = engine.devSetPosition(room, caller, target, pos);
-				break;
-			case 'buy-property':
-				r = engine.devBuyProperty(room, caller, target, pos);
-				break;
-			case 'give-property':
-				r = engine.devGiveProperty(room, caller, target, pos);
-				break;
-			case 'force-roll':
-				r = engine.devForceRoll(room, caller, d1, d2);
-				break;
-			default:
-				return socket.emit('error-msg', 'unknown-dev-command');
-		}
-		if (!r.ok) return socket.emit('error-msg', r.error);
-		broadcast(io, room, r.events);
-	},
+	// Dev commands — dispatches to game/devtools.js (see registerSocketHandlers).
+	'dev-command': (io, socket, payload) => devtools.handleDevCommand(io, socket, payload),
 };
 
 function doPropAction(io, socket, getFn, pos) {
@@ -919,10 +893,19 @@ function registerSocketHandlers(io) {
 		console.log('[dev] dev-command handler registered for socket');
 		socket.on('dev-command', (...args) =>
 			safe(() => {
-				console.log('[dev] received dev-command:', JSON.stringify(args[0]));
+				console.log(
+					'[dev] received dev-command (args.length=' + args.length + '):',
+					JSON.stringify(args[0]),
+				);
+				console.log('[dev] raw args keys:', args[0] ? Object.keys(args[0]) : 'null');
 				const result = validation.validateDevCommandPayload(args[0]);
 				if (!result.ok) {
-					console.warn('[dev] validation failed:', result.error, result.message);
+					console.warn(
+						'[dev] validation failed:',
+						result.error,
+						result.message,
+						result.details,
+					);
 					return emitValidationError(socket, 'dev-command', result);
 				}
 				console.log('[dev] dispatching:', result.value.cmd, '→', result.value.userId);

@@ -22,6 +22,7 @@ export default function DevPanel({ room, me, act }) {
 	const [cashAmount, setCashAmount] = useState('');
 	const [d1, setD1] = useState('3');
 	const [d2, setD2] = useState('4');
+	const [resolveLand, setResolveLand] = useState(true);
 
 	const tileOptions = React.useMemo(() => buildTileOptions(room.board.tiles), [room.board.tiles]);
 	const playerOptions = room.players.filter((p) => !p.bankrupt);
@@ -34,6 +35,7 @@ export default function DevPanel({ room, me, act }) {
 		setCashAmount('');
 		setD1('3');
 		setD2('4');
+		setResolveLand(true);
 	}, []);
 
 	// Keyboard shortcut.
@@ -50,7 +52,7 @@ export default function DevPanel({ room, me, act }) {
 
 	function send(cmd, extra = {}) {
 		const payload = { cmd, userId: targetUserId || me.userId, ...extra };
-		console.log('[dev-panel] sending', payload);
+		console.log('[dev-panel] sending', JSON.stringify(payload));
 		act('dev-command', payload);
 	}
 
@@ -343,10 +345,32 @@ export default function DevPanel({ room, me, act }) {
 							className="btn sm"
 							style={{ fontSize: 11 }}
 							disabled={!targetUserId || !selectedPos}
-							onClick={() => send('set-position', { pos: Number(selectedPos) })}
+							onClick={() =>
+								send('set-position', {
+									pos: Number(selectedPos),
+									resolve: resolveLand,
+								})
+							}
 						>
-							Teleport
+							Teleport{resolveLand ? ' & Resolve' : ''}
 						</button>
+						<label
+							style={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 4,
+								fontSize: 11,
+								color: 'var(--text-3)',
+								cursor: 'pointer',
+							}}
+						>
+							<input
+								type="checkbox"
+								checked={resolveLand}
+								onChange={(e) => setResolveLand(e.target.checked)}
+							/>
+							Resolve landing (buy/pay rent/etc.)
+						</label>
 					</div>
 				)}
 			</div>

@@ -756,12 +756,9 @@ const DEV_COMMANDS = new Set([
 function validateDevCommandPayload(payload) {
 	const root = requireObject(payload, 'dev-command');
 	if (!root.ok) return root;
-	const fields = rejectUnknownKeys(
-		root.value,
-		['cmd', 'userId', 'pos', 'amount', 'd1', 'd2'],
-		'dev-command',
-	);
-	if (!fields.ok) return fields;
+	// Dev commands are intentionally permissive — we validate each field
+	// we care about below rather than rejecting unknown keys, so adding
+	// new dev features doesn't break the running server.
 
 	const cmd = stringField(root.value.cmd, 'cmd', { min: 1, max: 32 });
 	if (!cmd.ok) return cmd;
@@ -783,7 +780,15 @@ function validateDevCommandPayload(payload) {
 			result.amount = amount.value;
 			break;
 		}
-		case 'set-position':
+		case 'set-position': {
+			const pos = finiteNumber(root.value.pos, 'pos', { min: 0, max: 39, integer: true });
+			if (!pos.ok) return pos;
+			result.pos = pos.value;
+			const resolve = booleanField(root.value.resolve, 'resolve', { optional: true });
+			if (!resolve.ok) return resolve;
+			result.resolve = resolve.value || false;
+			break;
+		}
 		case 'buy-property':
 		case 'give-property': {
 			const pos = finiteNumber(root.value.pos, 'pos', { min: 0, max: 39, integer: true });

@@ -693,104 +693,6 @@ function declareBankruptcy(room, player, creditorUserId = null) {
 	return { ok: true, events };
 }
 
-// ─── Dev helpers ─────────────────────────────────────────────────────────────
-// These are gated behind NODE_ENV !== 'production' in the socket layer.
-// They bypass normal turn-phase checks so you can test specific scenarios.
-
-function devSetCash(room, player, targetPlayer, amount) {
-	if (amount < 0) return { ok: false, error: 'negative-cash' };
-	const old = targetPlayer.cash;
-	targetPlayer.cash = amount;
-	appendLog(room, { kind: 'dev-set-cash', userId: targetPlayer.userId, old, new: amount });
-	return {
-		ok: true,
-		events: [{ type: 'dev-set-cash', userId: targetPlayer.userId, old, new: amount }],
-	};
-}
-
-function devSetPosition(room, player, targetPlayer, pos) {
-	if (pos < 0 || pos > 39) return { ok: false, error: 'bad-position' };
-	const old = targetPlayer.position;
-	targetPlayer.position = pos;
-	// Clear jail state if moving out.
-	if (pos !== 10) {
-		targetPlayer.inJail = false;
-		targetPlayer.jailTurns = 0;
-	}
-	appendLog(room, { kind: 'dev-set-position', userId: targetPlayer.userId, old, new: pos });
-	return {
-		ok: true,
-		events: [
-			{
-				type: 'move',
-				userId: targetPlayer.userId,
-				from: old,
-				to: pos,
-				path: [pos],
-				animate: false,
-			},
-			{ type: 'dev-set-position', userId: targetPlayer.userId, old, new: pos },
-		],
-	};
-}
-
-function devBuyProperty(room, player, targetPlayer, pos) {
-	const def = tileDef(room, pos);
-	if (!def) return { ok: false, error: 'bad-position' };
-	const st = tileSt(room, pos);
-	if (st.owner) return { ok: false, error: 'already-owned' };
-	if (!['property', 'station', 'utility'].includes(def.type))
-		return { ok: false, error: 'not-buyable-tile' };
-	if (targetPlayer.cash < def.price) return { ok: false, error: 'insufficient' };
-
-	targetPlayer.cash -= def.price;
-	targetPlayer.stats.moneySpent += def.price;
-	targetPlayer.stats.propertiesBought += 1;
-	targetPlayer.owned.push(def.pos);
-	st.owner = targetPlayer.userId;
-	appendLog(room, {
-		kind: 'dev-buy',
-		userId: targetPlayer.userId,
-		pos: def.pos,
-		price: def.price,
-	});
-	return {
-		ok: true,
-		events: [{ type: 'buy', userId: targetPlayer.userId, pos: def.pos, price: def.price }],
-	};
-}
-
-function devGiveProperty(room, player, targetPlayer, pos) {
-	const def = tileDef(room, pos);
-	if (!def) return { ok: false, error: 'bad-position' };
-	const st = tileSt(room, pos);
-	if (!['property', 'station', 'utility'].includes(def.type))
-		return { ok: false, error: 'not-property' };
-
-	// If already owned by someone else, clear their ownership.
-	if (st.owner && st.owner !== targetPlayer.userId) {
-		const prevOwner = room.players.find((p) => p.userId === st.owner);
-		if (prevOwner) {
-			prevOwner.owned = prevOwner.owned.filter((o) => o !== pos);
-		}
-	}
-	st.owner = targetPlayer.userId;
-	st.houses = 0;
-	st.mortgaged = false;
-	if (!targetPlayer.owned.includes(pos)) targetPlayer.owned.push(pos);
-	appendLog(room, { kind: 'dev-give', userId: targetPlayer.userId, pos, tile: def.name });
-	return {
-		ok: true,
-		events: [{ type: 'dev-give', userId: targetPlayer.userId, pos, tile: def.name }],
-	};
-}
-
-function devForceRoll(room, player, d1, d2) {
-	// Store the forced dice values on the room. rollAndMove will check this.
-	room._devDice = [d1, d2];
-	return { ok: true, events: [] };
-}
-
 module.exports = {
 	rollDie,
 	rollDice,
@@ -814,10 +716,4 @@ module.exports = {
 	resolveLanding,
 	drawCard,
 	applyCardEffect,
-	// Dev helpers
-	devSetCash,
-	devSetPosition,
-	devBuyProperty,
-	devGiveProperty,
-	devForceRoll,
 };
