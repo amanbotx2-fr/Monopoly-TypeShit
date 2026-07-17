@@ -13,10 +13,8 @@ function stackOffset(side, idx) {
 	return [d, 0];
 }
 
-// Tile-by-tile walk. Watches incoming events for this player's `move` events
-// and steps the displayed position along the `path` so the token visibly
-// walks across each tile instead of teleporting.
-const STEP_MS = 30;
+// Tile-by-tile walk with a cartoony hop on each step.
+const STEP_MS = 60;
 
 export default function PlayerToken({
 	player,
@@ -29,9 +27,11 @@ export default function PlayerToken({
 }) {
 	const [displayPos, setDisplayPos] = useState(player.position);
 	const [isJailShaking, setJailShaking] = useState(false);
+	const [hopFrame, setHopFrame] = useState(0); // 0=idle, 1=hop-up, 2=land
 	const queueRef = useRef([]);
 	const runningRef = useRef(false);
 	const lastSeenVersion = useRef(null);
+	const genRef = useRef(0); // incremented to cancel stale walk timeouts
 
 	function drain() {
 		if (runningRef.current) return;
@@ -40,17 +40,37 @@ export default function PlayerToken({
 		runningRef.current = true;
 
 		if (next.kind === 'walk') {
+			const gen = genRef.current;
 			const path = next.path || [];
 			let i = 0;
 			const step = () => {
-				if (i >= path.length) {
+				if (genRef.current !== gen) {
 					runningRef.current = false;
 					drain();
 					return;
 				}
+				if (i >= path.length) {
+					setHopFrame(2);
+					setTimeout(() => {
+						if (genRef.current !== gen) return;
+						setHopFrame(0);
+						runningRef.current = false;
+						drain();
+					}, 180);
+					return;
+				}
+				setHopFrame(1);
 				setDisplayPos(path[i]);
 				i++;
-				setTimeout(step, STEP_MS);
+				setTimeout(() => {
+					if (genRef.current !== gen) return;
+					setHopFrame(2);
+					setTimeout(() => {
+						if (genRef.current !== gen) return;
+						setHopFrame(0);
+						step();
+					}, STEP_MS);
+				}, STEP_MS);
 			};
 			step();
 		} else if (next.kind === 'jail') {
@@ -70,6 +90,8 @@ export default function PlayerToken({
 	}
 
 	// Feed new move events for this player into the queue.
+	// When a new roll arrives while a walk is in progress, cancel the
+	// stale walk and jump to the latest position.
 	useEffect(() => {
 		if (!events) return;
 		for (const e of events) {
@@ -78,9 +100,11 @@ export default function PlayerToken({
 		const idx = events.findIndex((e) => e._k === lastSeenVersion.current);
 		const newEvents = idx === -1 ? events : events.slice(idx + 1);
 		if (newEvents.length) lastSeenVersion.current = newEvents[newEvents.length - 1]._k;
+
+		let latestMove = null;
 		for (const e of newEvents) {
 			if (e.type === 'move' && e.userId === player.userId) {
-				queueRef.current.push({ kind: 'walk', path: e.path });
+				latestMove = { kind: 'walk', path: e.path };
 			}
 			if (e.type === 'jail' && e.userId === player.userId) {
 				queueRef.current.push({ kind: 'jail' });
@@ -89,6 +113,16 @@ export default function PlayerToken({
 				queueRef.current.push({ kind: 'jail-escape' });
 			}
 		}
+
+		if (latestMove) {
+			// Cancel any in-progress walk
+			genRef.current++;
+			queueRef.current.length = 0;
+			runningRef.current = false;
+			setHopFrame(0);
+			queueRef.current.push(latestMove);
+		}
+
 		drain();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [events, player.userId]);
@@ -108,9 +142,11 @@ export default function PlayerToken({
 	const isLight = ['#FFFFFF', '#FACC15', '#FEF200'].includes(player.color?.toUpperCase());
 	const hasBuildingUnderneath = tilesWithBuildings?.has(displayPos);
 
+	const hopClass = hopFrame === 1 ? 'hop-up' : hopFrame === 2 ? 'hop-land' : '';
+
 	return (
 		<div
-			className={`token ${isActive ? 'active' : ''} ${isJailShaking ? 'shake' : ''} ${hasBuildingUnderneath ? 'peek' : ''}`}
+			className={`token ${isActive ? 'active' : ''} ${isJailShaking ? 'shake' : ''} ${hasBuildingUnderneath ? 'peek' : ''} ${hopClass}`}
 			style={{
 				left: `calc(${xPct}% + ${off[0]}px)`,
 				top: `calc(${yPct}% + ${off[1]}px)`,
