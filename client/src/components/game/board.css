@@ -504,14 +504,14 @@
 
 /* ─── Highlight overlays (player hover) ────────────────────────────────────── */
 .tile.highlight-owned {
-	z-index: 8;
+	z-index: 11;
 	box-shadow:
 		inset 0 0 14px 2px rgba(255, 255, 255, 0.22),
 		inset 0 0 4px 1px rgba(255, 255, 255, 0.14);
 	filter: brightness(1.15);
 }
 .tile.highlight-position {
-	z-index: 8;
+	z-index: 11;
 	filter: brightness(1.15);
 }
 
