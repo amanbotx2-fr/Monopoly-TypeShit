@@ -15,6 +15,7 @@ import AuctionModal from './AuctionModal';
 import TradeModal from './TradeModal';
 import PropertyModal from './PropertyModal';
 import SoundToggle from './SoundToggle';
+import DevPanel from './DevPanel';
 import Victory from './Victory';
 import BrandLogo from '../common/BrandLogo';
 import { LogOut, Copy, ScrollText } from 'lucide-react';
@@ -141,6 +142,7 @@ export default function Game({ userId, pushToast }) {
 				onClose={() => setChatOpen(false)}
 			/>
 			{room.ended && <Victory room={room} onLeave={() => nav('/')} />}
+			{import.meta.env.DEV && <DevPanel room={room} me={me} act={act} />}
 		</>
 	);
 

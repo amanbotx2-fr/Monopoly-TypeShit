@@ -741,6 +741,39 @@ const handlers = {
 		if (!r.ok) return socket.emit('error-msg', r.error);
 		broadcast(io, room, r.events);
 	},
+
+	// Dev commands — only wired in non-production (see registerSocketHandlers).
+	'dev-command': (io, socket, { cmd, userId, pos, amount, d1, d2 }) => {
+		const room = getRoom(socket.data.roomCode);
+		if (!room) return;
+		const target = room.players.find((p) => p.userId === userId);
+		if (!target) return socket.emit('error-msg', 'dev-target-not-found');
+		const caller = room.players.find((p) => p.userId === socket.data.userId);
+		if (!caller) return socket.emit('error-msg', 'dev-caller-not-found');
+
+		let r;
+		switch (cmd) {
+			case 'set-cash':
+				r = engine.devSetCash(room, caller, target, amount);
+				break;
+			case 'set-position':
+				r = engine.devSetPosition(room, caller, target, pos);
+				break;
+			case 'buy-property':
+				r = engine.devBuyProperty(room, caller, target, pos);
+				break;
+			case 'give-property':
+				r = engine.devGiveProperty(room, caller, target, pos);
+				break;
+			case 'force-roll':
+				r = engine.devForceRoll(room, caller, d1, d2);
+				break;
+			default:
+				return socket.emit('error-msg', 'unknown-dev-command');
+		}
+		if (!r.ok) return socket.emit('error-msg', r.error);
+		broadcast(io, room, r.events);
+	},
 };
 
 function doPropAction(io, socket, getFn, pos) {
@@ -879,6 +912,22 @@ function registerSocketHandlers(io) {
 			'bankrupt',
 			(p) => validateBankruptEvent(p, socket),
 			(p) => handlers['bankrupt'](io, socket, p),
+		);
+
+		// Dev commands — always registered. The client gates these behind
+		// import.meta.env.DEV so they are never sent from production builds.
+		console.log('[dev] dev-command handler registered for socket');
+		socket.on('dev-command', (...args) =>
+			safe(() => {
+				console.log('[dev] received dev-command:', JSON.stringify(args[0]));
+				const result = validation.validateDevCommandPayload(args[0]);
+				if (!result.ok) {
+					console.warn('[dev] validation failed:', result.error, result.message);
+					return emitValidationError(socket, 'dev-command', result);
+				}
+				console.log('[dev] dispatching:', result.value.cmd, '→', result.value.userId);
+				handlers['dev-command'](io, socket, result.value);
+			}, socket),
 		);
 
 		socket.on('disconnect', () => {

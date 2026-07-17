@@ -744,6 +744,66 @@ function validateQueryText(value, label = 'q') {
 	return stringField(value, label, { min: 1, max: 80 });
 }
 
+// Dev commands — only available in non-production.
+const DEV_COMMANDS = new Set([
+	'set-cash',
+	'set-position',
+	'buy-property',
+	'give-property',
+	'force-roll',
+]);
+
+function validateDevCommandPayload(payload) {
+	const root = requireObject(payload, 'dev-command');
+	if (!root.ok) return root;
+	const fields = rejectUnknownKeys(
+		root.value,
+		['cmd', 'userId', 'pos', 'amount', 'd1', 'd2'],
+		'dev-command',
+	);
+	if (!fields.ok) return fields;
+
+	const cmd = stringField(root.value.cmd, 'cmd', { min: 1, max: 32 });
+	if (!cmd.ok) return cmd;
+	if (!DEV_COMMANDS.has(cmd.value)) return fail('bad-cmd', `unknown dev command: ${cmd.value}`);
+
+	const target = userId(root.value.userId, 'userId');
+	if (!target.ok) return target;
+
+	const result = { cmd: cmd.value, userId: target.value };
+
+	switch (cmd.value) {
+		case 'set-cash': {
+			const amount = finiteNumber(root.value.amount, 'amount', {
+				min: 0,
+				max: MAX_MONEY,
+				integer: true,
+			});
+			if (!amount.ok) return amount;
+			result.amount = amount.value;
+			break;
+		}
+		case 'set-position':
+		case 'buy-property':
+		case 'give-property': {
+			const pos = finiteNumber(root.value.pos, 'pos', { min: 0, max: 39, integer: true });
+			if (!pos.ok) return pos;
+			result.pos = pos.value;
+			break;
+		}
+		case 'force-roll': {
+			const d1 = finiteNumber(root.value.d1, 'd1', { min: 1, max: 6, integer: true });
+			if (!d1.ok) return d1;
+			const d2 = finiteNumber(root.value.d2, 'd2', { min: 1, max: 6, integer: true });
+			if (!d2.ok) return d2;
+			result.d1 = d1.value;
+			result.d2 = d2.value;
+			break;
+		}
+	}
+	return ok(result);
+}
+
 module.exports = {
 	fail,
 	ok,
@@ -766,6 +826,7 @@ module.exports = {
 	validateTradeIdPayload,
 	validateTradeMsgPayload,
 	validateBankruptPayload,
+	validateDevCommandPayload,
 	validateCreateBoardBody,
 	validatePatchBoardBody,
 	validateDuplicateBoardBody,

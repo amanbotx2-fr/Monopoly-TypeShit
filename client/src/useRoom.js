@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { connectSocket, onState, onChat, emit, disconnectSocket } from './socket';
+import { connectSocket, onState, onChat, onError, emit, disconnectSocket } from './socket';
 import { playEvents } from './sound';
 
 export default function useRoom({ userId }) {
@@ -35,10 +35,12 @@ export default function useRoom({ userId }) {
 			}
 		});
 		const offChat = onChat((msg) => setChat((c) => c.concat(msg)));
+		const offError = onError((msg) => console.error('[server error]', msg));
 
 		return () => {
 			offState();
 			offChat();
+			offError();
 			disconnectSocket();
 		};
 	}, [code, userId]);

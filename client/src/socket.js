@@ -58,7 +58,13 @@ export function onError(fn) {
 }
 
 export function emit(event, payload) {
-	if (!socket) return;
+	if (!socket) {
+		console.warn('[socket] emit skipped — socket not connected');
+		return;
+	}
+	if (event === 'dev-command') {
+		console.log('[socket] emit dev-command:', payload);
+	}
 	if (payload === undefined) socket.emit(event);
 	else socket.emit(event, payload);
 }
