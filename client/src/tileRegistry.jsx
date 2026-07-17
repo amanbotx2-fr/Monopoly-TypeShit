@@ -127,14 +127,14 @@ const TYPES = {
 				: 'tile-utility-water',
 	},
 
-	// ═══ Chance ═══════════════════════════════════════════════════════════════
+	// ═══ Chance / Surprise ════════════════════════════════════════════════════
 	chance: {
 		corner: false,
 		clickable: false,
 		colorBar: false,
 		badge: null,
 		cssClass: 'tile-chance',
-		icon: (def) => def.icon || '/icons/chance.svg',
+		icon: (def) => def.icon || '/icons/surprise.png',
 		body: (_def, _state, icon) => (
 			<>
 				{icon ? (
@@ -143,25 +143,25 @@ const TYPES = {
 					<HelpCircle className="tile-icon" color="#ff95bc" />
 				)}
 				<div className="tile-name" style={{ color: '#ff95bc' }}>
-					Chance
+					Surprise
 				</div>
 			</>
 		),
 	},
 
-	// ═══ Community Chest ══════════════════════════════════════════════════════
+	// ═══ Community Chest / Treasure ═══════════════════════════════════════════
 	chest: {
 		corner: false,
 		clickable: false,
 		colorBar: false,
 		badge: null,
 		cssClass: 'tile-chest',
-		icon: (def) => def.icon || '/icons/chest.svg',
+		icon: (def) => def.icon || '/icons/treasure.png',
 		body: (_def, _state, icon) => (
 			<>
 				{icon ? <IconImg src={icon} /> : <Package className="tile-icon" color="#f2a841" />}
 				<div className="tile-name" style={{ color: '#f2a841' }}>
-					Chest
+					Treasure
 				</div>
 			</>
 		),
@@ -248,14 +248,14 @@ const TYPES = {
 		),
 	},
 
-	// ═══ Free Parking corner ══════════════════════════════════════════════════
+	// ═══ Free Parking / Vacation corner ═══════════════════════════════════════
 	parking: {
 		corner: true,
 		clickable: false,
 		colorBar: false,
 		badge: null,
 		cssClass: 'tile-parking',
-		icon: (def) => def.icon || '/icons/parking.svg',
+		icon: (def) => def.icon || '/icons/vacation.png',
 		cornerBody: (def, icon) => (
 			<>
 				<div className="parking-image">

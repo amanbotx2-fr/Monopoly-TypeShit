@@ -25,7 +25,7 @@ export default function CardModal({ deck, text, onClose }) {
 				<div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
 					<Icon size={22} color={isChance ? 'var(--warning)' : 'var(--accent-2)'} />
 					<div style={{ fontWeight: 800, fontSize: 16, textTransform: 'uppercase' }}>
-						{isChance ? 'Chance' : 'Community Chest'}
+						{isChance ? 'Surprise' : 'Treasure'}
 					</div>
 				</div>
 				<div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text)', minHeight: 50 }}>
