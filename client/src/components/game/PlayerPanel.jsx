@@ -9,8 +9,7 @@ export default function PlayerPanel({ p, isMe, isActive, room, act, onTrade, onH
 		(room.jailFreeLedger?.[p.userId]?.chest || 0);
 
 	// Show bankruptcy button when it's my turn and game is active.
-	const canBankrupt =
-		isMe && isActive && room.started && !room.ended && !p.bankrupt;
+	const canBankrupt = isMe && isActive && room.started && !room.ended && !p.bankrupt;
 
 	function handleBankrupt() {
 		setShowBankruptConfirm(false);
@@ -159,7 +158,14 @@ export default function PlayerPanel({ p, isMe, isActive, room, act, onTrade, onH
 								border: '1px solid var(--danger)',
 							}}
 						>
-							<span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600, flex: 1 }}>
+							<span
+								style={{
+									fontSize: 11,
+									color: 'var(--danger)',
+									fontWeight: 600,
+									flex: 1,
+								}}
+							>
 								Lose all assets?
 							</span>
 							<button
