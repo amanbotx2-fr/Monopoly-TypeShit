@@ -1001,24 +1001,16 @@ async function registerSocketHandlers(io) {
 								text: `${p.username} disconnected — auto-declining purchase`,
 							});
 						}
-					} else if (room.turnPhase === 'resolving') {
-						// Auto-declare bankruptcy.
-						const r = engine.declareBankruptcy(room, p);
-						if (r.ok) {
-							room.pendingDebt = null;
-							broadcast(io, room, r.events);
-							appendLog(room, {
-								kind: 'dev',
-								text: `${p.username} disconnected — auto-bankruptcy`,
-							});
-						}
 					} else if (
 						room.turnPhase === 'awaiting-roll' ||
 						room.turnPhase === 'rolling' ||
+						room.turnPhase === 'resolving' ||
 						room.turnPhase === 'awaiting-end-turn'
 					) {
-						// Auto-end turn (engine handles rolling vs awaiting-end-turn).
-						const r = engine.endTurn(room, p);
+						// Auto-end turn. For resolving phase we force-end so
+						// the player stays in debt and must declare bankruptcy
+						// themselves when they reconnect.
+						const r = engine.endTurn(room, p, { force: true });
 						if (r.ok) {
 							broadcast(io, room, r.events);
 							appendLog(room, {

@@ -87,14 +87,14 @@ describe('transfer', () => {
 		expect(p.stats.moneyEarned).toBe(200);
 	});
 
-	it('rejects transfer with insufficient funds', () => {
+	it('allows negative balance (goes into debt)', () => {
 		const room = makeRoom();
 		const p = room.players[0];
+		const cashBefore = p.cash;
 		const r = engine.transfer(room, p.userId, 'bank', 99999, 'test');
-		expect(r.ok).toBe(false);
-		expect(r.error).toBe('insufficient');
-		expect(r.needed).toBe(99999);
-		expect(r.have).toBe(1500);
+		expect(r.ok).toBe(true);
+		expect(p.cash).toBe(cashBefore - 99999);
+		expect(p.cash).toBeLessThan(0);
 	});
 
 	it('rejects transfer from unknown player', () => {
@@ -401,13 +401,15 @@ describe('payJailFine', () => {
 		expect(r.error).toBe('not-in-jail');
 	});
 
-	it('rejects if insufficient funds', () => {
+	it('allows paying fine even with insufficient funds (goes negative)', () => {
 		const room = makeRoom();
 		const p = room.players[0];
 		p.inJail = true;
 		p.cash = 10;
 		const r = engine.payJailFine(room, p);
-		expect(r.ok).toBe(false);
+		expect(r.ok).toBe(true);
+		expect(p.cash).toBeLessThan(0);
+		expect(p.inJail).toBe(false);
 	});
 });
 
@@ -615,10 +617,12 @@ describe('endTurn', () => {
 		expect(r.ok).toBe(false);
 	});
 
-	it('rejects end turn during resolving (debt)', () => {
+	it('rejects end turn when player has negative cash', () => {
 		const room = makeRoom();
-		room.turnPhase = 'resolving';
-		const r = engine.endTurn(room, room.players[0]);
+		const p = room.players[0];
+		p.cash = -50;
+		room.turnPhase = 'awaiting-end-turn';
+		const r = engine.endTurn(room, p);
 		expect(r.ok).toBe(false);
 		expect(r.error).toBe('resolve-debt-first');
 	});
@@ -931,7 +935,7 @@ describe('resolveLanding', () => {
 		expect(events).toHaveLength(0);
 	});
 
-	it('transfer reports insufficient funds for rent', () => {
+	it('allows rent transfer even with insufficient funds (negative balance)', () => {
 		const room = makeRoom();
 		const p = room.players[0];
 		p.cash = 0;
@@ -941,17 +945,18 @@ describe('resolveLanding', () => {
 		const rent = engine.rentOwed(room, 1, [2, 3]);
 		expect(rent).toBeGreaterThan(0);
 		const r = engine.transfer(room, p.userId, owner.userId, rent, 'rent');
-		expect(r.ok).toBe(false);
-		expect(r.error).toBe('insufficient');
+		expect(r.ok).toBe(true);
+		expect(p.cash).toBeLessThan(0);
+		expect(owner.cash).toBeGreaterThan(1500);
 	});
 
-	it('transfer reports insufficient for tax', () => {
+	it('allows tax transfer even with insufficient funds (negative balance)', () => {
 		const room = makeRoom();
 		const p = room.players[0];
 		p.cash = 0;
 		const r = engine.transfer(room, p.userId, 'bank', 200, 'tax');
-		expect(r.ok).toBe(false);
-		expect(r.error).toBe('insufficient');
+		expect(r.ok).toBe(true);
+		expect(p.cash).toBeLessThan(0);
 	});
 });
 
@@ -1270,25 +1275,26 @@ describe('applyCardEffect', () => {
 	});
 });
 
-// ─── Transfer failure paths ──────────────────────────────────────────────────
-describe('transfer failure', () => {
-	it('returns events:[] on insufficient funds', () => {
+// ─── Transfer edge cases ──────────────────────────────────────────────────────
+describe('transfer edge cases', () => {
+	it('allows going negative on transfer', () => {
 		const room = makeRoom();
 		const p = room.players[0];
 		p.cash = 5;
 		const r = engine.transfer(room, p.userId, 'bank', 100, 'test');
-		expect(r.ok).toBe(false);
-		expect(r.error).toBe('insufficient');
-		expect(r.events).toEqual([]);
+		expect(r.ok).toBe(true);
+		expect(p.cash).toBe(-95);
+		expect(r.events).toHaveLength(1);
 	});
 
-	it('does not deduct cash on insufficient funds', () => {
+	it('deducts cash even when going negative', () => {
 		const room = makeRoom();
 		const p = room.players[0];
 		const cashBefore = 10;
 		p.cash = cashBefore;
 		engine.transfer(room, p.userId, 'bank', 100, 'test');
-		expect(p.cash).toBe(cashBefore);
+		expect(p.cash).toBe(cashBefore - 100);
+		expect(p.cash).toBeLessThan(0);
 	});
 
 	it('returns events:[] on bad-from', () => {
@@ -1353,30 +1359,94 @@ describe('resolveLanding debt creation', () => {
 	});
 });
 
-// ─── tryResolveDebt ──────────────────────────────────────────────────────────
-describe('tryResolveDebt', () => {
-	it('resolves debt when player has enough cash', () => {
+// ─── Invariant: resolveLanding never leaves phase=resolving without pendingDebt
+describe('resolveLanding invariants', () => {
+	function assertInvariant(room, player, dice) {
+		room.turnPhase = 'moving';
+		engine.resolveLanding(room, player, dice);
+		// If phase is resolving, pendingDebt MUST be set.
+		if (room.turnPhase === 'resolving') {
+			expect(room.pendingDebt).toBeTruthy();
+			expect(room.pendingDebt.userId).toBe(player.userId);
+		}
+	}
+
+	it('GO landing: never resolving', () => {
 		const room = makeRoom();
-		const p = room.players[0];
-		const creditor = room.players[1];
-		p.cash = 500;
-		room.turnPhase = 'resolving';
-		room.pendingDebt = { userId: p.userId, creditor: creditor.userId, amount: 200 };
-		const events = engine.tryResolveDebt(room, p);
-		expect(events).toBeTruthy();
-		expect(room.pendingDebt).toBeNull();
-		expect(room.turnPhase).toBe('awaiting-end-turn');
-		expect(p.cash).toBe(300);
-		expect(creditor.cash).toBe(1500 + 200);
+		room.players[0].position = 0;
+		assertInvariant(room, room.players[0], [2, 3]);
+		expect(room.turnPhase).not.toBe('resolving');
 	});
 
-	it('returns null when player does not have enough cash', () => {
+	it('own property landing: never resolving', () => {
 		const room = makeRoom();
 		const p = room.players[0];
-		const creditor = room.players[1];
-		p.cash = 50;
+		room.tileState[1].owner = p.userId;
+		p.owned.push(1);
+		p.position = 1;
+		assertInvariant(room, p, [2, 3]);
+		expect(room.turnPhase).not.toBe('resolving');
+	});
+
+	it('unowned property: buying, not resolving', () => {
+		const room = makeRoom();
+		const p = room.players[0];
+		p.position = 1;
+		assertInvariant(room, p, [2, 3]);
+		expect(room.turnPhase).toBe('buying');
+	});
+
+	it('mortgaged property: not resolving', () => {
+		const room = makeRoom();
+		const p = room.players[0];
+		room.tileState[1].owner = room.players[1].userId;
+		room.tileState[1].mortgaged = true;
+		room.players[1].owned.push(1);
+		p.position = 1;
+		assertInvariant(room, p, [2, 3]);
+		expect(room.turnPhase).not.toBe('resolving');
+	});
+
+	it('jail visiting: never resolving', () => {
+		const room = makeRoom();
+		room.players[0].position = 10;
+		assertInvariant(room, room.players[0], [2, 3]);
+		expect(room.turnPhase).not.toBe('resolving');
+	});
+
+	it('chance/chest: never resolving from card chain', () => {
+		const room = makeRoom();
+		const p = room.players[0];
+		p.position = 7; // Chance
+		assertInvariant(room, p, [2, 3]);
+		// Chance card may move player — phase depends on card effect.
+		// Just verify invariant: if resolving, debt must exist.
+		if (room.turnPhase === 'resolving') {
+			expect(room.pendingDebt).toBeTruthy();
+		}
+	});
+});
+
+// ─── tryResolveDebt ──────────────────────────────────────────────────────────
+describe('tryResolveDebt', () => {
+	it('resolves debt when player has non-negative cash', () => {
+		const room = makeRoom();
+		const p = room.players[0];
+		p.cash = 500;
 		room.turnPhase = 'resolving';
-		room.pendingDebt = { userId: p.userId, creditor: creditor.userId, amount: 200 };
+		room.pendingDebt = { userId: p.userId, creditor: 'player-2', amount: 200 };
+		const events = engine.tryResolveDebt(room, p);
+		expect(events).toEqual([]);
+		expect(room.pendingDebt).toBeNull();
+		expect(room.turnPhase).toBe('awaiting-end-turn');
+	});
+
+	it('returns null when player still has negative cash', () => {
+		const room = makeRoom();
+		const p = room.players[0];
+		p.cash = -50;
+		room.turnPhase = 'resolving';
+		room.pendingDebt = { userId: p.userId, creditor: 'player-2', amount: 200 };
 		const events = engine.tryResolveDebt(room, p);
 		expect(events).toBeNull();
 		expect(room.pendingDebt).toBeTruthy();
@@ -1416,29 +1486,15 @@ describe('tryResolveDebt', () => {
 		expect(room.pendingDebt).toBeTruthy();
 	});
 
-	it('resolves debt to bank (tax)', () => {
+	it('resolves debt at exactly zero cash', () => {
 		const room = makeRoom();
 		const p = room.players[0];
-		p.cash = 300;
+		p.cash = 0;
 		room.turnPhase = 'resolving';
 		room.pendingDebt = { userId: p.userId, creditor: 'bank', amount: 200 };
 		const events = engine.tryResolveDebt(room, p);
-		expect(events).toBeTruthy();
+		expect(events).toEqual([]);
 		expect(room.pendingDebt).toBeNull();
 		expect(room.turnPhase).toBe('awaiting-end-turn');
-		expect(p.cash).toBe(100);
-	});
-
-	it('handles exact cash match for debt', () => {
-		const room = makeRoom();
-		const p = room.players[0];
-		const creditor = room.players[1];
-		p.cash = 200;
-		room.turnPhase = 'resolving';
-		room.pendingDebt = { userId: p.userId, creditor: creditor.userId, amount: 200 };
-		const events = engine.tryResolveDebt(room, p);
-		expect(events).toBeTruthy();
-		expect(p.cash).toBe(0);
-		expect(creditor.cash).toBe(1500 + 200);
 	});
 });

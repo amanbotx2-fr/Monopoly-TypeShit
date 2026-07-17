@@ -328,6 +328,7 @@ export default function Game({ userId, pushToast }) {
 								isMe={p.userId === userId}
 								isActive={active?.userId === p.userId}
 								room={room}
+								act={act}
 								onTrade={() => setTradeWith(p.userId)}
 								onHover={(pl) => setHoveredPlayer(pl)}
 							/>

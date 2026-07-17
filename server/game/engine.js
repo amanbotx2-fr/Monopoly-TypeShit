@@ -90,8 +90,8 @@ function transfer(room, from, to, amount, reason = '') {
 	if (from !== 'bank' && from !== 'pot') {
 		const p = room.players.find((x) => x.userId === from);
 		if (!p) return { ok: false, error: 'bad-from', events: [] };
-		if (p.cash < amount)
-			return { ok: false, error: 'insufficient', needed: amount, have: p.cash, events: [] };
+		// Allow negative balance — the player goes into debt and must
+		// mortgage/sell or declare bankruptcy before ending their turn.
 		p.cash -= amount;
 		p.stats.moneySpent += amount;
 	} else if (from === 'pot') {
@@ -219,30 +219,27 @@ function resolveLanding(room, player, diceRoll, { chainedFromCard = false } = {}
 			if (rent > 0) {
 				const r = transfer(room, player.userId, st.owner, rent, 'rent');
 				events.push(...r.events);
-				if (r.ok) {
-					player.stats.rentPaid += rent;
-					owner.stats.rentCollected += rent;
-					appendLog(room, {
-						kind: 'rent',
-						fromUserId: player.userId,
-						toUserId: owner.userId,
-						amount: rent,
-						pos: player.position,
-					});
-				} else {
-					// Insufficient funds — engine.raiseOrBankrupt will surface
-					// a "you owe $N" banner on the client and block turn end
-					// until resolved.
+				player.stats.rentPaid += rent;
+				owner.stats.rentCollected += rent;
+				appendLog(room, {
+					kind: 'rent',
+					fromUserId: player.userId,
+					toUserId: owner.userId,
+					amount: rent,
+					pos: player.position,
+				});
+				// If the player went into debt, block turn end until resolved.
+				if (player.cash < 0) {
 					room.turnPhase = 'resolving';
 					room.pendingDebt = {
 						userId: player.userId,
-						creditor: owner.userId,
+						creditor: st.owner,
 						amount: rent,
 					};
 					events.push({
 						type: 'debt',
 						userId: player.userId,
-						creditor: owner.userId,
+						creditor: st.owner,
 						amount: rent,
 					});
 					return events;
@@ -252,15 +249,11 @@ function resolveLanding(room, player, diceRoll, { chainedFromCard = false } = {}
 		}
 
 		case 'tax': {
-			const r = transfer(
-				room,
-				player.userId,
-				room.rules.freeParkingPot ? 'pot' : 'bank',
-				def.amount,
-				'tax',
-			);
+			const creditor = room.rules.freeParkingPot ? 'pot' : 'bank';
+			const r = transfer(room, player.userId, creditor, def.amount, 'tax');
 			events.push(...r.events);
-			if (!r.ok) {
+			appendLog(room, { kind: 'tax', userId: player.userId, amount: def.amount });
+			if (player.cash < 0) {
 				room.turnPhase = 'resolving';
 				room.pendingDebt = { userId: player.userId, creditor: 'bank', amount: def.amount };
 				events.push({
@@ -271,7 +264,6 @@ function resolveLanding(room, player, diceRoll, { chainedFromCard = false } = {}
 				});
 				return events;
 			}
-			appendLog(room, { kind: 'tax', userId: player.userId, amount: def.amount });
 			break;
 		}
 
@@ -594,7 +586,7 @@ function playerHasExtraRoll(room, player) {
 }
 
 // ─── End-of-turn + bankruptcy ────────────────────────────────────────────────
-function endTurn(room, player) {
+function endTurn(room, player, { force = false } = {}) {
 	if (
 		room.turnPhase === 'auctioning' ||
 		room.turnPhase === 'trading' ||
@@ -602,9 +594,10 @@ function endTurn(room, player) {
 	) {
 		return { ok: false, error: `cannot-end-in-${room.turnPhase}` };
 	}
-	// Owed-money debts must be resolved first.
-	if (room.turnPhase === 'resolving') return { ok: false, error: 'resolve-debt-first' };
-	room.pendingDebt = null;
+	// Player must clear their debt before ending their turn — unless forced
+	// (e.g. player disconnected; debt stays and turn advances).
+	if (!force && player.cash < 0) return { ok: false, error: 'resolve-debt-first' };
+	if (!force) room.pendingDebt = null;
 
 	player.hasRolled = false;
 	player.doublesThisTurn = 0;
@@ -663,10 +656,11 @@ function declareBankruptcy(room, player, creditorUserId = null) {
 		}
 	}
 	player.owned = [];
-	// Hand over cash to creditor (if any).
-	if (creditorUserId) {
+	// Hand over cash to creditor (if any). If no creditor (voluntary
+	// bankruptcy), cash stays with the bank and properties revert.
+	if (creditorUserId && creditorUserId !== 'bank') {
 		const c = room.players.find((p) => p.userId === creditorUserId);
-		if (c) c.cash += player.cash;
+		if (c) c.cash += Math.max(0, player.cash);
 	}
 	player.cash = 0;
 	player.bankrupt = true;
@@ -691,22 +685,20 @@ function declareBankruptcy(room, player, creditorUserId = null) {
 	return { ok: true, events };
 }
 
-// Try to auto-resolve a pending debt after the player raises cash (mortgage,
-// sell buildings, etc.). Returns the transfer events if resolved, null if not.
+// Check if a player in resolving phase has cleared their negative balance
+// (by mortgaging/selling). The rent/tax was already transferred — the
+// player just needs to get back to non-negative cash.
 function tryResolveDebt(room, player) {
 	const pending = room.pendingDebt;
 	if (
 		pending &&
 		pending.userId === player.userId &&
 		room.turnPhase === 'resolving' &&
-		player.cash >= pending.amount
+		player.cash >= 0
 	) {
-		const t = transfer(room, player.userId, pending.creditor, pending.amount, 'debt');
-		if (t.ok) {
-			room.pendingDebt = null;
-			room.turnPhase = 'awaiting-end-turn';
-			return t.events;
-		}
+		room.pendingDebt = null;
+		room.turnPhase = 'awaiting-end-turn';
+		return [];
 	}
 	return null;
 }

@@ -48,9 +48,14 @@ function setPosition(room, _caller, targetPlayer, pos, { resolveLand = false } =
 		// Force the turn to this player so resolveLanding sets turnPhase correctly.
 		const turnIdx = room.players.findIndex((p) => p.userId === targetPlayer.userId);
 		if (turnIdx !== -1) room.turnIndex = turnIdx;
-		room.turnPhase = 'resolving';
+		const prevPhase = room.turnPhase;
+		room.turnPhase = 'moving';
 		const landingEvents = engine.resolveLanding(room, targetPlayer, [1, 1]);
 		events.push(...landingEvents);
+		// If resolveLanding didn't set a decision phase (buy/debt), end the turn.
+		if (room.turnPhase === 'moving') {
+			room.turnPhase = 'awaiting-end-turn';
+		}
 	}
 
 	return { ok: true, events };

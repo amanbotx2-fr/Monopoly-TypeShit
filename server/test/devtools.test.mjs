@@ -128,6 +128,97 @@ describe('setPosition', () => {
 		// Should trigger buying phase for the target player.
 		expect(room.turnPhase).toBe('buying');
 	});
+
+	// ─── Regression: "stuck in resolving" bug ─────────────────────────────
+	// The setPosition + resolveLand path was forcing turnPhase='resolving'
+	// before calling resolveLanding, which left the phase stuck if the
+	// landing didn't produce a debt. These tests guarantee it never happens again.
+
+	it('resolveLand on owned property (can afford): phase is awaiting-end-turn, NOT resolving', () => {
+		const room = makeRoom();
+		const caller = room.players[0];
+		const target = room.players[1];
+		// Give pos 1 (Cairo) to caller, move target there — target owes rent.
+		room.tileState[1].owner = caller.userId;
+		caller.owned.push(1);
+		target.cash = 500;
+		const r = devtools.setPosition(room, caller, target, 1, { resolveLand: true });
+		expect(r.ok).toBe(true);
+		// Phase must NOT be 'resolving' — player can afford the rent.
+		expect(room.turnPhase).not.toBe('resolving');
+		expect(room.pendingDebt).toBeNull();
+		expect(room.turnPhase).toBe('awaiting-end-turn');
+	});
+
+	it('resolveLand on owned property (cannot afford): phase is resolving with pendingDebt', () => {
+		const room = makeRoom();
+		const caller = room.players[0];
+		const target = room.players[1];
+		room.tileState[1].owner = caller.userId;
+		caller.owned.push(1);
+		target.cash = 0;
+		const r = devtools.setPosition(room, caller, target, 1, { resolveLand: true });
+		expect(r.ok).toBe(true);
+		expect(room.turnPhase).toBe('resolving');
+		expect(room.pendingDebt).toBeTruthy();
+		expect(room.pendingDebt.userId).toBe(target.userId);
+	});
+
+	it('resolveLand on GO: phase is awaiting-end-turn, NOT resolving', () => {
+		const room = makeRoom();
+		const caller = room.players[0];
+		const target = room.players[1];
+		const r = devtools.setPosition(room, caller, target, 0, { resolveLand: true });
+		expect(r.ok).toBe(true);
+		expect(room.turnPhase).not.toBe('resolving');
+		expect(room.pendingDebt).toBeNull();
+	});
+
+	it('resolveLand on own property: phase is awaiting-end-turn, NOT resolving', () => {
+		const room = makeRoom();
+		const caller = room.players[0];
+		const target = room.players[1];
+		// Give pos 1 to the target — they land on their own property.
+		room.tileState[1].owner = target.userId;
+		target.owned.push(1);
+		const r = devtools.setPosition(room, caller, target, 1, { resolveLand: true });
+		expect(r.ok).toBe(true);
+		expect(room.turnPhase).not.toBe('resolving');
+		expect(room.pendingDebt).toBeNull();
+	});
+
+	it('resolveLand on tax (can afford): phase is awaiting-end-turn, NOT resolving', () => {
+		const room = makeRoom();
+		const caller = room.players[0];
+		const target = room.players[1];
+		target.cash = 500;
+		const r = devtools.setPosition(room, caller, target, 4, { resolveLand: true }); // Income Tax
+		expect(r.ok).toBe(true);
+		expect(room.turnPhase).not.toBe('resolving');
+		expect(room.pendingDebt).toBeNull();
+	});
+
+	it('resolveLand on tax (cannot afford): phase is resolving with pendingDebt', () => {
+		const room = makeRoom();
+		const caller = room.players[0];
+		const target = room.players[1];
+		target.cash = 0;
+		const r = devtools.setPosition(room, caller, target, 4, { resolveLand: true }); // Income Tax
+		expect(r.ok).toBe(true);
+		expect(room.turnPhase).toBe('resolving');
+		expect(room.pendingDebt).toBeTruthy();
+		expect(room.pendingDebt.creditor).toBe('bank');
+	});
+
+	it('resolveLand on Jail (just visiting): phase is NOT resolving', () => {
+		const room = makeRoom();
+		const caller = room.players[0];
+		const target = room.players[1];
+		const r = devtools.setPosition(room, caller, target, 10, { resolveLand: true });
+		expect(r.ok).toBe(true);
+		expect(room.turnPhase).not.toBe('resolving');
+		expect(room.pendingDebt).toBeNull();
+	});
 });
 
 // ─── buyProperty ─────────────────────────────────────────────────────────────

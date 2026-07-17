@@ -413,32 +413,23 @@ function validateBankruptPayload(payload, room, player) {
 	if (!root.ok) return root;
 	const fields = rejectUnknownKeys(root.value, ['creditorUserId'], 'bankrupt');
 	if (!fields.ok) return fields;
-	if (room.turnPhase !== 'resolving')
-		return fail('bad-bankruptcy-state', 'bankruptcy is only allowed while resolving debt');
+	// Player can declare bankruptcy at any time — not just during resolving.
+	// Assets liquidate to the bank unless a creditor is specified.
 	if (room.players[room.turnIndex]?.userId !== player.userId) {
-		return fail('bad-bankruptcy-state', 'only the active debtor can declare bankruptcy');
-	}
-	const pending = room.pendingDebt;
-	if (!pending || pending.userId !== player.userId)
-		return fail('bad-bankruptcy-state', 'no pending debt for this player');
-	const resources = availableBankruptcyResources(room, player);
-	if (resources >= pending.amount) {
-		return fail(
-			'bad-bankruptcy-state',
-			'player can cover pending debt with available resources',
-			{ resources, debt: pending.amount },
-		);
+		return fail('bad-bankruptcy-state', 'only the active player can declare bankruptcy');
 	}
 
 	const creditor = userId(root.value.creditorUserId, 'creditorUserId', { optional: true });
 	if (!creditor.ok) return creditor;
-	const expected = pending.creditor === 'bank' ? null : pending.creditor;
-	const actual = creditor.value || null;
-	if (actual !== expected) return fail('bad-creditor', 'creditor does not match pending debt');
-	if (actual && !room.players.some((p) => p.userId === actual && !p.bankrupt)) {
-		return fail('bad-creditor', 'creditor is not an active player');
+	// If there's a pending debt, the creditor must match.
+	const pending = room.pendingDebt;
+	if (pending && pending.userId === player.userId && creditor.value != null) {
+		const expected = pending.creditor === 'bank' ? null : pending.creditor;
+		if (creditor.value !== expected) {
+			return fail('bad-creditor', 'creditor does not match pending debt');
+		}
 	}
-	return ok({ creditorUserId: actual });
+	return ok({ creditorUserId: creditor.value || null });
 }
 
 function availableBankruptcyResources(room, player) {
