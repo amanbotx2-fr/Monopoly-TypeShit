@@ -10,6 +10,8 @@ import {
 	PlayCircle,
 	Palmtree,
 } from 'lucide-react';
+import HouseIcon from './components/game/HouseIcon.jsx';
+import HotelIcon from './components/game/HotelIcon.jsx';
 
 // ─── Icon helpers ────────────────────────────────────────────────────────────
 
@@ -21,6 +23,33 @@ function IconImg({ src, size = 20 }) {
 			className="tile-icon"
 			style={{ objectFit: 'contain', width: size, height: size }}
 		/>
+	);
+}
+
+// ─── Houses / Hotel display (shown under property name when owned) ─────────────
+
+function HousesDisplay({ houses }) {
+	if (houses >= 5) {
+		return (
+			<div className="tile-building-wrap">
+				<HotelIcon size={32} />
+			</div>
+		);
+	}
+	if (houses === 0) {
+		return <div className="tile-owned-label">Owned</div>;
+	}
+	if (houses === 1) {
+		return (
+			<div className="tile-building-wrap">
+				<HouseIcon size={32} />
+			</div>
+		);
+	}
+	return (
+		<div className="tile-building-wrap">
+			<HouseIcon size={32} label={`×${houses}`} />
+		</div>
 	);
 }
 
@@ -36,10 +65,14 @@ const TYPES = {
 		colorBar: true,
 		badge: 'flag', // circular badge at inner edge (country flag)
 		icon: (def) => def.icon || null, // def.icon set by boards.js
-		body: (def) => (
+		body: (def, state) => (
 			<>
 				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">{def.price}</div>
+				{state?.owner != null ? (
+					<HousesDisplay houses={state.houses ?? 0} />
+				) : (
+					<div className="tile-price">{def.price}</div>
+				)}
 			</>
 		),
 	},
