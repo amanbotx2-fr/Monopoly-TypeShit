@@ -6,6 +6,7 @@ import PropertyCard from './PropertyCard';
 import BoardOverlay from './BoardOverlay';
 import PlayerHoverCard from './PlayerHoverCard';
 import ActionBar from './ActionBar';
+import ActionLog from './ActionLog';
 import { analyzeBoard, tileSide, gridArea } from './layout';
 import './board.css';
 
@@ -22,6 +23,8 @@ export default function Board({
 	onTileClick,
 	hoveredPlayer,
 	onHoverPlayer,
+	actionLog,
+	onOpenTrade,
 }) {
 	const [hovered, setHovered] = useState(null);
 	const tiles = room?.board?.tiles || [];
@@ -134,6 +137,13 @@ export default function Board({
 						</div>
 					)}
 					<ActionBar room={room} me={me} isMyTurn={isMyTurn} act={act} />
+					<ActionLog
+						variant="board"
+						log={actionLog}
+						players={players}
+						tiles={tiles}
+						onTradeClick={onOpenTrade}
+					/>
 				</div>
 
 				{room?.lastDice && !diceRolling && (

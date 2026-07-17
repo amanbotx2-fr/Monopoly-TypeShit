@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
@@ -9,7 +9,6 @@ import PlayerStrip from './PlayerStrip';
 import ChatPanel from './ChatPanel';
 import TradesPanel from './TradesPanel';
 import LogDrawer from './LogDrawer';
-import ActionLog from './ActionLog';
 import CardModal from './CardModal';
 import AuctionModal from './AuctionModal';
 import TradeModal from './TradeModal';
@@ -18,7 +17,7 @@ import SoundToggle from './SoundToggle';
 import DevPanel from './DevPanel';
 import Victory from './Victory';
 import BrandLogo from '../common/BrandLogo';
-import { LogOut, Copy, ScrollText } from 'lucide-react';
+import { LogOut, Copy } from 'lucide-react';
 
 export default function Game({ userId, pushToast }) {
 	const nav = useNavigate();
@@ -32,7 +31,6 @@ export default function Game({ userId, pushToast }) {
 	const [peekTradeId, setPeekTradeId] = useState(null);
 	const [openPropertyPos, setOpenPropertyPos] = useState(null);
 	const [drawnCard, setDrawnCard] = useState(null);
-	const handleTradeClick = useCallback((id) => setPeekTradeId(id), []);
 	const [chatOpen, setChatOpen] = useState(false);
 	const [logOpen, setLogOpen] = useState(false);
 	const diceTimer = useRef(null);
@@ -246,6 +244,8 @@ export default function Game({ userId, pushToast }) {
 								onTileClick={(pos) => setOpenPropertyPos(pos)}
 								hoveredPlayer={hoveredPlayer}
 								onHoverPlayer={setHoveredPlayer}
+								actionLog={room.actionLog}
+								onOpenTrade={setPeekTradeId}
 							/>
 						</div>
 					</main>
@@ -255,7 +255,7 @@ export default function Game({ userId, pushToast }) {
 						onOpen={() => setLogOpen(true)}
 						onClose={() => setLogOpen(false)}
 						room={room}
-						onTradeClick={handleTradeClick}
+						onTradeClick={setPeekTradeId}
 					/>
 					{modals}
 				</div>
@@ -270,7 +270,7 @@ export default function Game({ userId, pushToast }) {
 			<div
 				style={{
 					display: 'grid',
-					gridTemplateColumns: 'minmax(270px, 310px) 1fr minmax(290px, 350px)',
+					gridTemplateColumns: 'minmax(270px, 310px) 1fr',
 					gap: 16,
 					padding: 16,
 					height: '100vh',
@@ -375,34 +375,12 @@ export default function Game({ userId, pushToast }) {
 								onTileClick={(pos) => setOpenPropertyPos(pos)}
 								hoveredPlayer={hoveredPlayer}
 								onHoverPlayer={setHoveredPlayer}
+								actionLog={room.actionLog}
+								onOpenTrade={setPeekTradeId}
 							/>
 						</div>
 					</div>
 				</main>
-
-				<aside
-					style={{
-						display: 'flex',
-						flexDirection: 'column',
-						gap: 8,
-						minHeight: 0,
-						padding: 12,
-						background: 'var(--surface)',
-						border: '1px solid var(--border)',
-						borderRadius: 'var(--radius-lg)',
-					}}
-				>
-					<header className="section-title" style={{ padding: '2px 2px 0' }}>
-						<ScrollText size={14} color="var(--text-3)" />
-						<div>Action Log</div>
-					</header>
-					<ActionLog
-						log={room.actionLog}
-						players={room.players}
-						tiles={room.board.tiles}
-						onTradeClick={handleTradeClick}
-					/>
-				</aside>
 
 				{modals}
 			</div>
