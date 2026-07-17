@@ -21,6 +21,46 @@ function generateRoomCode() {
 	return uuidv4().slice(0, 6).toUpperCase();
 }
 
+// ─── Persistence helpers (pure functions, no DB dependency) ──────────────────
+
+// Strip socket IDs and reset connected state for MongoDB snapshot.
+function stripTransient(room) {
+	return {
+		...room,
+		players: room.players.map((p) => ({ ...p, socketId: null, connected: true })),
+		spectators: room.spectators.map((s) => ({ ...s, socketId: null })),
+	};
+}
+
+const RESTORABLE_LIFECYCLES = new Set(['waiting-for-players', 'in-progress', 'empty-grace']);
+
+// Take a MongoDB doc and return a sanitized room state ready for insertion
+// into activeRooms, or null if the room should be skipped.
+function hydrateRestoredRoom(doc) {
+	if (!doc?.state || !doc.state.roomCode) return null;
+	const room = JSON.parse(JSON.stringify(doc.state));
+	const lifecycle =
+		room.lifecycle ||
+		(room.ended ? 'finished' : room.started ? 'in-progress' : 'waiting-for-players');
+	if (!RESTORABLE_LIFECYCLES.has(lifecycle)) return null;
+	if (room.ended) return null;
+
+	room.players = Array.isArray(room.players) ? room.players : [];
+	room.players.forEach((p) => {
+		p.socketId = null;
+		p.connected = false;
+	});
+	room.spectators = Array.isArray(room.spectators) ? room.spectators : [];
+	room.spectators = [];
+	room.trades = Array.isArray(room.trades) ? room.trades : [];
+	room.lifecycle = room.started ? 'in-progress' : 'waiting-for-players';
+	room.cleanupAt = null;
+	room.cleanupReason = null;
+	room.version = Number.isInteger(room.version) ? room.version : 0;
+	room.lastActivity = Number.isFinite(room.lastActivity) ? room.lastActivity : Date.now();
+	return room;
+}
+
 // Ten paintable tokens. Player-picked at join, host can reassign if needed.
 // Hex values chosen for contrast on the dark board; avoid pairs that are
 // hard to tell apart at a glance (no red+pink both in the defaults).
@@ -309,4 +349,7 @@ module.exports = {
 	appendLog,
 	appendChat,
 	generateRoomCode,
+	stripTransient,
+	RESTORABLE_LIFECYCLES,
+	hydrateRestoredRoom,
 };

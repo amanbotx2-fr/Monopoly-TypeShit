@@ -86,6 +86,28 @@ export default function Game({ userId, pushToast }) {
 	const me = room.players.find((p) => p.userId === userId);
 	const active = room.players[room.turnIndex];
 	const isMyTurn = active?.userId === userId && !room.ended;
+
+	// Show a reconnection banner when the socket drops.
+	const disconnectedBanner =
+		!connected && room && !room.ended ? (
+			<div
+				style={{
+					position: 'fixed',
+					top: 0,
+					left: 0,
+					right: 0,
+					zIndex: 9999,
+					background: 'var(--warning)',
+					color: '#000',
+					textAlign: 'center',
+					padding: '6px 12px',
+					fontSize: 13,
+					fontWeight: 600,
+				}}
+			>
+				⚠️ Connection lost — reconnecting…
+			</div>
+		) : null;
 	const openTrade = peekTradeId
 		? room.trades?.find((t) => t.id === peekTradeId)
 		: room.trades?.find(
@@ -152,228 +174,237 @@ export default function Game({ userId, pushToast }) {
 
 	if (isMobile) {
 		return (
-			<div
-				style={{
-					display: 'grid',
-					gridTemplateRows: 'auto auto 1fr',
-					height: '100vh',
-					overflow: 'hidden',
-					background: 'var(--bg)',
-				}}
-			>
-				<header
-					style={{
-						display: 'flex',
-						gap: 6,
-						alignItems: 'center',
-						padding: '8px 10px',
-						borderBottom: '1px solid var(--border)',
-						background: 'var(--surface)',
-					}}
-				>
-					<button className="btn ghost sm" onClick={() => nav('/')}>
-						<LogOut size={13} />
-					</button>
-					<BrandLogo size={26} showText={false} />
-					<div className="chip" style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-						{roomCode}
-					</div>
-					<button className="btn sm ghost" onClick={copyLink}>
-						<Copy size={12} />
-					</button>
-					<div style={{ flex: 1 }} />
-					<SoundToggle />
-				</header>
-
-				<PlayerStrip
-					room={room}
-					me={me}
-					onTrade={(uid) => setTradeWith(uid)}
-					onHover={(p) => setHoveredPlayer(p)}
-				/>
-
-				<main
+			<>
+				{disconnectedBanner}
+				<div
 					style={{
 						display: 'grid',
-						placeItems: 'center',
-						padding: 10,
-						minHeight: 0,
+						gridTemplateRows: 'auto auto 1fr',
+						height: '100vh',
+						overflow: 'hidden',
 						background: 'var(--bg)',
 					}}
 				>
-					<div
+					<header
 						style={{
-							width: 'min(100%, 100vw - 20px)',
-							maxHeight: '100%',
-							aspectRatio: '1 / 1',
+							display: 'flex',
+							gap: 6,
+							alignItems: 'center',
+							padding: '8px 10px',
+							borderBottom: '1px solid var(--border)',
+							background: 'var(--surface)',
 						}}
 					>
-						<Board
-							room={room}
-							userId={userId}
-							diceRolling={diceRolling}
-							events={events}
-							me={me}
-							isMyTurn={isMyTurn}
-							act={act}
-							onTileClick={(pos) => setOpenPropertyPos(pos)}
-							hoveredPlayer={hoveredPlayer}
-							onHoverPlayer={setHoveredPlayer}
-						/>
-					</div>
-				</main>
+						<button className="btn ghost sm" onClick={() => nav('/')}>
+							<LogOut size={13} />
+						</button>
+						<BrandLogo size={26} showText={false} />
+						<div
+							className="chip"
+							style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
+						>
+							{roomCode}
+						</div>
+						<button className="btn sm ghost" onClick={copyLink}>
+							<Copy size={12} />
+						</button>
+						<div style={{ flex: 1 }} />
+						<SoundToggle />
+					</header>
 
-				<LogDrawer
-					open={logOpen}
-					onOpen={() => setLogOpen(true)}
-					onClose={() => setLogOpen(false)}
-					room={room}
-					onTradeClick={handleTradeClick}
-				/>
-				{modals}
-			</div>
+					<PlayerStrip
+						room={room}
+						me={me}
+						onTrade={(uid) => setTradeWith(uid)}
+						onHover={(p) => setHoveredPlayer(p)}
+					/>
+
+					<main
+						style={{
+							display: 'grid',
+							placeItems: 'center',
+							padding: 10,
+							minHeight: 0,
+							background: 'var(--bg)',
+						}}
+					>
+						<div
+							style={{
+								width: 'min(100%, 100vw - 20px)',
+								maxHeight: '100%',
+								aspectRatio: '1 / 1',
+							}}
+						>
+							<Board
+								room={room}
+								userId={userId}
+								diceRolling={diceRolling}
+								events={events}
+								me={me}
+								isMyTurn={isMyTurn}
+								act={act}
+								onTileClick={(pos) => setOpenPropertyPos(pos)}
+								hoveredPlayer={hoveredPlayer}
+								onHoverPlayer={setHoveredPlayer}
+							/>
+						</div>
+					</main>
+
+					<LogDrawer
+						open={logOpen}
+						onOpen={() => setLogOpen(true)}
+						onClose={() => setLogOpen(false)}
+						room={room}
+						onTradeClick={handleTradeClick}
+					/>
+					{modals}
+				</div>
+			</>
 		);
 	}
 
 	// Desktop layout
 	return (
-		<div
-			style={{
-				display: 'grid',
-				gridTemplateColumns: 'minmax(270px, 310px) 1fr minmax(290px, 350px)',
-				gap: 16,
-				padding: 16,
-				height: '100vh',
-				overflow: 'hidden',
-				background: 'var(--bg)',
-			}}
-		>
-			<aside
+		<>
+			{disconnectedBanner}
+			<div
 				style={{
-					display: 'flex',
-					flexDirection: 'column',
-					gap: 12,
-					minHeight: 0,
-					padding: 12,
-					background: 'var(--surface)',
-					border: '1px solid var(--border)',
-					borderRadius: 'var(--radius-lg)',
+					display: 'grid',
+					gridTemplateColumns: 'minmax(270px, 310px) 1fr minmax(290px, 350px)',
+					gap: 16,
+					padding: 16,
+					height: '100vh',
+					overflow: 'hidden',
+					background: 'var(--bg)',
 				}}
 			>
-				<header style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-					<button className="btn ghost sm" onClick={() => nav('/')}>
-						<LogOut size={13} />
-					</button>
-					<BrandLogo size={28} showText={false} />
-					<div className="chip" style={{ fontFamily: 'var(--font-mono)' }}>
-						{roomCode}
-					</div>
-					<button className="btn sm ghost" onClick={copyLink}>
-						<Copy size={12} />
-					</button>
-					<div style={{ flex: 1 }} />
-					<SoundToggle />
-				</header>
-				<div className="status-line" style={{ padding: '2px 2px 0' }}>
-					<span
-						className="dot"
-						style={{ background: connected ? 'var(--success)' : 'var(--warning)' }}
-					/>
-					{room.ended ? 'Game finished' : `${active?.username || 'Guest'} to act`}
-				</div>
-				<div
+				<aside
 					style={{
 						display: 'flex',
 						flexDirection: 'column',
-						gap: 8,
-						overflowY: 'auto',
-						paddingRight: 4,
-						flex: 1,
+						gap: 12,
+						minHeight: 0,
+						padding: 12,
+						background: 'var(--surface)',
+						border: '1px solid var(--border)',
+						borderRadius: 'var(--radius-lg)',
 					}}
 				>
-					{room.players.map((p) => (
-						<PlayerPanel
-							key={p.userId}
-							p={p}
-							isMe={p.userId === userId}
-							isActive={active?.userId === p.userId}
-							room={room}
-							onTrade={() => setTradeWith(p.userId)}
-							onHover={(pl) => setHoveredPlayer(pl)}
+					<header style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+						<button className="btn ghost sm" onClick={() => nav('/')}>
+							<LogOut size={13} />
+						</button>
+						<BrandLogo size={28} showText={false} />
+						<div className="chip" style={{ fontFamily: 'var(--font-mono)' }}>
+							{roomCode}
+						</div>
+						<button className="btn sm ghost" onClick={copyLink}>
+							<Copy size={12} />
+						</button>
+						<div style={{ flex: 1 }} />
+						<SoundToggle />
+					</header>
+					<div className="status-line" style={{ padding: '2px 2px 0' }}>
+						<span
+							className="dot"
+							style={{ background: connected ? 'var(--success)' : 'var(--warning)' }}
 						/>
-					))}
-				</div>
-			</aside>
+						{room.ended ? 'Game finished' : `${active?.username || 'Guest'} to act`}
+					</div>
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							gap: 8,
+							overflowY: 'auto',
+							paddingRight: 4,
+							flex: 1,
+						}}
+					>
+						{room.players.map((p) => (
+							<PlayerPanel
+								key={p.userId}
+								p={p}
+								isMe={p.userId === userId}
+								isActive={active?.userId === p.userId}
+								room={room}
+								onTrade={() => setTradeWith(p.userId)}
+								onHover={(pl) => setHoveredPlayer(pl)}
+							/>
+						))}
+					</div>
+				</aside>
 
-			<main
-				style={{
-					display: 'flex',
-					flexDirection: 'column',
-					minHeight: 0,
-					border: '1px solid var(--border)',
-					borderRadius: 'var(--radius-lg)',
-					background: 'var(--bg-1)',
-					boxShadow: 'var(--shadow-lg)',
-					overflow: 'hidden',
-				}}
-			>
-				<div
+				<main
 					style={{
-						width: '100%',
-						height: '100%',
-						display: 'grid',
-						placeItems: 'center',
+						display: 'flex',
+						flexDirection: 'column',
+						minHeight: 0,
+						border: '1px solid var(--border)',
+						borderRadius: 'var(--radius-lg)',
+						background: 'var(--bg-1)',
+						boxShadow: 'var(--shadow-lg)',
+						overflow: 'hidden',
 					}}
 				>
 					<div
 						style={{
-							width: 'min(100%, 100% - 24px)',
-							aspectRatio: '1 / 1',
-							maxWidth: 'calc(100vh - 64px)',
-							maxHeight: '100%',
+							width: '100%',
+							height: '100%',
+							display: 'grid',
+							placeItems: 'center',
 						}}
 					>
-						<Board
-							room={room}
-							userId={userId}
-							diceRolling={diceRolling}
-							events={events}
-							me={me}
-							isMyTurn={isMyTurn}
-							act={act}
-							onTileClick={(pos) => setOpenPropertyPos(pos)}
-							hoveredPlayer={hoveredPlayer}
-							onHoverPlayer={setHoveredPlayer}
-						/>
+						<div
+							style={{
+								width: 'min(100%, 100% - 24px)',
+								aspectRatio: '1 / 1',
+								maxWidth: 'calc(100vh - 64px)',
+								maxHeight: '100%',
+							}}
+						>
+							<Board
+								room={room}
+								userId={userId}
+								diceRolling={diceRolling}
+								events={events}
+								me={me}
+								isMyTurn={isMyTurn}
+								act={act}
+								onTileClick={(pos) => setOpenPropertyPos(pos)}
+								hoveredPlayer={hoveredPlayer}
+								onHoverPlayer={setHoveredPlayer}
+							/>
+						</div>
 					</div>
-				</div>
-			</main>
+				</main>
 
-			<aside
-				style={{
-					display: 'flex',
-					flexDirection: 'column',
-					gap: 8,
-					minHeight: 0,
-					padding: 12,
-					background: 'var(--surface)',
-					border: '1px solid var(--border)',
-					borderRadius: 'var(--radius-lg)',
-				}}
-			>
-				<header className="section-title" style={{ padding: '2px 2px 0' }}>
-					<ScrollText size={14} color="var(--text-3)" />
-					<div>Action Log</div>
-				</header>
-				<ActionLog
-					log={room.actionLog}
-					players={room.players}
-					tiles={room.board.tiles}
-					onTradeClick={handleTradeClick}
-				/>
-			</aside>
+				<aside
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 8,
+						minHeight: 0,
+						padding: 12,
+						background: 'var(--surface)',
+						border: '1px solid var(--border)',
+						borderRadius: 'var(--radius-lg)',
+					}}
+				>
+					<header className="section-title" style={{ padding: '2px 2px 0' }}>
+						<ScrollText size={14} color="var(--text-3)" />
+						<div>Action Log</div>
+					</header>
+					<ActionLog
+						log={room.actionLog}
+						players={room.players}
+						tiles={room.board.tiles}
+						onTradeClick={handleTradeClick}
+					/>
+				</aside>
 
-			{modals}
-		</div>
+				{modals}
+			</div>
+		</>
 	);
 }

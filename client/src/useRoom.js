@@ -22,6 +22,9 @@ export default function useRoom({ userId }) {
 		const s = connectSocket({ userId, roomCode: code, username, color });
 		s.on('connect', () => setConnected(true));
 		s.on('disconnect', () => setConnected(false));
+		// If socket is already connected (reused from another component),
+		// the 'connect' event already fired — sync the flag immediately.
+		if (s.connected) setConnected(true);
 
 		const offState = onState(({ room: r, events: evs }) => {
 			setRoom(r);

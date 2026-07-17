@@ -86,13 +86,12 @@ function rentOwed(room, pos, roll, rentMultOverride = null) {
 // parking), or a player userId.
 function transfer(room, from, to, amount, reason = '') {
 	if (amount <= 0) return { ok: true, events: [] };
-	const events = [];
 
 	if (from !== 'bank' && from !== 'pot') {
 		const p = room.players.find((x) => x.userId === from);
-		if (!p) return { ok: false, error: 'bad-from' };
+		if (!p) return { ok: false, error: 'bad-from', events: [] };
 		if (p.cash < amount)
-			return { ok: false, error: 'insufficient', needed: amount, have: p.cash };
+			return { ok: false, error: 'insufficient', needed: amount, have: p.cash, events: [] };
 		p.cash -= amount;
 		p.stats.moneySpent += amount;
 	} else if (from === 'pot') {
@@ -101,15 +100,14 @@ function transfer(room, from, to, amount, reason = '') {
 
 	if (to !== 'bank' && to !== 'pot') {
 		const p = room.players.find((x) => x.userId === to);
-		if (!p) return { ok: false, error: 'bad-to' };
+		if (!p) return { ok: false, error: 'bad-to', events: [] };
 		p.cash += amount;
 		p.stats.moneyEarned += amount;
 	} else if (to === 'pot') {
 		room.parkingPot += amount;
 	}
 
-	events.push({ type: 'money', from, to, amount, reason });
-	return { ok: true, events };
+	return { ok: true, events: [{ type: 'money', from, to, amount, reason }] };
 }
 
 // ─── Movement ────────────────────────────────────────────────────────────────
@@ -693,6 +691,26 @@ function declareBankruptcy(room, player, creditorUserId = null) {
 	return { ok: true, events };
 }
 
+// Try to auto-resolve a pending debt after the player raises cash (mortgage,
+// sell buildings, etc.). Returns the transfer events if resolved, null if not.
+function tryResolveDebt(room, player) {
+	const pending = room.pendingDebt;
+	if (
+		pending &&
+		pending.userId === player.userId &&
+		room.turnPhase === 'resolving' &&
+		player.cash >= pending.amount
+	) {
+		const t = transfer(room, player.userId, pending.creditor, pending.amount, 'debt');
+		if (t.ok) {
+			room.pendingDebt = null;
+			room.turnPhase = 'awaiting-end-turn';
+			return t.events;
+		}
+	}
+	return null;
+}
+
 module.exports = {
 	rollDie,
 	rollDice,
@@ -716,4 +734,5 @@ module.exports = {
 	resolveLanding,
 	drawCard,
 	applyCardEffect,
+	tryResolveDebt,
 };

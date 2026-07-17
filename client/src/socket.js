@@ -7,6 +7,7 @@ import { SOCKET_URL } from './config';
 
 let socket = null;
 let currentRoom = null;
+let lastRoomState = null; // cached so late subscribers get immediate state
 const listeners = { state: new Set(), chat: new Set(), error: new Set() };
 
 export function connectSocket({ roomCode, username, color, asSpectator }) {
@@ -16,6 +17,7 @@ export function connectSocket({ roomCode, username, color, asSpectator }) {
 		socket = null;
 	}
 	currentRoom = roomCode;
+	lastRoomState = null; // new room → clear cached state
 
 	socket = io(SOCKET_URL, {
 		withCredentials: true,
@@ -26,7 +28,10 @@ export function connectSocket({ roomCode, username, color, asSpectator }) {
 		auth: { roomCode, username, color, asSpectator: !!asSpectator },
 	});
 
-	socket.on('state', (p) => listeners.state.forEach((fn) => fn(p)));
+	socket.on('state', (p) => {
+		lastRoomState = p; // cache for late subscribers
+		listeners.state.forEach((fn) => fn(p));
+	});
 	socket.on('chat', (p) => listeners.chat.forEach((fn) => fn(p)));
 	socket.on('error-msg', (e) => listeners.error.forEach((fn) => fn(e)));
 
@@ -46,6 +51,9 @@ export function disconnectSocket() {
 
 export function onState(fn) {
 	listeners.state.add(fn);
+	// Replay cached state so late subscribers (e.g. Game mounting after
+	// RoomRouter already received state) get immediate room data.
+	if (lastRoomState) fn(lastRoomState);
 	return () => listeners.state.delete(fn);
 }
 export function onChat(fn) {

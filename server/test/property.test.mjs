@@ -379,3 +379,51 @@ describe('sellHouse', () => {
 		expect(room.tileState[1].houses).toBe(1);
 	});
 });
+
+// ─── Build rollback on transfer failure ──────────────────────────────────────
+describe('build rollback', () => {
+	function giveMonopoly(room, p, group) {
+		for (let i = 0; i < 40; i++) {
+			const tile = room.board.tiles[i];
+			if (tile.type === 'property' && tile.group === group) {
+				room.tileState[i].owner = p.userId;
+				if (!p.owned.includes(i)) p.owned.push(i);
+			}
+		}
+	}
+
+	it('rolls back house when transfer fails (insufficient funds)', () => {
+		const room = makeRoom();
+		const p = room.players[0];
+		giveMonopoly(room, p, 'brown');
+		// Make player unable to afford the build.
+		p.cash = 0;
+		room.bank.houses = 32;
+		const housesBefore = room.bank.houses;
+		const st = room.tileState[1];
+		st.houses = 0;
+		const r = property.buildHouse(room, p, 1);
+		expect(r.ok).toBe(false);
+		expect(r.error).toBe('insufficient');
+		expect(st.houses).toBe(0); // rolled back
+		expect(room.bank.houses).toBe(housesBefore); // restored
+	});
+
+	it('rolls back hotel when transfer fails', () => {
+		const room = makeRoom();
+		room.rules.evenBuild = false;
+		const p = room.players[0];
+		giveMonopoly(room, p, 'brown');
+		p.cash = 0;
+		room.bank.houses = 32;
+		room.bank.hotels = 12;
+		const st = room.tileState[1];
+		st.houses = 4; // ready for hotel
+		const r = property.buildHouse(room, p, 1);
+		expect(r.ok).toBe(false);
+		expect(r.error).toBe('insufficient');
+		expect(st.houses).toBe(4); // rolled back from 5
+		expect(room.bank.hotels).toBe(12); // restored
+		expect(room.bank.houses).toBe(32); // restored (4 houses back, 1 hotel returned)
+	});
+});

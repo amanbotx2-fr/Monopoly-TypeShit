@@ -9,7 +9,7 @@ import { Copy, LogOut, Play, X, Users, Settings, UserPlus } from 'lucide-react';
 
 const allowSoloDevGame = import.meta.env.VITE_ALLOW_SOLO_DEV_GAME === '1' || import.meta.env.DEV;
 
-export default function Lobby({ userId, pushToast, onStart }) {
+export default function Lobby({ userId, pushToast }) {
 	const nav = useNavigate();
 	const isMobile = useIsMobile();
 	const [tokens, setTokens] = useState([]);
@@ -20,11 +20,6 @@ export default function Lobby({ userId, pushToast, onStart }) {
 			.then(setTokens)
 			.catch(() => {});
 	}, []);
-
-	// Promote to game view once host starts.
-	useEffect(() => {
-		if (room?.started) onStart();
-	}, [room?.started, onStart]);
 
 	if (!room) {
 		return (
