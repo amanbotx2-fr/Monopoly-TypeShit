@@ -35,6 +35,8 @@ export default function Game({ userId, pushToast }) {
 	const handleTradeClick = useCallback((id) => setPeekTradeId(id), []);
 	const [chatOpen, setChatOpen] = useState(false);
 	const [logOpen, setLogOpen] = useState(false);
+	const diceTimer = useRef(null);
+	const cardTimer = useRef(null);
 
 	useEffect(() => {
 		// Server sends roll as the FIRST event in a batch (followed by move/land events).
@@ -47,16 +49,18 @@ export default function Game({ userId, pushToast }) {
 		const cardEvt = newEvents.find((e) => e.type === 'draw-card');
 
 		if (rollEvt) {
+			clearTimeout(diceTimer.current);
 			setDiceRolling(true);
-			const t2 = setTimeout(() => setDiceRolling(false), DICE_TOTAL_MS);
-			return () => clearTimeout(t2);
+			diceTimer.current = setTimeout(() => setDiceRolling(false), DICE_TOTAL_MS);
 		}
 		if (cardEvt) {
+			clearTimeout(cardTimer.current);
 			const t = setTimeout(() =>
 				setDrawnCard({ deck: cardEvt.deck, cardId: cardEvt.cardId, text: cardEvt.text }),
 			);
-			return () => clearTimeout(t);
+			cardTimer.current = t;
 		}
+		// No cleanup — don't cancel the animation timer when follow-up events arrive
 	}, [events]);
 
 	if (!room) {
