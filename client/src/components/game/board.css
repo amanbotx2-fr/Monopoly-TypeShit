@@ -790,6 +790,33 @@
 	}
 }
 
+/* Token pulses to near-invisible when sitting on a tile with houses/hotel
+   so the building count underneath is visible to all players. */
+.token.peek {
+	animation: tokenPeek 2.8s ease-in-out infinite;
+}
+/* When the token is both active AND on a building tile, run both animations. */
+.token.active.peek {
+	animation:
+		tokenPulse 1.4s ease-in-out infinite,
+		tokenPeek 2.8s ease-in-out infinite;
+}
+
+@keyframes tokenPeek {
+	0%,
+	30% {
+		opacity: 1;
+	}
+	45%,
+	55% {
+		opacity: 0;
+	}
+	70%,
+	100% {
+		opacity: 1;
+	}
+}
+
 /* ─── Property card popup (hover tooltip on tiles) ─────────────────────────── */
 .prop-popup {
 	position: absolute;

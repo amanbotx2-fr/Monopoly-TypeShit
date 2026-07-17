@@ -43,6 +43,18 @@ export default function Board({
 		return set;
 	})();
 
+	// Tiles that have buildings (houses/hotel) — used to trigger the
+	// token peek animation so the count is visible under player tokens.
+	const tilesWithBuildings = useMemo(() => {
+		const set = new Set();
+		for (const ts of tileState) {
+			if (ts && ts.type === 'property' && ts.owner && ts.houses > 0) {
+				set.add(ts.pos);
+			}
+		}
+		return set;
+	}, [tileState]);
+
 	// Split tiles by side, driven by tile types not magic numbers.
 	const cornerTiles = useMemo(() => {
 		if (!boardInfo) return [];
@@ -147,6 +159,7 @@ export default function Board({
 								stackIndex={stackIdx}
 								events={events}
 								boardInfo={boardInfo}
+								tilesWithBuildings={tilesWithBuildings}
 								onHover={(e, pl) => onHoverPlayer(pl ? { player: pl, e } : null)}
 							/>
 						);

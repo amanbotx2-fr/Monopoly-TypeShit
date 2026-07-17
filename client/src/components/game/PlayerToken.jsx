@@ -18,7 +18,15 @@ function stackOffset(side, idx) {
 // walks across each tile instead of teleporting.
 const STEP_MS = 30;
 
-export default function PlayerToken({ player, isActive, stackIndex, events, onHover, boardInfo }) {
+export default function PlayerToken({
+	player,
+	isActive,
+	stackIndex,
+	events,
+	onHover,
+	boardInfo,
+	tilesWithBuildings,
+}) {
 	const [displayPos, setDisplayPos] = useState(player.position);
 	const [isJailShaking, setJailShaking] = useState(false);
 	const queueRef = useRef([]);
@@ -98,10 +106,11 @@ export default function PlayerToken({ player, isActive, stackIndex, events, onHo
 	const off = stackOffset(side, stackIndex);
 	const initial = (player.username || '?').trim()[0]?.toUpperCase() || '?';
 	const isLight = ['#FFFFFF', '#FACC15', '#FEF200'].includes(player.color?.toUpperCase());
+	const hasBuildingUnderneath = tilesWithBuildings?.has(displayPos);
 
 	return (
 		<div
-			className={`token ${isActive ? 'active' : ''} ${isJailShaking ? 'shake' : ''}`}
+			className={`token ${isActive ? 'active' : ''} ${isJailShaking ? 'shake' : ''} ${hasBuildingUnderneath ? 'peek' : ''}`}
 			style={{
 				left: `calc(${xPct}% + ${off[0]}px)`,
 				top: `calc(${yPct}% + ${off[1]}px)`,
