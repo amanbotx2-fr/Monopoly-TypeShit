@@ -758,6 +758,26 @@ function doPropAction(io, socket, getFn, pos) {
 	const action = getFn(p);
 	const r = action(room, p, pos);
 	if (!r.ok) return socket.emit('error-msg', r.error);
+
+	// Auto-resolve pending debt if the player now has enough cash after
+	// mortgaging or selling buildings. Without this the player gets stuck:
+	// they can't end turn (resolve-debt-first) and can't declare bankruptcy
+	// (server sees enough total resources to cover the debt).
+	const pending = room.pendingDebt;
+	if (
+		pending &&
+		pending.userId === p.userId &&
+		room.turnPhase === 'resolving' &&
+		p.cash >= pending.amount
+	) {
+		const t = engine.transfer(room, p.userId, pending.creditor, pending.amount, 'debt');
+		if (t.ok) {
+			r.events.push(...t.events);
+			room.pendingDebt = null;
+			room.turnPhase = 'awaiting-end-turn';
+		}
+	}
+
 	broadcast(io, room, r.events);
 }
 

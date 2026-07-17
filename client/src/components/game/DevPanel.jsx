@@ -20,8 +20,8 @@ export default function DevPanel({ room, me, act }) {
 	const [targetUserId, setTargetUserId] = useState('');
 	const [selectedPos, setSelectedPos] = useState('');
 	const [cashAmount, setCashAmount] = useState('');
-	const [d1, setD1] = useState('3');
-	const [d2, setD2] = useState('4');
+	const [d1, setD1] = useState(3);
+	const [d2, setD2] = useState(4);
 	const [resolveLand, setResolveLand] = useState(true);
 
 	const tileOptions = React.useMemo(() => buildTileOptions(room.board.tiles), [room.board.tiles]);
@@ -33,8 +33,8 @@ export default function DevPanel({ room, me, act }) {
 		setTargetUserId('');
 		setSelectedPos('');
 		setCashAmount('');
-		setD1('3');
-		setD2('4');
+		setD1(3);
+		setD2(4);
 		setResolveLand(true);
 	}, []);
 
@@ -212,7 +212,7 @@ export default function DevPanel({ room, me, act }) {
 							<select
 								style={{ ...sharedInputStyle, width: 60 }}
 								value={d1}
-								onChange={(e) => setD1(e.target.value)}
+								onChange={(e) => setD1(Number(e.target.value))}
 							>
 								{[1, 2, 3, 4, 5, 6].map((n) => (
 									<option key={n} value={n}>
@@ -224,7 +224,7 @@ export default function DevPanel({ room, me, act }) {
 							<select
 								style={{ ...sharedInputStyle, width: 60 }}
 								value={d2}
-								onChange={(e) => setD2(e.target.value)}
+								onChange={(e) => setD2(Number(e.target.value))}
 							>
 								{[1, 2, 3, 4, 5, 6].map((n) => (
 									<option key={n} value={n}>
@@ -233,14 +233,14 @@ export default function DevPanel({ room, me, act }) {
 								))}
 							</select>
 							<span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-								= {Number(d1) + Number(d2)}
+								= {d1 + d2}
 								{d1 === d2 ? ' 🎲🎲' : ''}
 							</span>
 						</div>
 						<button
 							className="btn sm"
 							style={{ fontSize: 11 }}
-							onClick={() => send('force-roll', { d1: Number(d1), d2: Number(d2) })}
+							onClick={() => send('force-roll', { d1, d2 })}
 						>
 							Set Next Roll
 						</button>
