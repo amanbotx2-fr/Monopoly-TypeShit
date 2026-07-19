@@ -1,0 +1,337 @@
+.create-private-page {
+	min-height: 100dvh;
+	overflow: auto;
+}
+
+.create-private-shell {
+	width: min(calc(100% - 48px), 1174px);
+	margin: 0 auto;
+	padding: 100px 0 30px;
+}
+
+.create-private-title {
+	margin: 27px 0 20px 23px;
+}
+
+.create-private-title h1 {
+	margin: 0;
+	font-size: 32px;
+	font-weight: 800;
+	line-height: 1.1;
+	letter-spacing: 0.025em;
+	text-transform: uppercase;
+}
+
+.create-private-title p {
+	margin: 8px 0 0;
+	color: var(--landing-muted);
+	font-size: 14px;
+}
+
+.create-private-form {
+	width: min(100%, 910px);
+	margin: 0 auto;
+	padding: 25px 26px 22px;
+	border: 1px solid var(--landing-border);
+	border-radius: 10px;
+	background: oklch(13.5% 0.008 248 / 0.5);
+}
+
+.create-private-form fieldset {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.create-private-form legend {
+	width: 100%;
+	margin: 0 0 21px;
+	padding: 0;
+	color: var(--landing-text);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.035em;
+	text-transform: uppercase;
+}
+
+.create-settings-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 21px 35px;
+}
+
+.create-setting-field {
+	display: grid;
+	min-width: 0;
+	align-content: start;
+	gap: 8px;
+}
+
+.create-setting-field > span:first-child {
+	display: flex;
+	min-height: 14px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	color: oklch(82% 0.008 82);
+	font-size: 11px;
+	font-weight: 550;
+	letter-spacing: 0.035em;
+	text-transform: uppercase;
+}
+
+.create-setting-field > span:first-child small {
+	padding: 2px 6px;
+	border: 1px solid var(--landing-border);
+	border-radius: 999px;
+	color: var(--landing-muted);
+	font-size: 8px;
+	font-weight: 650;
+	letter-spacing: 0.055em;
+}
+
+.create-setting-control {
+	position: relative;
+	display: flex;
+	height: 45px;
+	align-items: center;
+	border: 1px solid var(--landing-border);
+	border-radius: 7px;
+	background: var(--landing-panel);
+	transition:
+		border-color var(--duration) var(--ease-out),
+		box-shadow var(--duration) var(--ease-out),
+		background var(--duration) var(--ease-out);
+}
+
+.create-setting-control:hover:not(.is-unavailable) {
+	border-color: var(--landing-border-hover);
+}
+
+.create-setting-control:focus-within:not(.is-unavailable) {
+	border-color: var(--landing-gold);
+	box-shadow: 0 0 0 3px oklch(78% 0.14 79 / 0.14);
+}
+
+.create-setting-control > svg:first-child {
+	position: absolute;
+	left: 14px;
+	z-index: 1;
+	width: 18px;
+	height: 18px;
+	color: oklch(76% 0.01 82);
+	stroke-width: 1.5;
+	pointer-events: none;
+}
+
+.create-setting-control > svg:last-child {
+	position: absolute;
+	right: 13px;
+	width: 15px;
+	height: 15px;
+	color: var(--landing-muted);
+	stroke-width: 1.7;
+	pointer-events: none;
+}
+
+.create-setting-control input,
+.create-setting-control select {
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	padding: 0 38px 0 46px;
+	border: 0;
+	appearance: none;
+	background: transparent;
+	color: var(--landing-text);
+	font-size: 14px;
+	box-shadow: none;
+}
+
+.create-setting-control input::placeholder {
+	color: var(--landing-muted);
+}
+
+.create-setting-control select {
+	cursor: pointer;
+}
+
+.create-setting-control.is-unavailable {
+	background: oklch(14.5% 0.008 248 / 0.45);
+}
+
+.create-setting-control.is-unavailable input,
+.create-setting-control.is-unavailable select {
+	cursor: not-allowed;
+	opacity: 0.68;
+}
+
+.create-setting-help {
+	min-height: 13px;
+	color: var(--landing-muted);
+	font-size: 11px;
+	line-height: 1.35;
+}
+
+.create-settings-section,
+.create-privacy-section {
+	margin-top: 23px !important;
+	padding-top: 21px !important;
+	border-top: 1px solid var(--landing-border) !important;
+}
+
+.create-privacy-section legend {
+	margin-bottom: 14px;
+}
+
+.create-privacy-option {
+	position: relative;
+	display: grid;
+	grid-template-columns: 48px 1fr 22px;
+	min-height: 73px;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 19px;
+	border: 1px solid var(--landing-gold);
+	border-radius: 7px;
+	background: oklch(16% 0.012 74 / 0.22);
+}
+
+.create-privacy-option > input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.create-privacy-icon {
+	display: grid;
+	width: 45px;
+	height: 45px;
+	place-items: center;
+	border: 1px solid oklch(60% 0.12 75 / 0.72);
+	border-radius: 50%;
+	background: oklch(10% 0.008 250 / 0.8);
+	color: var(--landing-gold);
+}
+
+.create-privacy-icon svg {
+	width: 22px;
+	height: 22px;
+	stroke-width: 1.65;
+}
+
+.create-privacy-copy {
+	display: grid;
+	gap: 5px;
+}
+
+.create-privacy-copy strong {
+	font-size: 14px;
+	font-weight: 650;
+}
+
+.create-privacy-copy small {
+	color: var(--landing-muted);
+	font-size: 12px;
+}
+
+.create-privacy-option > svg {
+	width: 20px;
+	height: 20px;
+	color: var(--landing-gold);
+	fill: var(--landing-gold);
+	stroke: oklch(15% 0.01 250);
+}
+
+.create-private-submit {
+	display: inline-flex;
+	width: 100%;
+	min-height: 55px;
+	align-items: center;
+	justify-content: center;
+	gap: 13px;
+	margin-top: 22px;
+	border: 1px solid var(--landing-gold);
+	border-radius: 7px;
+	background: linear-gradient(180deg, var(--landing-gold-bright), oklch(72% 0.145 75));
+	color: oklch(15% 0.012 250);
+	font-size: 18px;
+	font-weight: 800;
+	letter-spacing: 0.035em;
+	text-transform: uppercase;
+	box-shadow: inset 0 1px 0 oklch(96% 0.07 85 / 0.3);
+	transition:
+		transform var(--duration) var(--ease-out),
+		box-shadow var(--duration) var(--ease-out),
+		background var(--duration) var(--ease-out);
+}
+
+.create-private-submit:hover:not(:disabled) {
+	background: linear-gradient(180deg, oklch(88% 0.13 84), oklch(77% 0.15 77));
+	box-shadow: 0 10px 28px oklch(70% 0.15 78 / 0.2);
+	transform: translateY(-1px);
+}
+
+.create-private-submit:disabled {
+	cursor: wait;
+	opacity: 0.58;
+}
+
+.create-private-submit svg {
+	width: 20px;
+	height: 20px;
+	stroke-width: 1.8;
+}
+
+.create-private-footnote {
+	margin: 12px 0 0;
+	color: var(--landing-muted);
+	font-size: 12px;
+	text-align: center;
+}
+
+@media (max-width: 760px) {
+	.create-private-shell {
+		width: min(calc(100% - 24px), 600px);
+		padding-top: 88px;
+	}
+
+	.create-private-title {
+		margin: 20px 0 18px;
+	}
+
+	.create-private-title h1 {
+		font-size: 27px;
+	}
+
+	.create-private-form {
+		padding: 22px 18px;
+	}
+
+	.create-settings-grid {
+		grid-template-columns: 1fr;
+		gap: 18px;
+	}
+
+	.create-private-submit {
+		font-size: 15px;
+	}
+}
+
+@media (max-width: 430px) {
+	.create-private-title h1 {
+		font-size: 24px;
+	}
+
+	.create-privacy-option {
+		grid-template-columns: 40px 1fr 18px;
+		gap: 12px;
+		padding: 12px;
+	}
+
+	.create-privacy-icon {
+		width: 40px;
+		height: 40px;
+	}
+}

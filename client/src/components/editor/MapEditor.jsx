@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api';
 import BrandLogo from '../common/BrandLogo';
 import {
@@ -200,11 +200,14 @@ function validateBoard(board, name) {
 
 export default function MapEditor({ pushToast }) {
 	const nav = useNavigate();
+	const location = useLocation();
 	const { boardId } = useParams();
+	const [startRequest] = useState(() => location.state?.mapStart || null);
+	const startRequestHandled = useRef(false);
 	const [board, setBoard] = useState(null);
 	const [baseBoard, setBaseBoard] = useState(null);
 	const [presets, setPresets] = useState([]);
-	const [selected, setSelected] = useState('world-tour');
+	const [selected, setSelected] = useState(() => startRequest?.templateId || 'world-tour');
 	const [name, setName] = useState('My Custom Board');
 	const [description, setDescription] = useState('');
 	const [isPublic, setIsPublic] = useState(true);
@@ -223,12 +226,27 @@ export default function MapEditor({ pushToast }) {
 	}, []);
 
 	// Route/template loading is intentionally driven only by these two values.
-	/* eslint-disable react-hooks/exhaustive-deps, react-hooks/immutability */
+	/* eslint-disable react-hooks/exhaustive-deps */
 	useEffect(() => {
-		if (boardId) loadExistingBoard(boardId);
-		else loadTemplate(selected);
+		if (boardId) {
+			loadExistingBoard(boardId);
+			return;
+		}
+		if (!startRequestHandled.current && startRequest?.mode === 'scratch') {
+			startRequestHandled.current = true;
+			createNewMap({
+				mapName: 'My Custom Board',
+				mapDescription: '',
+				visibility: 'private',
+				template: 'blank',
+			});
+			return;
+		}
+		const requestedTemplateId = startRequestHandled.current ? null : startRequest?.templateId;
+		startRequestHandled.current = true;
+		loadTemplate(requestedTemplateId || selected);
 	}, [boardId, selected]);
-	/* eslint-enable react-hooks/exhaustive-deps, react-hooks/immutability */
+	/* eslint-enable react-hooks/exhaustive-deps */
 
 	useEffect(() => {
 		function warn(e) {
