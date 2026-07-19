@@ -4,7 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const require = createRequire(import.meta.url);
 
 const engine = require('../game/engine');
+const GameRoom = require('../models/GameRoom');
+const registerSocketHandlers = require('../socket/handlers');
 const { createRoom, createPlayerState, activeRooms, deleteRoom } = require('../game/state');
+const {
+	schedulePendingRoomCleanup,
+	clearPendingRoomCleanup,
+	shutdownPendingRoomCleanup,
+	PENDING_HOST_CONNECT_MS,
+} = require('../abuse/pendingRooms');
+const DEFAULT_DISCONNECT_GRACE_MS = 15 * 60 * 1000;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function makeRoom(started = true) {
@@ -39,10 +48,37 @@ function makeRoom(started = true) {
 	return room;
 }
 
-// Mock the handlers module's internal dependencies.
-// We test the core logic directly: the lifecycle functions are pure enough
-// to test without Socket.IO. The onJoin/disconnect handlers are Socket.IO
-// event wrappers around these pure functions.
+function makeSocket(userId, roomCode, id) {
+	const listeners = new Map();
+	return {
+		id,
+		data: { userId },
+		handshake: { auth: { roomCode } },
+		join: vi.fn(),
+		leave: vi.fn(),
+		emit: vi.fn(),
+		disconnect: vi.fn(),
+		on: vi.fn((event, handler) => listeners.set(event, handler)),
+		listeners,
+	};
+}
+
+function makeIo() {
+	let connect;
+	return {
+		io: {
+			on: vi.fn((event, handler) => {
+				if (event === 'connection') connect = handler;
+			}),
+			to: vi.fn(() => ({ emit: vi.fn() })),
+			sockets: { adapter: { rooms: new Map() }, sockets: new Map() },
+		},
+		connect: (socket) => connect(socket),
+	};
+}
+
+// Most lifecycle cases are state-level tests; the grace-period regression
+// below also drives the Socket.IO connection and disconnect wrappers.
 
 beforeEach(() => {
 	for (const [code] of activeRooms) deleteRoom(code);
@@ -50,6 +86,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	shutdownPendingRoomCleanup();
 	vi.useRealTimers();
 	vi.restoreAllMocks();
 });
@@ -190,18 +227,29 @@ describe('all players disconnect', () => {
 		expect(room.cleanupReason).toBe('idle-disconnect');
 	});
 
-	it('room is cleaned up when host disconnects before game start', () => {
+	it('keeps the lobby pending when the host disconnects and cancels cleanup on reconnect', () => {
 		const room = makeRoom(false);
 		room.lifecycle = 'waiting-for-players';
+		const host = room.players[0];
+		host.socketId = 'sock-host';
+		host.connected = true;
 
 		// Host disconnects before start.
-		room.lifecycle = 'deleting';
-		for (const p of room.players) {
-			p.connected = false;
-			p.socketId = null;
-		}
+		host.connected = false;
+		host.socketId = null;
+		schedulePendingRoomCleanup(room);
 
-		expect(room.lifecycle).toBe('deleting');
+		expect(activeRooms.get(room.roomCode)).toBe(room);
+		expect(room.cleanupReason).toBe('pending-host-connect');
+
+		// Host reconnects before the grace period expires.
+		clearPendingRoomCleanup(room.roomCode);
+		host.socketId = 'sock-host-new';
+		host.connected = true;
+		vi.advanceTimersByTime(PENDING_HOST_CONNECT_MS + 100);
+
+		expect(activeRooms.get(room.roomCode)).toBe(room);
+		expect(room.cleanupReason).toBeNull();
 	});
 
 	it('idle cleanup timer is cleared when a player reconnects', () => {
@@ -252,6 +300,40 @@ describe('spectator disconnect/reconnect', () => {
 
 // ─── Turn stuck when active player disconnects ───────────────────────────────
 describe('active player disconnect — turn handling', () => {
+	it('preserves the turn during reconnect grace and only advances after it expires', async () => {
+		vi.spyOn(GameRoom, 'findOneAndUpdate').mockResolvedValue({});
+		vi.spyOn(GameRoom, 'deleteOne').mockResolvedValue({ deletedCount: 1 });
+		const room = makeRoom();
+		room.players[1].socketId = 'sock-player-2';
+		room.players[1].connected = true;
+		const harness = makeIo();
+		const lifecycle = await registerSocketHandlers(harness.io);
+
+		try {
+			const firstSocket = makeSocket('host-1', room.roomCode, 'sock-host-1');
+			await harness.connect(firstSocket);
+			firstSocket.listeners.get('disconnect')();
+
+			expect(room.turnIndex).toBe(0);
+			expect(room.turnPhase).toBe('awaiting-roll');
+
+			const reconnectSocket = makeSocket('host-1', room.roomCode, 'sock-host-2');
+			await harness.connect(reconnectSocket);
+			await vi.advanceTimersByTimeAsync(DEFAULT_DISCONNECT_GRACE_MS + 100);
+
+			expect(room.turnIndex).toBe(0);
+			expect(room.turnPhase).toBe('awaiting-roll');
+
+			reconnectSocket.listeners.get('disconnect')();
+			await vi.advanceTimersByTimeAsync(DEFAULT_DISCONNECT_GRACE_MS + 100);
+
+			expect(room.turnIndex).toBe(1);
+			expect(room.turnPhase).toBe('awaiting-roll');
+		} finally {
+			lifecycle.shutdown();
+		}
+	});
+
 	it('active player disconnect leaves phase unchanged', () => {
 		const room = makeRoom();
 		room.turnIndex = 0;

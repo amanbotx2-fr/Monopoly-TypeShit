@@ -157,10 +157,17 @@ function cancelQueuedSnapshot(roomCode) {
 	snapshotTimers.delete(roomCode);
 }
 
-function cancelIdleCleanup(roomCode) {
-	const t = idleTimers.get(roomCode);
-	if (!t) return;
-	clearTimeout(t);
+function cancelIdleCleanup(roomCode, reconnectingUserId) {
+	const entry = idleTimers.get(roomCode);
+	if (!entry) return;
+	if (
+		reconnectingUserId &&
+		entry.waitingForUserId &&
+		entry.waitingForUserId !== reconnectingUserId
+	) {
+		return;
+	}
+	clearTimeout(entry.timer);
 	idleTimers.delete(roomCode);
 	const room = getRoom(roomCode);
 	if (room) {
@@ -181,14 +188,45 @@ function connectedPlayers(room) {
 }
 
 function scheduleIdleCleanup(io, room, reason = 'idle-timeout') {
-	if (!room || idleTimers.has(room.roomCode)) return;
-	room.lifecycle = 'empty-grace';
-	room.cleanupReason = reason;
-	room.cleanupAt = Date.now() + IDLE_CLEANUP_MS;
+	if (!room) return;
+	const roomIsEmpty = connectedPlayers(room) === 0;
+	const existing = idleTimers.get(room.roomCode);
+	if (existing) {
+		if (roomIsEmpty && existing.waitingForUserId) {
+			existing.waitingForUserId = null;
+			room.lifecycle = 'empty-grace';
+			room.cleanupReason = reason;
+			room.cleanupAt = existing.expiresAt;
+		}
+		return;
+	}
+	const active = room.players[room.turnIndex];
+	const waitingForUserId = !roomIsEmpty && active && !active.socketId ? active.userId : null;
+	if (!roomIsEmpty && !waitingForUserId) return;
+	const expiresAt = Date.now() + IDLE_CLEANUP_MS;
+	if (roomIsEmpty) {
+		room.lifecycle = 'empty-grace';
+		room.cleanupReason = reason;
+		room.cleanupAt = expiresAt;
+	}
 	const t = setTimeout(() => {
-		cleanupRoom(io, room.roomCode, reason);
+		idleTimers.delete(room.roomCode);
+		const current = getRoom(room.roomCode);
+		if (!current) return;
+		if (connectedPlayers(current) === 0) {
+			cleanupRoom(io, current.roomCode, reason);
+			return;
+		}
+		const disconnectedActive = current.players[current.turnIndex];
+		if (
+			disconnectedActive &&
+			!disconnectedActive.socketId &&
+			resolveDisconnectedTurn(io, current, disconnectedActive)
+		) {
+			evaluateRoomLifecycle(io, current, reason);
+		}
 	}, IDLE_CLEANUP_MS);
-	idleTimers.set(room.roomCode, t);
+	idleTimers.set(room.roomCode, { timer: t, waitingForUserId, expiresAt });
 }
 
 function disconnectRoomSockets(io, roomCode, reason) {
@@ -246,7 +284,33 @@ function evaluateRoomLifecycle(io, room, reason = 'disconnect') {
 		if (connectedPlayers(room) === 0) cleanupRoom(io, room.roomCode, reason);
 		return;
 	}
-	if (connectedPlayers(room) === 0) scheduleIdleCleanup(io, room, reason);
+	if (connectedPlayers(room) === 0) {
+		scheduleIdleCleanup(io, room, reason);
+		return;
+	}
+	const active = room.players[room.turnIndex];
+	if (!room.ended && active && !active.socketId) scheduleIdleCleanup(io, room, reason);
+}
+
+function resolveDisconnectedTurn(io, room, player) {
+	let result = null;
+	let logText = null;
+	if (room.turnPhase === 'buying') {
+		result = engine.declineBuy(room, player);
+		logText = `${player.username} disconnected — auto-declining purchase`;
+	} else if (
+		room.turnPhase === 'awaiting-roll' ||
+		room.turnPhase === 'rolling' ||
+		room.turnPhase === 'resolving' ||
+		room.turnPhase === 'awaiting-end-turn'
+	) {
+		result = engine.endTurn(room, player, { force: true });
+		logText = `${player.username} disconnected — turn auto-ended`;
+	}
+	if (!result?.ok) return false;
+	broadcast(io, room, result.events);
+	appendLog(room, { kind: 'dev', text: logText });
+	return true;
 }
 
 function broadcast(io, room, events = []) {
@@ -450,7 +514,7 @@ async function onJoin(io, socket, payload) {
 	}
 	const { room, userId } = ident;
 	const { username, color, asSpectator } = auth.value;
-	cancelIdleCleanup(room.roomCode);
+	cancelIdleCleanup(room.roomCode, userId);
 	setActiveLifecycle(room);
 	if (userId === room.hostUserId) clearPendingRoomCleanup(room.roomCode);
 	else if (
@@ -471,6 +535,7 @@ async function onJoin(io, socket, payload) {
 		existing.connected = true;
 		if (username) existing.username = username;
 		broadcast(io, room, [{ type: 'player-reconnect', userId }]);
+		evaluateRoomLifecycle(io, room, 'idle-disconnect');
 		return true;
 	}
 	const existingSpectator = room.spectators.find((s) => s.userId === userId);
@@ -982,44 +1047,8 @@ async function registerSocketHandlers(io) {
 			if (s) s.socketId = null;
 
 			if (!room.started && userId === room.hostUserId) {
-				cleanupRoom(io, room.roomCode, 'host-disconnect-before-start');
+				schedulePendingRoomCleanup(room);
 				return;
-			}
-
-			// If the active player disconnected, auto-resolve their turn so
-			// the game doesn't get stuck waiting forever.
-			if (p && room.started && !room.ended) {
-				const active = room.players[room.turnIndex];
-				if (active && active.userId === p.userId) {
-					if (room.turnPhase === 'buying') {
-						// Auto-decline the purchase.
-						const r = engine.declineBuy(room, p);
-						if (r.ok) {
-							broadcast(io, room, r.events);
-							appendLog(room, {
-								kind: 'dev',
-								text: `${p.username} disconnected — auto-declining purchase`,
-							});
-						}
-					} else if (
-						room.turnPhase === 'awaiting-roll' ||
-						room.turnPhase === 'rolling' ||
-						room.turnPhase === 'resolving' ||
-						room.turnPhase === 'awaiting-end-turn'
-					) {
-						// Auto-end turn. For resolving phase we force-end so
-						// the player stays in debt and must declare bankruptcy
-						// themselves when they reconnect.
-						const r = engine.endTurn(room, p, { force: true });
-						if (r.ok) {
-							broadcast(io, room, r.events);
-							appendLog(room, {
-								kind: 'dev',
-								text: `${p.username} disconnected — turn auto-ended`,
-							});
-						}
-					}
-				}
 			}
 
 			broadcast(io, room, [{ type: 'player-disconnect', userId }]);
