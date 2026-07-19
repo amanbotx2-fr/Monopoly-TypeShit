@@ -17,11 +17,18 @@ const engine = require('../game/engine');
 const property = require('../game/property');
 const auction = require('../game/auction');
 const trade = require('../game/trade');
-const GameRoom = require('../models/GameRoom');
+const devtools = require('../game/devtools');
+const {
+	deleteRoomSnapshot,
+	restoreRecentRooms,
+	restoreRoomByCode,
+	saveRoomSnapshot,
+} = require('../game/roomStore');
 const validation = require('../validation/payloads');
 const { socketRateLimit, positiveInt } = require('../abuse/rateLimit');
 const {
 	clearPendingRoomCleanup,
+	schedulePendingRoomCleanup,
 	shutdownPendingRoomCleanup,
 	pendingRoomStats,
 } = require('../abuse/pendingRooms');
@@ -29,6 +36,9 @@ const {
 const DEFAULT_IDLE_CLEANUP_MS = 15 * 60 * 1000;
 const SAVE_INTERVAL = 30000;
 const IDLE_CLEANUP_MS = positiveInt(process.env.ROOM_IDLE_TIMEOUT_MS, DEFAULT_IDLE_CLEANUP_MS);
+const STARTUP_RESTORE_LIMIT = positiveInt(process.env.STARTUP_ROOM_RESTORE_LIMIT, 0);
+const MAX_ACTIVE_ROOMS = positiveInt(process.env.MAX_ACTIVE_ROOMS, 200);
+const SNAPSHOT_DEBOUNCE_MS = positiveInt(process.env.ROOM_SNAPSHOT_DEBOUNCE_MS, 1000);
 
 function isLocalClientUrl(value) {
 	if (!value) return false;
@@ -94,23 +104,17 @@ const SOCKET_LIMITS = {
 };
 const saveTimers = new Map();
 const idleTimers = new Map();
+const snapshotTimers = new Map();
 let auctionHeartbeat = null;
 
-async function saveRoomSnapshot(room) {
-	try {
-		await GameRoom.findOneAndUpdate(
-			{ roomCode: room.roomCode },
-			{
-				roomCode: room.roomCode,
-				hostUserId: room.hostUserId,
-				state: stripTransient(room),
-				lastActivity: new Date(),
-			},
-			{ upsert: true },
-		);
-	} catch {
-		/* mongo optional in dev */
+// Startup restore is capped and disabled by default. Normal recovery is lazy:
+// the first reconnect/lookup for a room code restores only that one snapshot.
+async function restoreRoomsOnStartup() {
+	const restored = await restoreRecentRooms({ limit: STARTUP_RESTORE_LIMIT });
+	for (const room of activeRooms.values()) {
+		if (room.started) startAutoSave(room.roomCode);
 	}
+	if (restored > 0) console.info(`[restore] ${restored} room(s) restored from MongoDB`);
 }
 
 function startAutoSave(roomCode) {
@@ -133,12 +137,24 @@ function stopAutoSave(roomCode) {
 		saveTimers.delete(roomCode);
 	}
 }
-function stripTransient(room) {
-	return {
-		...room,
-		players: room.players.map((p) => ({ ...p, socketId: null, connected: true })),
-		spectators: room.spectators.map((s) => ({ ...s, socketId: null })),
-	};
+
+function queueRoomSnapshot(room) {
+	if (!room?.roomCode || room.lifecycle === 'deleting') return;
+	if (snapshotTimers.has(room.roomCode)) return;
+	const t = setTimeout(async () => {
+		snapshotTimers.delete(room.roomCode);
+		const latest = getRoom(room.roomCode);
+		if (latest) await saveRoomSnapshot(latest);
+	}, SNAPSHOT_DEBOUNCE_MS);
+	if (typeof t.unref === 'function') t.unref();
+	snapshotTimers.set(room.roomCode, t);
+}
+
+function cancelQueuedSnapshot(roomCode) {
+	const t = snapshotTimers.get(roomCode);
+	if (!t) return;
+	clearTimeout(t);
+	snapshotTimers.delete(roomCode);
 }
 
 function cancelIdleCleanup(roomCode) {
@@ -192,9 +208,13 @@ function cleanupRoom(io, roomCode, reason = 'cleanup') {
 	clearPendingRoomCleanup(roomCode);
 	cancelIdleCleanup(roomCode);
 	stopAutoSave(roomCode);
+	cancelQueuedSnapshot(roomCode);
 
 	const room = getRoom(roomCode);
 	if (!room) return false;
+
+	const preserveSnapshot = reason === 'server-shutdown';
+	if (preserveSnapshot) saveRoomSnapshot(room);
 
 	room.lifecycle = 'deleting';
 	room.cleanupReason = reason;
@@ -209,6 +229,7 @@ function cleanupRoom(io, roomCode, reason = 'cleanup') {
 
 	disconnectRoomSockets(io, roomCode, reason);
 	deleteRoom(roomCode);
+	if (!preserveSnapshot) deleteRoomSnapshot(roomCode);
 	return true;
 }
 
@@ -234,7 +255,10 @@ function broadcast(io, room, events = []) {
 	if (room.ended) {
 		room.lifecycle = 'finished';
 		stopAutoSave(room.roomCode);
+		cancelQueuedSnapshot(room.roomCode);
 		saveRoomSnapshot(room);
+	} else {
+		queueRoomSnapshot(room);
 	}
 }
 
@@ -260,6 +284,9 @@ function emitValidationError(socket, event, result) {
 		details: result.details,
 	});
 	socket.emit('error-msg', result.message || result.error);
+	if (result.details) {
+		socket.emit('error-msg', `  details: ${JSON.stringify(result.details)}`);
+	}
 	return false;
 }
 
@@ -388,37 +415,50 @@ function replaceExistingSocket(io, socket, oldSocketId) {
 // express-session-backed Socket.IO middleware. Returns null when the room
 // cannot be found (server restart or cleanup) — the connection is rejected
 // so the client can redirect back to the home page.
-function identify(socket, auth) {
+async function identify(socket, auth) {
 	const { roomCode } = auth;
 	const userId = socket.data.userId;
 	if (!userId || !roomCode) return { error: 'missing-identity' };
-	const room = getRoom(roomCode);
+	let room = getRoom(roomCode);
+	if (!room) {
+		if (activeRooms.size >= MAX_ACTIVE_ROOMS) return { error: 'room-capacity' };
+		room = await restoreRoomByCode(roomCode);
+		if (room?.started) startAutoSave(room.roomCode);
+	}
 	if (!room) return { error: 'room-not-found' };
 	return { room, userId };
 }
 
-function onJoin(io, socket, payload) {
+async function onJoin(io, socket, payload) {
 	const auth = validation.validateSocketAuth(payload, TOKEN_COLORS);
 	if (!auth.ok) {
 		emitValidationError(socket, 'connection', auth);
 		socket.disconnect(true);
 		return false;
 	}
-	const ident = identify(socket, auth.value);
+	const ident = await identify(socket, auth.value);
 	if (!ident || ident.error) {
-		const msg =
-			ident?.error === 'room-not-found'
-				? 'Room is no longer active. Please create a new one.'
-				: 'Could not verify your session. Please try refreshing the page.';
+		let msg = 'Could not verify your session. Please try refreshing the page.';
+		if (ident?.error === 'room-not-found') {
+			msg = 'Room is no longer active. Please create a new one.';
+		} else if (ident?.error === 'room-capacity') {
+			msg = 'Server is at active room capacity. Please try again shortly.';
+		}
 		socket.emit('error-msg', msg);
 		socket.disconnect(true);
 		return false;
 	}
 	const { room, userId } = ident;
 	const { username, color, asSpectator } = auth.value;
-	if (userId === room.hostUserId) clearPendingRoomCleanup(room.roomCode);
 	cancelIdleCleanup(room.roomCode);
 	setActiveLifecycle(room);
+	if (userId === room.hostUserId) clearPendingRoomCleanup(room.roomCode);
+	else if (
+		!room.started &&
+		!room.players.some((p) => p.userId === room.hostUserId && p.socketId)
+	) {
+		schedulePendingRoomCleanup(room);
+	}
 
 	socket.join(room.roomCode);
 	socket.data.roomCode = room.roomCode;
@@ -483,6 +523,7 @@ function onJoin(io, socket, payload) {
 	room.players.push(p);
 	sysChat(io, room, `${p.username} joined`);
 	broadcast(io, room, [{ type: 'player-join', userId }]);
+	saveRoomSnapshot(room);
 	return true;
 }
 
@@ -597,6 +638,7 @@ const handlers = {
 		// First turn-start doesn't come through endTurn, so log it here.
 		appendLog(room, { kind: 'turn-start', userId: room.players[0].userId });
 		startAutoSave(room.roomCode);
+		saveRoomSnapshot(room);
 		sysChat(io, room, `Game started — ${room.players[0].username} goes first.`);
 		broadcast(io, room, [
 			{ type: 'game-start' },
@@ -741,6 +783,9 @@ const handlers = {
 		if (!r.ok) return socket.emit('error-msg', r.error);
 		broadcast(io, room, r.events);
 	},
+
+	// Dev commands — dispatches to game/devtools.js (see registerSocketHandlers).
+	'dev-command': (io, socket, payload) => devtools.handleDevCommand(io, socket, payload),
 };
 
 function doPropAction(io, socket, getFn, pos) {
@@ -751,6 +796,12 @@ function doPropAction(io, socket, getFn, pos) {
 	const action = getFn(p);
 	const r = action(room, p, pos);
 	if (!r.ok) return socket.emit('error-msg', r.error);
+
+	// Auto-resolve pending debt if the player now has enough cash after
+	// mortgaging or selling buildings.
+	const debtEvents = engine.tryResolveDebt(room, p);
+	if (debtEvents) r.events.push(...debtEvents);
+
 	broadcast(io, room, r.events);
 }
 
@@ -765,9 +816,13 @@ function shutdownLifecycle(io) {
 	}
 	for (const roomCode of [...saveTimers.keys()]) stopAutoSave(roomCode);
 	for (const roomCode of [...idleTimers.keys()]) cancelIdleCleanup(roomCode);
+	for (const roomCode of [...snapshotTimers.keys()]) cancelQueuedSnapshot(roomCode);
 }
 
-function registerSocketHandlers(io) {
+async function registerSocketHandlers(io) {
+	// Restore rooms that were active before a server restart.
+	await restoreRoomsOnStartup();
+
 	// Heartbeat for auction timers. Runs every second across all rooms, only
 	// checks rooms that actually have an open auction.
 	auctionHeartbeat = setInterval(() => {
@@ -778,8 +833,15 @@ function registerSocketHandlers(io) {
 		}
 	}, 1000);
 
-	io.on('connection', (socket) => {
-		if (!onJoin(io, socket, socket.handshake.auth)) return;
+	io.on('connection', async (socket) => {
+		try {
+			if (!(await onJoin(io, socket, socket.handshake.auth))) return;
+		} catch (e) {
+			console.error('[socket join]', e);
+			socket.emit('error-msg', 'server-error');
+			socket.disconnect(true);
+			return;
+		}
 
 		bindPayloadEvent(socket, 'chat', validation.validateChatPayload, (p) =>
 			handlers['chat'](io, socket, p),
@@ -881,10 +943,36 @@ function registerSocketHandlers(io) {
 			(p) => handlers['bankrupt'](io, socket, p),
 		);
 
+		// Dev commands — always registered. The client gates these behind
+		// import.meta.env.DEV so they are never sent from production builds.
+		console.log('[dev] dev-command handler registered for socket');
+		socket.on('dev-command', (...args) =>
+			safe(() => {
+				console.log(
+					'[dev] received dev-command (args.length=' + args.length + '):',
+					JSON.stringify(args[0]),
+				);
+				console.log('[dev] raw args keys:', args[0] ? Object.keys(args[0]) : 'null');
+				const result = validation.validateDevCommandPayload(args[0]);
+				if (!result.ok) {
+					console.warn(
+						'[dev] validation failed:',
+						result.error,
+						result.message,
+						result.details,
+					);
+					return emitValidationError(socket, 'dev-command', result);
+				}
+				console.log('[dev] dispatching:', result.value.cmd, '→', result.value.userId);
+				handlers['dev-command'](io, socket, result.value);
+			}, socket),
+		);
+
 		socket.on('disconnect', () => {
-			if (socket.data.replacedBy || socket.data.roomDeleted) return;
+			if (!socket.data || socket.data.replacedBy || socket.data.roomDeleted) return;
 			const room = getRoom(socket.data.roomCode);
 			if (!room) return;
+			const userId = socket.data.userId;
 			const p = room.players.find((pl) => pl.socketId === socket.id);
 			if (p) {
 				p.connected = false;
@@ -893,12 +981,48 @@ function registerSocketHandlers(io) {
 			const s = room.spectators.find((sp) => sp.socketId === socket.id);
 			if (s) s.socketId = null;
 
-			if (!room.started && socket.data.userId === room.hostUserId) {
+			if (!room.started && userId === room.hostUserId) {
 				cleanupRoom(io, room.roomCode, 'host-disconnect-before-start');
 				return;
 			}
 
-			broadcast(io, room, [{ type: 'player-disconnect', userId: socket.data.userId }]);
+			// If the active player disconnected, auto-resolve their turn so
+			// the game doesn't get stuck waiting forever.
+			if (p && room.started && !room.ended) {
+				const active = room.players[room.turnIndex];
+				if (active && active.userId === p.userId) {
+					if (room.turnPhase === 'buying') {
+						// Auto-decline the purchase.
+						const r = engine.declineBuy(room, p);
+						if (r.ok) {
+							broadcast(io, room, r.events);
+							appendLog(room, {
+								kind: 'dev',
+								text: `${p.username} disconnected — auto-declining purchase`,
+							});
+						}
+					} else if (
+						room.turnPhase === 'awaiting-roll' ||
+						room.turnPhase === 'rolling' ||
+						room.turnPhase === 'resolving' ||
+						room.turnPhase === 'awaiting-end-turn'
+					) {
+						// Auto-end turn. For resolving phase we force-end so
+						// the player stays in debt and must declare bankruptcy
+						// themselves when they reconnect.
+						const r = engine.endTurn(room, p, { force: true });
+						if (r.ok) {
+							broadcast(io, room, r.events);
+							appendLog(room, {
+								kind: 'dev',
+								text: `${p.username} disconnected — turn auto-ended`,
+							});
+						}
+					}
+				}
+			}
+
+			broadcast(io, room, [{ type: 'player-disconnect', userId }]);
 			evaluateRoomLifecycle(io, room, 'idle-disconnect');
 		});
 	});
@@ -910,6 +1034,7 @@ function registerSocketHandlers(io) {
 			activeRooms: activeRooms.size,
 			saveTimers: saveTimers.size,
 			idleTimers: idleTimers.size,
+			snapshotTimers: snapshotTimers.size,
 			...pendingRoomStats(),
 			auctionHeartbeat: auctionHeartbeat ? 1 : 0,
 		}),
@@ -926,3 +1051,5 @@ function safe(fn, socket) {
 }
 
 module.exports = registerSocketHandlers;
+module.exports.saveRoomSnapshot = saveRoomSnapshot;
+module.exports.restoreRoomsOnStartup = restoreRoomsOnStartup;

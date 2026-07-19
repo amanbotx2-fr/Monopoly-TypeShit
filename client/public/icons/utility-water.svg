@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 8 4 12 4 15a8 8 0 0 0 16 0c0-3-4-7-8-13z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 33">
+  <path d="M20.63 11.25h-2.27a7.79 7.79 0 0 0-3.36-1.64V6.82l-1.88-.2-1.87.2v2.79a7.87 7.87 0 0 0-3.37 1.64H.99a.94.94 0 0 0-.94.94v5.63a.94.94 0 0 0 .94.93h5.43a7.95 7.95 0 0 0 13.5 0h.75a1.88 1.88 0 0 1 1.88 1.88 1.88 1.88 0 0 0 1.87 1.87h3.75a1.88 1.88 0 0 0 1.88-1.87 9.38 9.38 0 0 0-9.38-9.38Z" fill="#E1E5E6" fill-rule="evenodd"/>
+  <path d="M24 29.58a2.5 2.5 0 1 0 5 0c0-1.47-2.5-5.33-2.5-5.33S24 28.1 24 29.58z" fill="#5fccff" fill-rule="evenodd"/>
+  <path d="M15 3.56V.94A.94.94 0 0 0 14.06 0h-1.87a.94.94 0 0 0-.94.94v2.62" fill="#D5DADC" fill-rule="evenodd"/>
+  <path d="m11.25 2.56-6.47-.68a.96.96 0 0 0-1.03.99v1.77a.96.96 0 0 0 1.03.98l8.35-.88 8.34.88a.96.96 0 0 0 1.03-.98V2.87a.96.96 0 0 0-1.03-.99l-6.47.68" fill="#95A5A6" fill-rule="evenodd"/>
+</svg>

@@ -48,12 +48,11 @@
 }
 
 /* Spin animations — NO CSS custom properties in keyframes (they break) */
-/* !important beats theme.css @media (prefers-reduced-motion) 1ms override */
 .dice-spin {
-	animation: dice-spin 0.15s ease-in-out infinite !important;
+	animation: dice-spin 0.15s ease-in-out infinite;
 }
 .dice-spin-alt {
-	animation: dice-spin-alt 0.13s ease-in-out infinite !important;
+	animation: dice-spin-alt 0.13s ease-in-out infinite;
 }
 
 @keyframes dice-spin {

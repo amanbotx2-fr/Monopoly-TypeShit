@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { connectSocket, onState, onChat, emit, disconnectSocket } from './socket';
+import { connectSocket, onState, onChat, onError, emit, disconnectSocket } from './socket';
 import { playEvents } from './sound';
 
 export default function useRoom({ userId }) {
@@ -22,6 +22,9 @@ export default function useRoom({ userId }) {
 		const s = connectSocket({ userId, roomCode: code, username, color });
 		s.on('connect', () => setConnected(true));
 		s.on('disconnect', () => setConnected(false));
+		// If socket is already connected (reused from another component),
+		// the 'connect' event already fired — sync the flag immediately.
+		if (s.connected) setConnected(true);
 
 		const offState = onState(({ room: r, events: evs }) => {
 			setRoom(r);
@@ -35,10 +38,12 @@ export default function useRoom({ userId }) {
 			}
 		});
 		const offChat = onChat((msg) => setChat((c) => c.concat(msg)));
+		const offError = onError((msg) => console.error('[server error]', msg));
 
 		return () => {
 			offState();
 			offChat();
+			offError();
 			disconnectSocket();
 		};
 	}, [code, userId]);

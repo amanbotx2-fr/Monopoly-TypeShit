@@ -68,15 +68,13 @@ export default function ActionBar({ room, me, isMyTurn, act }) {
 			primary: true,
 			on: () => act('end-turn'),
 		});
-	} else if (phase === 'resolving' && isMyTurn) {
-		actions.push({
-			key: 'bankrupt',
-			icon: X,
-			label: 'Declare bankruptcy',
-			danger: true,
-			on: () => act('bankrupt', {}),
-		});
 	}
+
+	// Show debt warning in status text instead of a board-center button.
+	const debtWarning =
+		phase === 'resolving' && isMyTurn
+			? `⚠ In debt — raise cash or declare bankruptcy from the player panel`
+			: null;
 
 	const status = (() => {
 		if (room.ended) return 'Game over';
@@ -102,6 +100,18 @@ export default function ActionBar({ room, me, isMyTurn, act }) {
 					</button>
 				))}
 			</div>
+			{debtWarning && (
+				<div
+					style={{
+						fontSize: 11,
+						color: 'var(--danger)',
+						textAlign: 'center',
+						padding: '2px 6px',
+					}}
+				>
+					{debtWarning}
+				</div>
+			)}
 			<div className="board-turn-status">{status}</div>
 		</div>
 	);

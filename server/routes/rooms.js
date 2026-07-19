@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const { createRoom, activeRooms, TOKEN_COLORS } = require('../game/state');
 const { BUILTIN_BOARDS, validateBoard, computeGroupSizes } = require('../game/boards');
 const CustomBoard = require('../models/CustomBoard');
+const { restoreRoomByCode, saveRoomSnapshot } = require('../game/roomStore');
 const validation = require('../validation/payloads');
 const {
 	positiveInt,
@@ -373,6 +374,7 @@ router.post(
 			customBoard,
 		});
 		schedulePendingRoomCleanup(room);
+		saveRoomSnapshot(room);
 		if (customBoard) {
 			CustomBoard.updateOne({ id: customBoard.id }, { $inc: { timesPlayed: 1 } }).catch(
 				() => {},
@@ -382,10 +384,13 @@ router.post(
 	},
 );
 
-router.get('/rooms/:code', lookupLimit, (req, res) => {
+router.get('/rooms/:code', lookupLimit, async (req, res) => {
 	const code = validation.roomCode(req.params.code);
 	if (!code.ok) return validationError(res, req, code);
-	const r = activeRooms.get(code.value);
+	let r = activeRooms.get(code.value);
+	if (!r && activeRooms.size < REST_LIMITS.maxActiveRooms) {
+		r = await restoreRoomByCode(code.value);
+	}
 	if (!r) return res.status(404).json({ error: 'not-found' });
 	// Lightweight preview — don't leak the whole state.
 	res.json({

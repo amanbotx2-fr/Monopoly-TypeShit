@@ -413,32 +413,23 @@ function validateBankruptPayload(payload, room, player) {
 	if (!root.ok) return root;
 	const fields = rejectUnknownKeys(root.value, ['creditorUserId'], 'bankrupt');
 	if (!fields.ok) return fields;
-	if (room.turnPhase !== 'resolving')
-		return fail('bad-bankruptcy-state', 'bankruptcy is only allowed while resolving debt');
+	// Player can declare bankruptcy at any time — not just during resolving.
+	// Assets liquidate to the bank unless a creditor is specified.
 	if (room.players[room.turnIndex]?.userId !== player.userId) {
-		return fail('bad-bankruptcy-state', 'only the active debtor can declare bankruptcy');
-	}
-	const pending = room.pendingDebt;
-	if (!pending || pending.userId !== player.userId)
-		return fail('bad-bankruptcy-state', 'no pending debt for this player');
-	const resources = availableBankruptcyResources(room, player);
-	if (resources >= pending.amount) {
-		return fail(
-			'bad-bankruptcy-state',
-			'player can cover pending debt with available resources',
-			{ resources, debt: pending.amount },
-		);
+		return fail('bad-bankruptcy-state', 'only the active player can declare bankruptcy');
 	}
 
 	const creditor = userId(root.value.creditorUserId, 'creditorUserId', { optional: true });
 	if (!creditor.ok) return creditor;
-	const expected = pending.creditor === 'bank' ? null : pending.creditor;
-	const actual = creditor.value || null;
-	if (actual !== expected) return fail('bad-creditor', 'creditor does not match pending debt');
-	if (actual && !room.players.some((p) => p.userId === actual && !p.bankrupt)) {
-		return fail('bad-creditor', 'creditor is not an active player');
+	// If there's a pending debt, the creditor must match.
+	const pending = room.pendingDebt;
+	if (pending && pending.userId === player.userId && creditor.value != null) {
+		const expected = pending.creditor === 'bank' ? null : pending.creditor;
+		if (creditor.value !== expected) {
+			return fail('bad-creditor', 'creditor does not match pending debt');
+		}
 	}
-	return ok({ creditorUserId: actual });
+	return ok({ creditorUserId: creditor.value || null });
 }
 
 function availableBankruptcyResources(room, player) {
@@ -744,6 +735,71 @@ function validateQueryText(value, label = 'q') {
 	return stringField(value, label, { min: 1, max: 80 });
 }
 
+// Dev commands — only available in non-production.
+const DEV_COMMANDS = new Set([
+	'set-cash',
+	'set-position',
+	'buy-property',
+	'give-property',
+	'force-roll',
+]);
+
+function validateDevCommandPayload(payload) {
+	const root = requireObject(payload, 'dev-command');
+	if (!root.ok) return root;
+	// Dev commands are intentionally permissive — we validate each field
+	// we care about below rather than rejecting unknown keys, so adding
+	// new dev features doesn't break the running server.
+
+	const cmd = stringField(root.value.cmd, 'cmd', { min: 1, max: 32 });
+	if (!cmd.ok) return cmd;
+	if (!DEV_COMMANDS.has(cmd.value)) return fail('bad-cmd', `unknown dev command: ${cmd.value}`);
+
+	const target = userId(root.value.userId, 'userId');
+	if (!target.ok) return target;
+
+	const result = { cmd: cmd.value, userId: target.value };
+
+	switch (cmd.value) {
+		case 'set-cash': {
+			const amount = finiteNumber(root.value.amount, 'amount', {
+				min: 0,
+				max: MAX_MONEY,
+				integer: true,
+			});
+			if (!amount.ok) return amount;
+			result.amount = amount.value;
+			break;
+		}
+		case 'set-position': {
+			const pos = finiteNumber(root.value.pos, 'pos', { min: 0, max: 39, integer: true });
+			if (!pos.ok) return pos;
+			result.pos = pos.value;
+			const resolve = booleanField(root.value.resolve, 'resolve', { optional: true });
+			if (!resolve.ok) return resolve;
+			result.resolve = resolve.value || false;
+			break;
+		}
+		case 'buy-property':
+		case 'give-property': {
+			const pos = finiteNumber(root.value.pos, 'pos', { min: 0, max: 39, integer: true });
+			if (!pos.ok) return pos;
+			result.pos = pos.value;
+			break;
+		}
+		case 'force-roll': {
+			const d1 = finiteNumber(root.value.d1, 'd1', { min: 1, max: 6, integer: true });
+			if (!d1.ok) return d1;
+			const d2 = finiteNumber(root.value.d2, 'd2', { min: 1, max: 6, integer: true });
+			if (!d2.ok) return d2;
+			result.d1 = d1.value;
+			result.d2 = d2.value;
+			break;
+		}
+	}
+	return ok(result);
+}
+
 module.exports = {
 	fail,
 	ok,
@@ -766,6 +822,7 @@ module.exports = {
 	validateTradeIdPayload,
 	validateTradeMsgPayload,
 	validateBankruptPayload,
+	validateDevCommandPayload,
 	validateCreateBoardBody,
 	validatePatchBoardBody,
 	validateDuplicateBoardBody,

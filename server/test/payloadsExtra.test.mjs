@@ -136,7 +136,7 @@ describe('validateBankruptPayload extra', () => {
 		expect(r.error).toBe('bad-bankruptcy-state');
 	});
 
-	it('rejects when sufficient resources are available', () => {
+	it('allows bankruptcy even with sufficient resources (negative balance model)', () => {
 		const room = makeRoom();
 		const p = room.players[0];
 		p.cash = 500;
@@ -144,7 +144,7 @@ describe('validateBankruptPayload extra', () => {
 		room.turnIndex = 0;
 		room.pendingDebt = { userId: 'host-1', creditor: 'bank', amount: 50 };
 		const r = validation.validateBankruptPayload({}, room, p);
-		expect(r.ok).toBe(false);
+		expect(r.ok).toBe(true);
 	});
 
 	it('rejects when creditor does not match', () => {
@@ -159,7 +159,7 @@ describe('validateBankruptPayload extra', () => {
 		expect(r.error).toBe('bad-creditor');
 	});
 
-	it('rejects when creditor player is bankrupt', () => {
+	it('allows bankruptcy even when creditor is bankrupt (no creditor check)', () => {
 		const room = makeRoom();
 		room.players[1].bankrupt = true;
 		const p = room.players[0];
@@ -168,8 +168,7 @@ describe('validateBankruptPayload extra', () => {
 		room.turnIndex = 0;
 		room.pendingDebt = { userId: 'host-1', creditor: 'player-2', amount: 100 };
 		const r = validation.validateBankruptPayload({ creditorUserId: 'player-2' }, room, p);
-		expect(r.ok).toBe(false);
-		expect(r.error).toBe('bad-creditor');
+		expect(r.ok).toBe(true);
 	});
 });
 

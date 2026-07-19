@@ -7,11 +7,17 @@ import React, { useEffect, useRef } from 'react';
 // `onTradeClick(tradeId)` is called when the user clicks a trade-related log
 // entry, opening that trade for viewing (even after it's completed/closed).
 //
+// `variant`:
+//   - "board"  — compact, dark, for the board center (handles its own styling)
+//   - default  — card-style, for sidebars/drawers
+//
 // Performance: uses event delegation (single click handler on the scroll
 // container) and CSS hover instead of per-row JS handlers, so it stays
 // cheap even with hundreds of log entries.
-export default function ActionLog({ log, players, tiles, onTradeClick }) {
+export default function ActionLog({ log, players, tiles, onTradeClick, variant }) {
 	const ref = useRef(null);
+	const isBoard = variant === 'board';
+
 	useEffect(() => {
 		if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
 	}, [log?.length]);
@@ -40,12 +46,24 @@ export default function ActionLog({ log, players, tiles, onTradeClick }) {
 		if (id) onTradeClick(id);
 	}
 
-	return (
-		<div
-			className="card"
-			ref={ref}
-			onClick={handleContainerClick}
-			style={{
+	const baseStyle = isBoard
+		? {
+				flex: 1,
+				width: '75%',
+				minHeight: 0,
+				overflowY: 'auto',
+				fontSize: 'clamp(8px, 1.3cqi, 11px)',
+				lineHeight: 1.45,
+				color: '#b0a8cc',
+				display: 'flex',
+				flexDirection: 'column',
+				gap: 3,
+				padding: '6px clamp(4px, 2cqi, 12px)',
+				background: 'rgba(0, 0, 0, 0.18)',
+				borderRadius: '0.5em',
+				border: '1px solid rgba(255, 255, 255, 0.05)',
+			}
+		: {
 				flex: 1,
 				overflowY: 'auto',
 				padding: 12,
@@ -56,7 +74,14 @@ export default function ActionLog({ log, players, tiles, onTradeClick }) {
 				lineHeight: 1.55,
 				color: 'var(--text-2)',
 				minHeight: 0,
-			}}
+			};
+
+	return (
+		<div
+			className={isBoard ? undefined : 'card'}
+			ref={ref}
+			onClick={handleContainerClick}
+			style={baseStyle}
 		>
 			{(!log || log.length === 0) && (
 				<div style={{ color: 'var(--text-4)', textAlign: 'center', paddingTop: 16 }}>

@@ -397,12 +397,12 @@ describe('validateBankruptPayload', () => {
 		expect(r.ok).toBe(true);
 	});
 
-	it('rejects bankruptcy when not resolving', () => {
+	it('allows bankruptcy in any phase (not just resolving)', () => {
 		const room = makeRoom();
 		room.turnPhase = 'awaiting-roll';
+		room.turnIndex = 0;
 		const r = validation.validateBankruptPayload({}, room, room.players[0]);
-		expect(r.ok).toBe(false);
-		expect(r.error).toBe('bad-bankruptcy-state');
+		expect(r.ok).toBe(true);
 	});
 
 	it('rejects if wrong creditor', () => {

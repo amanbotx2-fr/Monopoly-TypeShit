@@ -692,14 +692,14 @@ a:focus-visible {
 	}
 }
 
+/* Respect reduce-motion for scroll behavior only — game animations
+   (dice, token movement, building peek) are essential UX and must
+   not be suppressed. */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
 	*::after {
-		animation-duration: 1ms !important;
-		animation-iteration-count: 1 !important;
 		scroll-behavior: auto !important;
-		transition-duration: 1ms !important;
 	}
 }
 
@@ -722,4 +722,338 @@ a:focus-visible {
 }
 .trade-clickable:hover {
 	color: var(--trade);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Auction Modal — richup.io-inspired layout with countdown progress bar,
+   bid history, quick-bid buttons, and sticky property info card.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.auction-modal {
+	width: min(100%, 460px);
+	background: var(--surface);
+	display: flex;
+	flex-direction: column;
+	max-height: 95vh;
+	overflow: hidden;
+}
+
+/* ── Title ───────────────────────────────────────────────────────────────── */
+.auction-title {
+	font-weight: 700;
+	padding: 1rem 1rem 0;
+	color: var(--text-3);
+	text-align: center;
+	font-size: 15px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* ── Tile header (icon + name) ───────────────────────────────────────────── */
+.auction-tile-header {
+	font-size: 28px;
+	text-align: center;
+	margin: 0.5rem 1rem 1.5rem;
+	font-weight: 800;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+}
+.auction-tile-icon {
+	width: 28px;
+	height: 28px;
+	border-radius: 4px;
+	object-fit: cover;
+	flex-shrink: 0;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.auction-tile-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ── Main section: bid + timer ───────────────────────────────────────────── */
+.auction-main {
+	display: flex;
+	margin: 0 1rem;
+	gap: 1rem;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.auction-bid-section {
+	display: flex;
+	flex-direction: column;
+	padding-left: 0.5em;
+}
+.auction-section-label {
+	color: var(--text-3);
+	font-size: 0.8rem;
+	padding-bottom: 0.4em;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+.auction-bid-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75em;
+}
+.auction-bidder-icon {
+	width: 3rem;
+	height: 3rem;
+	flex-shrink: 0;
+}
+.auction-bid-value {
+	font-size: 1.5em;
+	font-weight: 700;
+}
+
+/* ── Timer / progress bar ────────────────────────────────────────────────── */
+.auction-timer-section {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 12em;
+}
+.auction-timer-label {
+	color: var(--text-3);
+	align-self: flex-end;
+	font-size: 0.8rem;
+	margin-bottom: 0.3em;
+	font-weight: 700;
+	opacity: 0.9;
+}
+.auction-progress-track {
+	border-radius: 1em;
+	background: rgba(255, 255, 255, 0.1);
+	height: 1em;
+	overflow: hidden;
+	position: relative;
+}
+.auction-progress-fill {
+	height: 100%;
+	border-radius: inherit;
+	transition: width 0.2s linear;
+	position: relative;
+	z-index: 1;
+}
+.auction-progress-glow {
+	position: absolute;
+	inset: 25% 0;
+	border-radius: 1em;
+	box-shadow: 0 0.25em 0.75em currentColor;
+	opacity: 0.7;
+	transition: width 0.2s linear;
+	pointer-events: none;
+}
+
+/* ── Bid area ────────────────────────────────────────────────────────────── */
+.auction-bid-area {
+	padding: 1rem 1rem 0;
+}
+.auction-quick-bids {
+	display: flex;
+	margin: 0 -0.5em;
+	gap: 0;
+}
+.auction-quick-btn {
+	flex: 1;
+	margin: 0.5em;
+	padding: 0.65em 0.75em;
+	background: linear-gradient(to top left, var(--accent), oklch(62% 0.15 265));
+	border: 0;
+	border-radius: 0.25em;
+	color: #fff;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.15em;
+	font-weight: 600;
+	transition:
+		background 0.15s,
+		box-shadow 0.15s;
+	min-height: auto;
+}
+.auction-quick-btn:hover:not(:disabled) {
+	background: linear-gradient(to top left, oklch(68% 0.13 255), oklch(72% 0.14 260));
+	box-shadow: 0 0 0 2px var(--accent-soft);
+	transform: translateY(-1px);
+}
+.auction-quick-amount {
+	font-weight: 700;
+	font-size: 1.05em;
+}
+.auction-quick-delta {
+	font-size: 0.8em;
+	opacity: 0.75;
+}
+
+.auction-custom-row {
+	display: flex;
+	gap: 8px;
+	margin-top: 0.5em;
+}
+.auction-custom-input {
+	flex: 1;
+	min-height: 36px;
+	font-size: 16px;
+	font-weight: 700;
+	font-family: var(--font-mono);
+	text-align: center;
+}
+.auction-custom-submit {
+	flex-shrink: 0;
+	background: linear-gradient(180deg, var(--auction), oklch(60% 0.13 82));
+	border-color: var(--auction);
+	color: oklch(15% 0.025 80);
+	min-height: auto;
+	padding: 6px 16px;
+	font-size: 13px;
+	font-weight: 700;
+}
+.auction-custom-submit:hover:not(:disabled) {
+	background: var(--auction);
+	box-shadow: 0 0 0 3px var(--auction-soft);
+}
+
+/* ── Status row ──────────────────────────────────────────────────────────── */
+.auction-status-row {
+	display: flex;
+	justify-content: center;
+	padding: 0.5rem 1rem;
+}
+.auction-pass-btn {
+	font-size: 13px;
+	color: var(--text-3);
+}
+.auction-status-text {
+	font-size: 0.8rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+/* ── Bid history ─────────────────────────────────────────────────────────── */
+.auction-history {
+	flex: 1;
+	min-height: 0;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	margin: 0 0.5rem;
+}
+.auction-history::before {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	height: 50%;
+	background: linear-gradient(to top, var(--surface), transparent);
+	pointer-events: none;
+	z-index: 1;
+}
+.auction-history-scroll {
+	flex: 1;
+	overflow-y: auto;
+	font-size: 0.85rem;
+	padding: 0 0.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25em;
+}
+.auction-history-row {
+	transition:
+		transform 0.15s,
+		opacity 0.15s;
+	white-space: nowrap;
+}
+.auction-history-row:not(.auction-history-latest) {
+	opacity: 0.55;
+	transform: scale(0.9);
+	color: var(--text-3);
+}
+.auction-history-player {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35em;
+}
+.auction-history-dot {
+	width: 0.55em;
+	height: 0.55em;
+	border-radius: 50%;
+	display: inline-block;
+	flex-shrink: 0;
+}
+
+/* ── Sticky property info card ───────────────────────────────────────────── */
+.auction-property-card {
+	position: sticky;
+	bottom: 0;
+	z-index: 2;
+	margin: 0.5rem 0.75rem;
+	padding: 0.5em 0.75em;
+	background: oklch(18% 0.01 248);
+	border-radius: 0.5em;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	font-size: 0.85rem;
+}
+.auction-pc-icon {
+	width: 1.2em;
+	height: 1.2em;
+	border-radius: 3px;
+	object-fit: cover;
+	flex-shrink: 0;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.auction-property-name {
+	text-align: center;
+	font-weight: 600;
+	font-size: 1.35em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	padding-bottom: 0.25em;
+}
+.auction-rent-table {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3em;
+}
+.auction-rent-header {
+	display: flex;
+	justify-content: space-between;
+	font-weight: 700;
+	font-size: 0.85em;
+	color: var(--text-3);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	padding-bottom: 0.25em;
+}
+.auction-rent-row {
+	display: flex;
+	justify-content: space-between;
+	font-size: 0.85em;
+}
+.auction-property-price-row {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.5em;
+	padding-top: 0.25em;
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.auction-property-price-label {
+	opacity: 0.7;
+	font-size: 0.85em;
+}
+.auction-property-price-value {
+	font-size: 1.1em;
 }

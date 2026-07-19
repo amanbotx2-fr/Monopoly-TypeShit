@@ -80,16 +80,16 @@ export default function Tile({
 			{cfg?.corner ? (
 				<CornerBody def={def} cfg={cfg} icon={icon} />
 			) : (
-				<SideBody def={def} state={state} cfg={cfg} icon={icon} />
+				<SideBody def={def} state={state} cfg={cfg} icon={icon} side={side} />
 			)}
 		</div>
 	);
 }
 
 // ─── Side tile body ──────────────────────────────────────────────────────────
-function SideBody({ def, state, cfg, icon }) {
+function SideBody({ def, state, cfg, icon, side }) {
 	if (!cfg) return null;
-	return <div className="tile-body">{cfg.body(def, state, icon)}</div>;
+	return <div className="tile-body">{cfg.body(def, state, icon, side)}</div>;
 }
 
 // ─── Corner tile body ────────────────────────────────────────────────────────

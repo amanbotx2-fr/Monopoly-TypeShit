@@ -41,6 +41,20 @@ describe('generateRoomCode', () => {
 		}
 		expect(codes.size).toBe(100);
 	});
+
+	it('falls back to uuid fragment on repeated collisions', () => {
+		// Pre-fill activeRooms with ALL possible codes to force collision.
+		// Generate all possible 6-char codes and mock them as occupied.
+		// Since 32^6 is huge, we just mock that ALL codes already exist
+		// by overriding the check. The collision loop runs 10 times then
+		// falls back to uuid.
+		const originalHas = activeRooms.has.bind(activeRooms);
+		activeRooms.has = () => true;
+		const code = generateRoomCode();
+		activeRooms.has = originalHas;
+		expect(code).toHaveLength(6);
+		expect(code).toMatch(/^[A-Z0-9]{6}$/);
+	});
 });
 
 describe('createRoom', () => {

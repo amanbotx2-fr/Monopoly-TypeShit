@@ -89,19 +89,21 @@ io.use(
 	}),
 );
 
+let roomLifecycle = null;
+
 mongoose
 	.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monopoly')
-	.then(() => console.info('[mongo] connected'))
+	.then(async () => {
+		console.info('[mongo] connected');
+		roomLifecycle = await registerSocketHandlers(io);
+		configurePendingRoomCleanup(roomLifecycle.cleanupRoom);
+		server.listen(PORT, () => console.info(`[monopoly] server on ${PORT}`));
+	})
 	.catch((err) => console.error('[mongo] connection error:', err.message));
 
 app.use('/api', require('./routes/rooms'));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.get('/api/me', (req, res) => res.json({ userId: req.userId, csrfToken: req.csrfToken }));
-
-const roomLifecycle = registerSocketHandlers(io);
-configurePendingRoomCleanup(roomLifecycle.cleanupRoom);
-
-server.listen(PORT, () => console.info(`[monopoly] server on ${PORT}`));
 
 let shuttingDown = false;
 function shutdown(signal) {
@@ -109,7 +111,7 @@ function shutdown(signal) {
 	shuttingDown = true;
 	console.info(`[monopoly] ${signal} received, cleaning up rooms`);
 	shutdownPendingRoomCleanup();
-	roomLifecycle.shutdown();
+	if (roomLifecycle) roomLifecycle.shutdown();
 	server.close(() => {
 		mongoose.connection.close(false).finally(() => process.exit(0));
 	});

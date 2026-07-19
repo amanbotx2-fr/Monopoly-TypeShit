@@ -1,11 +1,20 @@
-import React from 'react';
-import { Handshake, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Handshake, Lock, Skull } from 'lucide-react';
 
-export default function PlayerPanel({ p, isMe, isActive, room, onTrade, onHover }) {
+export default function PlayerPanel({ p, isMe, isActive, room, act, onTrade, onHover }) {
+	const [showBankruptConfirm, setShowBankruptConfirm] = useState(false);
 	const ownedCount = p.owned?.length || 0;
 	const jailCards =
 		(room.jailFreeLedger?.[p.userId]?.chance || 0) +
 		(room.jailFreeLedger?.[p.userId]?.chest || 0);
+
+	// Show bankruptcy button when it's my turn and game is active.
+	const canBankrupt = isMe && isActive && room.started && !room.ended && !p.bankrupt;
+
+	function handleBankrupt() {
+		setShowBankruptConfirm(false);
+		act('bankrupt', {});
+	}
 
 	return (
 		<div
@@ -92,7 +101,13 @@ export default function PlayerPanel({ p, isMe, isActive, room, onTrade, onHover 
 					>
 						Cash
 					</div>
-					<div className="money" style={{ fontSize: 15 }}>
+					<div
+						className="money"
+						style={{
+							fontSize: 15,
+							color: p.cash < 0 ? 'var(--danger)' : undefined,
+						}}
+					>
 						${p.cash.toLocaleString()}
 					</div>
 				</div>
@@ -129,6 +144,70 @@ export default function PlayerPanel({ p, isMe, isActive, room, onTrade, onHover 
 					</div>
 				)}
 			</div>
+			{canBankrupt && (
+				<div style={{ marginTop: 10 }}>
+					{showBankruptConfirm ? (
+						<div
+							style={{
+								display: 'flex',
+								gap: 6,
+								alignItems: 'center',
+								padding: '6px 8px',
+								borderRadius: 'var(--radius-md)',
+								background: 'color-mix(in oklch, var(--danger) 15%, transparent)',
+								border: '1px solid var(--danger)',
+							}}
+						>
+							<span
+								style={{
+									fontSize: 11,
+									color: 'var(--danger)',
+									fontWeight: 600,
+									flex: 1,
+								}}
+							>
+								Lose all assets?
+							</span>
+							<button
+								className="btn sm"
+								style={{
+									fontSize: 11,
+									background: 'var(--danger)',
+									color: '#fff',
+									border: 'none',
+								}}
+								onClick={handleBankrupt}
+							>
+								Yes
+							</button>
+							<button
+								className="btn sm ghost"
+								style={{ fontSize: 11 }}
+								onClick={() => setShowBankruptConfirm(false)}
+							>
+								No
+							</button>
+						</div>
+					) : (
+						<button
+							className="btn sm"
+							style={{
+								width: '100%',
+								fontSize: 11,
+								background: 'var(--danger)',
+								color: '#fff',
+								border: 'none',
+								justifyContent: 'center',
+								gap: 4,
+							}}
+							onClick={() => setShowBankruptConfirm(true)}
+						>
+							<Skull size={12} />
+							Declare bankruptcy
+						</button>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

@@ -3,11 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
 
-const {
-	createSessionParser,
-	SESSION_COOKIE,
-	SESSION_MAX_AGE,
-} = require('../middleware/session');
+const { createSessionParser, SESSION_COOKIE, SESSION_MAX_AGE } = require('../middleware/session');
 const {
 	attachCsrfToken,
 	createCsrfMiddleware,

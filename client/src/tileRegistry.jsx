@@ -10,6 +10,8 @@ import {
 	PlayCircle,
 	Palmtree,
 } from 'lucide-react';
+import HouseIcon from './components/game/HouseIcon.jsx';
+import HotelIcon from './components/game/HotelIcon.jsx';
 
 // ─── Icon helpers ────────────────────────────────────────────────────────────
 
@@ -21,6 +23,38 @@ function IconImg({ src, size = 20 }) {
 			className="tile-icon"
 			style={{ objectFit: 'contain', width: size, height: size }}
 		/>
+	);
+}
+
+// Larger icon for special non-property tiles (chance, chest, station, tax, utility)
+function SpecialIcon({ src, size = 26 }) {
+	return <IconImg src={src} size={size} />;
+}
+
+// ─── Houses / Hotel display (shown under property name when owned) ─────────────
+
+function HousesDisplay({ houses }) {
+	if (houses >= 5) {
+		return (
+			<div className="tile-building-wrap">
+				<HotelIcon size={32} />
+			</div>
+		);
+	}
+	if (houses === 0) {
+		return null;
+	}
+	if (houses === 1) {
+		return (
+			<div className="tile-building-wrap">
+				<HouseIcon size={32} />
+			</div>
+		);
+	}
+	return (
+		<div className="tile-building-wrap">
+			<HouseIcon size={32} label={`×${houses}`} />
+		</div>
 	);
 }
 
@@ -36,15 +70,19 @@ const TYPES = {
 		colorBar: true,
 		badge: 'flag', // circular badge at inner edge (country flag)
 		icon: (def) => def.icon || null, // def.icon set by boards.js
-		body: (def) => (
+		body: (def, state) => (
 			<>
 				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">{def.price}</div>
+				{state?.owner != null ? (
+					<HousesDisplay houses={state.houses ?? 0} />
+				) : (
+					<div className="tile-price">{def.price}</div>
+				)}
 			</>
 		),
 	},
 
-	// ═══ Station / Transport ═════════════════════════════════════════════════
+	// ═══ Airport / Transport ════════════════════════════════════════════════
 	station: {
 		corner: false,
 		clickable: true,
@@ -52,13 +90,23 @@ const TYPES = {
 		badge: null,
 		cssClass: 'tile-station',
 		icon: (def) => def.icon || '/icons/station.svg',
-		body: (def, _state, icon) => (
-			<>
-				{icon ? <IconImg src={icon} /> : <Train className="tile-icon station-icon" />}
-				<div className="tile-name">{def.name}</div>
-				<div className="tile-price">{def.price}</div>
-			</>
-		),
+		body: (def, state, icon, side) => {
+			const owned = state?.owner != null;
+			const isSide = side === 'left' || side === 'right';
+			// When owned: full-size icon, hide price
+			const iconSize = owned ? 30 : isSide ? 22 : 30;
+			return (
+				<>
+					{icon ? (
+						<SpecialIcon src={icon} size={iconSize} />
+					) : (
+						<Train className="tile-icon station-icon" />
+					)}
+					<div className="tile-name tile-airport-name">{def.name}</div>
+					{!owned && <div className="tile-price">{def.price}</div>}
+				</>
+			);
+		},
 	},
 
 	// ═══ Utility ═════════════════════════════════════════════════════════════
@@ -79,7 +127,7 @@ const TYPES = {
 			return (
 				<>
 					{icon ? (
-						<IconImg src={icon} />
+						<SpecialIcon src={icon} size={26} />
 					) : (
 						<LucideIcon className="tile-icon" color={isElectric ? '#ff0' : '#0ff'} />
 					)}
@@ -94,41 +142,45 @@ const TYPES = {
 				: 'tile-utility-water',
 	},
 
-	// ═══ Chance ═══════════════════════════════════════════════════════════════
+	// ═══ Chance / Surprise ════════════════════════════════════════════════════
 	chance: {
 		corner: false,
 		clickable: false,
 		colorBar: false,
 		badge: null,
 		cssClass: 'tile-chance',
-		icon: (def) => def.icon || '/icons/chance.svg',
+		icon: (def) => def.icon || '/icons/surprise.png',
 		body: (_def, _state, icon) => (
 			<>
 				{icon ? (
-					<IconImg src={icon} />
+					<SpecialIcon src={icon} size={28} />
 				) : (
 					<HelpCircle className="tile-icon" color="#ff95bc" />
 				)}
 				<div className="tile-name" style={{ color: '#ff95bc' }}>
-					Chance
+					Surprise
 				</div>
 			</>
 		),
 	},
 
-	// ═══ Community Chest ══════════════════════════════════════════════════════
+	// ═══ Community Chest / Treasure ═══════════════════════════════════════════
 	chest: {
 		corner: false,
 		clickable: false,
 		colorBar: false,
 		badge: null,
 		cssClass: 'tile-chest',
-		icon: (def) => def.icon || '/icons/chest.svg',
+		icon: (def) => def.icon || '/icons/treasure.png',
 		body: (_def, _state, icon) => (
 			<>
-				{icon ? <IconImg src={icon} /> : <Package className="tile-icon" color="#f2a841" />}
+				{icon ? (
+					<SpecialIcon src={icon} size={28} />
+				) : (
+					<Package className="tile-icon" color="#f2a841" />
+				)}
 				<div className="tile-name" style={{ color: '#f2a841' }}>
-					Chest
+					Treasure
 				</div>
 			</>
 		),
@@ -148,7 +200,11 @@ const TYPES = {
 				: '/icons/tax-luxury.svg'),
 		body: (def, _state, icon) => (
 			<>
-				{icon ? <IconImg src={icon} /> : <Coins className="tile-icon" color="#ff6b6b" />}
+				{icon ? (
+					<SpecialIcon src={icon} size={24} />
+				) : (
+					<Coins className="tile-icon" color="#ff6b6b" />
+				)}
 				<div className="tile-name">{def.name}</div>
 				<div className="tile-tax-amount">${def.amount}</div>
 			</>
@@ -215,14 +271,14 @@ const TYPES = {
 		),
 	},
 
-	// ═══ Free Parking corner ══════════════════════════════════════════════════
+	// ═══ Free Parking / Vacation corner ═══════════════════════════════════════
 	parking: {
 		corner: true,
 		clickable: false,
 		colorBar: false,
 		badge: null,
 		cssClass: 'tile-parking',
-		icon: (def) => def.icon || '/icons/parking.svg',
+		icon: (def) => def.icon || '/icons/vacation.png',
 		cornerBody: (def, icon) => (
 			<>
 				<div className="parking-image">

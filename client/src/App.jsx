@@ -10,6 +10,7 @@ import Toasts from './components/common/Toasts';
 import BrandLogo from './components/common/BrandLogo';
 import { onError } from './socket';
 import { installGlobalClickSound, play as playSound } from './sound';
+import useRoom from './useRoom';
 
 export default function App() {
 	const [userId, setUserId] = useState(null);
@@ -80,12 +81,35 @@ export default function App() {
 }
 
 // Switches between Lobby (before game start) and Game (after) based on
-// room.started. Both mount the same socket connection.
+// room.started. Uses a shared socket connection so the correct component
+// renders immediately on page refresh without a Lobby flicker.
 function RoomRouter({ userId, pushToast }) {
-	const [phase, setPhase] = useState('lobby');
-	return phase === 'lobby' ? (
-		<Lobby userId={userId} pushToast={pushToast} onStart={() => setPhase('game')} />
+	const { room, connected } = useRoom({ userId });
+
+	// Still connecting — show a branded loading state.
+	if (!room) {
+		return (
+			<div className="grid-bg" style={{ flex: 1, display: 'grid', placeItems: 'center' }}>
+				<div
+					className="card"
+					style={{ display: 'grid', gap: 14, justifyItems: 'center', minWidth: 260 }}
+				>
+					<BrandLogo size={34} />
+					<div className="status-line" style={{ justifyContent: 'center' }}>
+						<span
+							className="dot"
+							style={{ background: connected ? 'var(--success)' : 'var(--warning)' }}
+						/>
+						{connected ? 'Joining game…' : 'Connecting…'}
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	return room.started ? (
+		<Game userId={userId} pushToast={pushToast} />
 	) : (
-		<Game userId={userId} pushToast={pushToast} onBackToLobby={() => setPhase('lobby')} />
+		<Lobby userId={userId} pushToast={pushToast} />
 	);
 }
