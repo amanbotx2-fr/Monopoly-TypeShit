@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LockKeyhole, Map, Play, UserRound, UsersRound } from 'lucide-react';
+import { Dice5, LockKeyhole, Map, Play, UserRound, UsersRound } from 'lucide-react';
 import { api } from '../../api';
+import generateNickname from '../../utils/generateNickname';
 import PremiumHeader from '../common/PremiumHeader';
 import './Home.css';
 
@@ -13,6 +14,12 @@ export default function Home({ pushToast }) {
 	function persist() {
 		localStorage.setItem('monopoly.username', username);
 		localStorage.setItem('monopoly.color', color);
+	}
+
+	function randomizeNickname() {
+		const nickname = generateNickname();
+		setUsername(nickname);
+		localStorage.setItem('monopoly.username', nickname);
 	}
 
 	async function create() {
@@ -58,18 +65,29 @@ export default function Home({ pushToast }) {
 						create();
 					}}
 				>
-					<label className="landing-name-field">
-						<span className="sr-only">Nickname</span>
-						<UserRound aria-hidden="true" />
-						<input
-							autoComplete="nickname"
-							maxLength={24}
-							placeholder="Enter your nickname..."
-							value={username}
-							onBlur={persist}
-							onChange={(event) => setUsername(event.target.value)}
-						/>
-					</label>
+					<div className="landing-name-row">
+						<label className="landing-name-field">
+							<span className="sr-only">Nickname</span>
+							<UserRound aria-hidden="true" />
+							<input
+								autoComplete="nickname"
+								maxLength={24}
+								placeholder="Enter your nickname..."
+								value={username}
+								onBlur={persist}
+								onChange={(event) => setUsername(event.target.value)}
+							/>
+						</label>
+						<button
+							className="landing-random-name-button"
+							type="button"
+							onClick={randomizeNickname}
+							aria-label="Generate a random nickname"
+							title="Generate a random nickname"
+						>
+							<Dice5 aria-hidden="true" />
+						</button>
+					</div>
 
 					<button className="landing-play-button" type="submit">
 						<Play aria-hidden="true" fill="currentColor" />

@@ -1,6 +1,6 @@
 # UI tasks
 
-- [ ] T1: New landing page
+- [x] T1: New landing page
 
   ![Landing page reference](./media/landing%20page.png)
   we want it exactly like this
@@ -10,24 +10,24 @@
 
    ![Richup.io pic](./refrence-media/random-name-dice.png)
 
-- [ ] T3: Make the browse room page.... as the image is shown
+- [x] T3: Make the browse room page.... as the image is shown
 
     ![Browse room refrence](./media/browse%20rooms%20page.png)
     we want it exactly like this
 
 
-- [ ] T4: Make the Private room page like the refrence pic given
+- [x] T4: Make the Private room page like the refrence pic given
 
     ![Private image refrence](./media/Private%20Rooms%20page.png)
     we want it exaclty like this
 
-- [ ] T5: Make the +create private room button working refrence image is given for what it      should look like...
+- [x] T5: Make the +create private room button working refrence image is given for what it      should look like...
     when the person click the button +create private room on the page private rooms page
     this page should show up
 
     ![+create private room page](./media/+create%20private%20room%20page.png)
 
 
-- [ ] T6: Make the create your own map page like the refrence
+- [x] T6: Make the create your own map page like the refrence
 
     ![create your own map](./media/create%20your%20own%20map%20page.png)

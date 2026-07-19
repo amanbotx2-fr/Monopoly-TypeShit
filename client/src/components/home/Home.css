@@ -208,6 +208,12 @@
 	gap: 23px;
 }
 
+.landing-name-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 75px;
+	gap: 12px;
+}
+
 .landing-name-field {
 	position: relative;
 	display: flex;
@@ -250,6 +256,50 @@
 
 .landing-name-field input:focus {
 	border-color: var(--landing-gold);
+	box-shadow: 0 0 0 3px oklch(78% 0.14 79 / 0.16);
+}
+
+.landing-random-name-button {
+	display: grid;
+	width: 75px;
+	height: 75px;
+	place-items: center;
+	border: 1px solid var(--landing-border);
+	border-radius: 11px;
+	background: var(--landing-panel);
+	color: oklch(68% 0.01 245);
+	box-shadow: inset 0 1px 0 oklch(70% 0.01 245 / 0.035);
+	cursor: pointer;
+	transition:
+		color var(--duration) var(--ease-out),
+		border-color var(--duration) var(--ease-out),
+		background-color var(--duration) var(--ease-out),
+		box-shadow var(--duration) var(--ease-out),
+		transform var(--duration) var(--ease-out);
+}
+
+.landing-random-name-button svg {
+	width: 25px;
+	height: 25px;
+	stroke-width: 1.65;
+}
+
+.landing-random-name-button:hover {
+	border-color: var(--landing-gold);
+	background: oklch(19% 0.025 79 / 0.78);
+	color: var(--landing-gold-bright);
+	box-shadow: 0 0 0 3px oklch(78% 0.14 79 / 0.08);
+	transform: translateY(-1px);
+}
+
+.landing-random-name-button:active {
+	transform: scale(0.97);
+}
+
+.landing-random-name-button:focus-visible {
+	outline: none;
+	border-color: var(--landing-gold);
+	color: var(--landing-gold-bright);
 	box-shadow: 0 0 0 3px oklch(78% 0.14 79 / 0.16);
 }
 
@@ -565,6 +615,13 @@
 	.landing-play-button {
 		height: 64px;
 	}
+	.landing-name-row {
+		grid-template-columns: minmax(0, 1fr) 64px;
+	}
+	.landing-random-name-button {
+		width: 64px;
+		height: 64px;
+	}
 	.landing-secondary-actions button,
 	.landing-map-button {
 		height: 60px;
@@ -623,6 +680,14 @@
 		gap: 16px;
 	}
 	.landing-name-field {
+		height: 60px;
+	}
+	.landing-name-row {
+		grid-template-columns: minmax(0, 1fr) 60px;
+		gap: 10px;
+	}
+	.landing-random-name-button {
+		width: 60px;
 		height: 60px;
 	}
 	.landing-name-field input {
