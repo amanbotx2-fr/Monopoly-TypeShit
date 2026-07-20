@@ -21,7 +21,6 @@ import {
 	Zap,
 } from 'lucide-react';
 import { api } from '../../api';
-import useRoom from '../../useRoom';
 import BrandLogo from '../common/BrandLogo';
 import SoundToggle from '../game/SoundToggle';
 import TokenPicker from '../home/TokenPicker';
@@ -31,10 +30,10 @@ import './Lobby.css';
 const allowSoloDevGame = import.meta.env.VITE_ALLOW_SOLO_DEV_GAME === '1' || import.meta.env.DEV;
 const MAX_PLAYERS = 8;
 
-export default function Lobby({ userId, pushToast }) {
+export default function Lobby({ userId, pushToast, roomSession }) {
 	const nav = useNavigate();
 	const [tokens, setTokens] = useState([]);
-	const { roomCode, room, chat, connected, act, sendChat } = useRoom({ userId });
+	const { roomCode, room, chat, connected, act, sendChat } = roomSession;
 
 	useEffect(() => {
 		api.tokens()

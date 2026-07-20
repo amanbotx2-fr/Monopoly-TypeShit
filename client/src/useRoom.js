@@ -1,5 +1,5 @@
-// Room-state subscription hook. Owns the socket connection lifecycle for
-// whichever component mounts it (Lobby first, then Game when lobby hands off).
+// Room-state subscription hook. RoomRouter owns this connection for the full
+// lobby-to-game session and passes the returned state and actions downstream.
 // Keeps the latest room view and an append-only `events` log that UI layers
 // (animations, sound) drain from.
 
@@ -22,9 +22,6 @@ export default function useRoom({ userId }) {
 		const s = connectSocket({ userId, roomCode: code, username, color });
 		s.on('connect', () => setConnected(true));
 		s.on('disconnect', () => setConnected(false));
-		// If socket is already connected (reused from another component),
-		// the 'connect' event already fired — sync the flag immediately.
-		if (s.connected) setConnected(true);
 
 		const offState = onState(({ room: r, events: evs }) => {
 			setRoom(r);

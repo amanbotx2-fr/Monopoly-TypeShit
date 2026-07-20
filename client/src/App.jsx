@@ -95,7 +95,8 @@ export default function App() {
 // room.started. Uses a shared socket connection so the correct component
 // renders immediately on page refresh without a Lobby flicker.
 function RoomRouter({ userId, pushToast }) {
-	const { room, connected } = useRoom({ userId });
+	const roomSession = useRoom({ userId });
+	const { room, connected } = roomSession;
 
 	// Still connecting — show a branded loading state.
 	if (!room) {
@@ -119,8 +120,8 @@ function RoomRouter({ userId, pushToast }) {
 	}
 
 	return room.started ? (
-		<Game userId={userId} pushToast={pushToast} />
+		<Game userId={userId} pushToast={pushToast} roomSession={roomSession} />
 	) : (
-		<Lobby userId={userId} pushToast={pushToast} />
+		<Lobby userId={userId} pushToast={pushToast} roomSession={roomSession} />
 	);
 }
