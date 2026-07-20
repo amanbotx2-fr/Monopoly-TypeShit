@@ -1,0 +1,65 @@
+.token-picker {
+	display: flex;
+	gap: 16px;
+	padding: 4px 3px 8px;
+	overflow-x: auto;
+	scrollbar-width: thin;
+}
+
+.token-picker-option {
+	position: relative;
+	width: 54px;
+	height: 54px;
+	flex: 0 0 54px;
+	border: 5px solid oklch(9% 0.007 250);
+	border-radius: 13px;
+	background: var(--token-color);
+	box-shadow:
+		0 0 0 1px oklch(34% 0.012 245 / 0.6),
+		inset 0 1px 0 oklch(98% 0.01 82 / 0.22),
+		0 6px 16px oklch(5% 0.006 250 / 0.32);
+	cursor: pointer;
+	transition:
+		transform var(--duration-fast) var(--ease-out),
+		box-shadow var(--duration-fast) var(--ease-out),
+		opacity var(--duration-fast) var(--ease-out);
+}
+
+.token-picker-option:hover:not(:disabled) {
+	transform: translateY(-2px);
+	box-shadow:
+		0 0 0 1px oklch(55% 0.045 78 / 0.68),
+		inset 0 1px 0 oklch(98% 0.01 82 / 0.22),
+		0 9px 20px oklch(5% 0.006 250 / 0.4);
+}
+
+.token-picker-option.is-selected {
+	box-shadow:
+		0 0 0 2px var(--lobby-gold, var(--warning)),
+		0 0 0 5px oklch(9% 0.007 250),
+		0 0 0 6px var(--lobby-gold, var(--warning)),
+		inset 0 1px 0 oklch(98% 0.01 82 / 0.24);
+}
+
+.token-picker-option:disabled {
+	opacity: 0.2;
+	cursor: not-allowed;
+}
+
+.token-picker-option:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 5px;
+}
+
+@media (max-width: 760px) {
+	.token-picker {
+		gap: 12px;
+	}
+
+	.token-picker-option {
+		width: 48px;
+		height: 48px;
+		flex-basis: 48px;
+		border-radius: 12px;
+	}
+}

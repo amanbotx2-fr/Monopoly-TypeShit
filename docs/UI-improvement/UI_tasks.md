@@ -6,7 +6,7 @@
   we want it exactly like this
 
 
-- [ ] T2: A dice button like richup.io that generates random names....
+- [x] T2: A dice button like richup.io that generates random names....
 
    ![Richup.io pic](./refrence-media/random-name-dice.png)
 
@@ -31,3 +31,7 @@
 - [x] T6: Make the create your own map page like the refrence
 
     ![create your own map](./media/create%20your%20own%20map%20page.png)
+
+- [ ] T7: Remake the lobby screen...
+
+    ![Lobby screen](./media/lobby_screenn.png)
