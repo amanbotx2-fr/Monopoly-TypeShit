@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { api } from './api';
 import Home from './components/home/Home';
+import BrowseRooms from './components/rooms/BrowseRooms';
+import PrivateRooms from './components/rooms/PrivateRooms';
+import CreatePrivateRoom from './components/rooms/CreatePrivateRoom';
+import CreateMapIntro from './components/editor/CreateMapIntro';
 import Lobby from './components/lobby/Lobby';
 import Game from './components/game/Game';
 import MapEditor from './components/editor/MapEditor';
@@ -60,6 +64,13 @@ export default function App() {
 		<>
 			<Routes>
 				<Route path="/" element={<Home userId={userId} pushToast={pushToast} />} />
+				<Route path="/rooms" element={<BrowseRooms pushToast={pushToast} />} />
+				<Route path="/private-rooms" element={<PrivateRooms pushToast={pushToast} />} />
+				<Route
+					path="/private-rooms/create"
+					element={<CreatePrivateRoom pushToast={pushToast} />}
+				/>
+				<Route path="/create-map" element={<CreateMapIntro pushToast={pushToast} />} />
 				<Route
 					path="/r/:code"
 					element={<RoomRouter userId={userId} pushToast={pushToast} />}
@@ -84,7 +95,8 @@ export default function App() {
 // room.started. Uses a shared socket connection so the correct component
 // renders immediately on page refresh without a Lobby flicker.
 function RoomRouter({ userId, pushToast }) {
-	const { room, connected } = useRoom({ userId });
+	const roomSession = useRoom({ userId });
+	const { room, connected } = roomSession;
 
 	// Still connecting — show a branded loading state.
 	if (!room) {
@@ -108,8 +120,8 @@ function RoomRouter({ userId, pushToast }) {
 	}
 
 	return room.started ? (
-		<Game userId={userId} pushToast={pushToast} />
+		<Game userId={userId} pushToast={pushToast} roomSession={roomSession} />
 	) : (
-		<Lobby userId={userId} pushToast={pushToast} />
+		<Lobby userId={userId} pushToast={pushToast} roomSession={roomSession} />
 	);
 }

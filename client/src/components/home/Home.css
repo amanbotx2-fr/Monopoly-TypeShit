@@ -1,0 +1,757 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Landing page
+   Kept fully scoped so the T1 redesign does not affect lobby, editor, or game UI.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.landing-page {
+	--landing-bg: oklch(12.5% 0.008 250);
+	--landing-panel: oklch(15.5% 0.009 248 / 0.7);
+	--landing-border: oklch(41% 0.012 245 / 0.7);
+	--landing-border-hover: oklch(60% 0.025 238 / 0.82);
+	--landing-text: oklch(96% 0.008 82);
+	--landing-muted: oklch(64% 0.012 245);
+	--landing-gold: oklch(78% 0.14 79);
+	--landing-gold-bright: oklch(84% 0.135 82);
+	position: relative;
+	isolation: isolate;
+	min-height: 100dvh;
+	color: var(--landing-text);
+	background:
+		radial-gradient(circle at 50% 40%, oklch(20% 0.012 245 / 0.2), transparent 43%),
+		var(--landing-bg);
+	overflow-x: hidden;
+}
+
+.landing-page::before,
+.landing-page::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.landing-page::before {
+	z-index: -2;
+	background-image:
+		linear-gradient(oklch(34% 0.012 245 / 0.16) 1px, transparent 1px),
+		linear-gradient(90deg, oklch(34% 0.012 245 / 0.14) 1px, transparent 1px);
+	background-size: 46px 46px;
+	background-position: center 0;
+	mask-image: linear-gradient(to bottom, transparent 2%, black 16%, black 78%, transparent 100%);
+}
+
+.landing-page::after {
+	z-index: -1;
+	background:
+		linear-gradient(
+			90deg,
+			oklch(7% 0.006 250 / 0.7),
+			transparent 22% 78%,
+			oklch(7% 0.006 250 / 0.7)
+		),
+		linear-gradient(
+			180deg,
+			oklch(7% 0.006 250 / 0.32),
+			transparent 20% 74%,
+			oklch(7% 0.006 250 / 0.64)
+		);
+}
+
+.landing-header {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 31px 34px;
+}
+
+.landing-header > div > .btn,
+.landing-nav button {
+	min-height: 44px;
+	padding: 8px 0;
+	border: 0;
+	background: transparent;
+	color: var(--landing-text);
+	font-size: 17px;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+	box-shadow: none;
+	transition:
+		color var(--duration) var(--ease-out),
+		transform var(--duration) var(--ease-out);
+}
+
+.landing-header > div > .btn {
+	width: 44px;
+}
+
+.landing-header > div > .btn svg {
+	width: 25px;
+	height: 25px;
+	stroke-width: 1.5;
+}
+
+.landing-header > div > .btn:hover:not(:disabled),
+.landing-nav button:hover:not(:disabled) {
+	border-color: transparent;
+	background: transparent;
+	color: var(--landing-gold-bright);
+	box-shadow: none;
+	transform: translateY(-1px);
+}
+
+.landing-header > div .fade-in {
+	left: 0 !important;
+	right: auto !important;
+	background: oklch(17% 0.01 248) !important;
+	border-color: var(--landing-border) !important;
+}
+
+.landing-nav {
+	display: flex;
+	align-items: center;
+	gap: 44px;
+}
+
+.landing-nav button {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.landing-nav svg {
+	width: 21px;
+	height: 21px;
+	stroke-width: 1.55;
+}
+
+.landing-hero {
+	display: flex;
+	min-height: 100dvh;
+	flex-direction: column;
+	align-items: center;
+	padding: 105px 24px 64px;
+}
+
+.landing-brand {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 53px;
+	text-align: center;
+}
+
+.landing-brand-mark {
+	display: block;
+	width: 206px;
+	height: 206px;
+	object-fit: contain;
+	mix-blend-mode: screen;
+}
+
+.landing-brand h1 {
+	margin: 13px 0 0;
+	padding-left: 0.3em;
+	color: var(--landing-text);
+	font-size: clamp(42px, 3.4vw, 55px);
+	font-weight: 500;
+	line-height: 1.05;
+	letter-spacing: 0.3em;
+}
+
+.landing-tagline {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	margin-top: 18px;
+	color: oklch(90% 0.009 82);
+	font-size: 17px;
+	font-weight: 500;
+	line-height: 1;
+	letter-spacing: 0.23em;
+	text-transform: uppercase;
+}
+
+.landing-tagline i {
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--landing-gold);
+}
+
+.landing-tagline-line {
+	width: 46px;
+	height: 1px;
+	background: var(--landing-gold);
+}
+
+.landing-actions {
+	display: grid;
+	width: min(100%, 565px);
+	gap: 23px;
+}
+
+.landing-name-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 75px;
+	gap: 12px;
+}
+
+.landing-name-field {
+	position: relative;
+	display: flex;
+	height: 75px;
+	align-items: center;
+}
+
+.landing-name-field > svg {
+	position: absolute;
+	left: 23px;
+	z-index: 1;
+	width: 23px;
+	height: 23px;
+	color: oklch(62% 0.008 245);
+	stroke-width: 1.65;
+	pointer-events: none;
+}
+
+.landing-name-field input {
+	width: 100%;
+	height: 100%;
+	padding: 0 24px 0 75px;
+	border: 1px solid var(--landing-border);
+	border-radius: 11px;
+	background: var(--landing-panel);
+	color: var(--landing-text);
+	font-size: 20px;
+	font-weight: 400;
+	box-shadow: inset 0 1px 0 oklch(70% 0.01 245 / 0.035);
+}
+
+.landing-name-field input::placeholder {
+	color: oklch(59% 0.008 245);
+	opacity: 1;
+}
+
+.landing-name-field input:hover {
+	border-color: var(--landing-border-hover);
+}
+
+.landing-name-field input:focus {
+	border-color: var(--landing-gold);
+	box-shadow: 0 0 0 3px oklch(78% 0.14 79 / 0.16);
+}
+
+.landing-random-name-button {
+	display: grid;
+	width: 75px;
+	height: 75px;
+	place-items: center;
+	border: 1px solid var(--landing-border);
+	border-radius: 11px;
+	background: var(--landing-panel);
+	color: oklch(68% 0.01 245);
+	box-shadow: inset 0 1px 0 oklch(70% 0.01 245 / 0.035);
+	cursor: pointer;
+	transition:
+		color var(--duration) var(--ease-out),
+		border-color var(--duration) var(--ease-out),
+		background-color var(--duration) var(--ease-out),
+		box-shadow var(--duration) var(--ease-out),
+		transform var(--duration) var(--ease-out);
+}
+
+.landing-random-name-button svg {
+	width: 25px;
+	height: 25px;
+	stroke-width: 1.65;
+}
+
+.landing-random-name-button:hover {
+	border-color: var(--landing-gold);
+	background: oklch(19% 0.025 79 / 0.78);
+	color: var(--landing-gold-bright);
+	box-shadow: 0 0 0 3px oklch(78% 0.14 79 / 0.08);
+	transform: translateY(-1px);
+}
+
+.landing-random-name-button:active {
+	transform: scale(0.97);
+}
+
+.landing-random-name-button:focus-visible {
+	outline: none;
+	border-color: var(--landing-gold);
+	color: var(--landing-gold-bright);
+	box-shadow: 0 0 0 3px oklch(78% 0.14 79 / 0.16);
+}
+
+.landing-play-button,
+.landing-secondary-actions button,
+.landing-map-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	border-radius: 10px;
+	text-transform: uppercase;
+	transition:
+		transform var(--duration) var(--ease-out),
+		border-color var(--duration) var(--ease-out),
+		background var(--duration) var(--ease-out),
+		box-shadow var(--duration) var(--ease-out),
+		color var(--duration) var(--ease-out);
+}
+
+.landing-play-button {
+	height: 76px;
+	gap: 21px;
+	border: 1px solid oklch(79% 0.15 79);
+	background: linear-gradient(180deg, var(--landing-gold-bright), oklch(72% 0.145 75));
+	color: oklch(15% 0.012 250);
+	font-size: 29px;
+	font-weight: 800;
+	letter-spacing: 0.035em;
+	box-shadow:
+		inset 0 1px 0 oklch(95% 0.08 85 / 0.34),
+		0 12px 34px oklch(69% 0.15 76 / 0.13);
+}
+
+.landing-play-button svg {
+	width: 24px;
+	height: 24px;
+	stroke-width: 1.8;
+}
+
+.landing-play-button:hover {
+	background: linear-gradient(180deg, oklch(88% 0.13 84), oklch(77% 0.15 77));
+	box-shadow:
+		inset 0 1px 0 oklch(96% 0.07 85 / 0.42),
+		0 14px 40px oklch(70% 0.15 78 / 0.24);
+	transform: translateY(-2px);
+}
+
+.landing-play-button:active,
+.landing-secondary-actions button:active,
+.landing-map-button:active {
+	transform: translateY(0) scale(0.995);
+}
+
+.landing-secondary-actions {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 26px;
+}
+
+.landing-secondary-actions button,
+.landing-map-button {
+	height: 69px;
+	gap: 14px;
+	border: 1px solid var(--landing-border);
+	background: var(--landing-panel);
+	color: var(--landing-text);
+	font-size: 18px;
+	font-weight: 500;
+	letter-spacing: 0.045em;
+}
+
+.landing-secondary-actions button svg,
+.landing-map-button svg {
+	width: 25px;
+	height: 25px;
+	stroke-width: 1.6;
+}
+
+.landing-secondary-actions button:hover,
+.landing-map-button:hover {
+	border-color: var(--landing-gold);
+	background: oklch(21% 0.014 245 / 0.82);
+	color: var(--landing-gold-bright);
+	box-shadow: 0 10px 30px oklch(6% 0.006 250 / 0.24);
+	transform: translateY(-2px);
+}
+
+.landing-map-button {
+	position: relative;
+}
+
+.landing-map-button strong {
+	margin-left: 8px;
+	padding: 4px 10px;
+	border-radius: 4px;
+	background: oklch(49% 0.18 290);
+	color: oklch(96% 0.01 290);
+	font-size: 12px;
+	font-weight: 800;
+	line-height: 1;
+	letter-spacing: 0.08em;
+}
+
+.landing-dialog-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	display: grid;
+	place-items: center;
+	padding: 24px;
+	background: oklch(5% 0.006 250 / 0.76);
+	backdrop-filter: blur(8px);
+	animation: fadeIn var(--duration) var(--ease-out);
+}
+
+.landing-dialog {
+	width: min(100%, 560px);
+	max-height: min(680px, 88dvh);
+	overflow: hidden auto;
+	border: 1px solid var(--landing-border);
+	border-radius: 12px;
+	background: oklch(16% 0.01 248);
+	box-shadow: 0 30px 80px oklch(4% 0.006 250 / 0.62);
+	animation: slideUp var(--duration-slow) var(--ease-out);
+}
+
+.landing-dialog > header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 20px 22px;
+	border-bottom: 1px solid var(--landing-border);
+}
+
+.landing-dialog h2 {
+	margin: 0;
+	font-size: 19px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.landing-dialog > header button {
+	display: grid;
+	width: 40px;
+	height: 40px;
+	place-items: center;
+	border: 1px solid transparent;
+	border-radius: 8px;
+}
+
+.landing-dialog > header button:hover {
+	border-color: var(--landing-border);
+	background: oklch(22% 0.012 245);
+}
+
+.landing-dialog-empty {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
+	padding: 48px 24px;
+	color: var(--landing-muted);
+	text-align: center;
+}
+
+.landing-dialog-empty svg {
+	width: 32px;
+	height: 32px;
+	margin-bottom: 6px;
+	color: var(--landing-gold);
+}
+
+.landing-dialog-empty strong {
+	color: var(--landing-text);
+	font-size: 16px;
+}
+
+.landing-room-list {
+	display: grid;
+	gap: 8px;
+	padding: 12px;
+}
+
+.landing-room-list > button {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 68px;
+	padding: 12px 14px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	background: oklch(20% 0.01 246);
+	text-align: left;
+}
+
+.landing-room-list > button:hover {
+	border-color: var(--landing-gold);
+	background: oklch(23% 0.014 245);
+}
+
+.landing-room-list > button > span:first-child {
+	display: grid;
+	gap: 5px;
+}
+
+.landing-room-list strong {
+	font-family: var(--font-mono);
+	font-size: 15px;
+	letter-spacing: 0.08em;
+}
+
+.landing-room-list small {
+	color: var(--landing-muted);
+	font-size: 12px;
+}
+
+.landing-room-join {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--landing-gold-bright);
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.landing-room-join svg {
+	width: 16px;
+	height: 16px;
+}
+
+.landing-private-form {
+	display: grid;
+	gap: 16px;
+	padding: 24px;
+}
+
+.landing-private-form p {
+	margin: 0 0 4px;
+	color: var(--landing-muted);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.landing-private-form label {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.landing-private-form label svg {
+	position: absolute;
+	left: 15px;
+	z-index: 1;
+	width: 19px;
+	color: var(--landing-muted);
+}
+
+.landing-private-form input {
+	width: 100%;
+	height: 54px;
+	padding-left: 48px;
+	border-color: var(--landing-border);
+	border-radius: 8px;
+	background: oklch(13.5% 0.008 248);
+	font-family: var(--font-mono);
+	font-size: 16px;
+	letter-spacing: 0.1em;
+}
+
+.landing-private-form > button {
+	display: inline-flex;
+	height: 52px;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	border-radius: 8px;
+	background: var(--landing-gold);
+	color: oklch(15% 0.012 250);
+	font-size: 15px;
+	font-weight: 800;
+	text-transform: uppercase;
+}
+
+.landing-private-form > button:hover {
+	background: var(--landing-gold-bright);
+}
+
+@media (min-width: 701px) and (max-height: 820px) {
+	.landing-hero {
+		padding-top: 74px;
+		padding-bottom: 40px;
+	}
+	.landing-brand {
+		margin-bottom: 32px;
+	}
+	.landing-brand-mark {
+		width: 176px;
+		height: 176px;
+	}
+	.landing-brand h1 {
+		margin-top: 6px;
+		font-size: 44px;
+	}
+	.landing-tagline {
+		margin-top: 13px;
+		font-size: 14px;
+	}
+	.landing-actions {
+		gap: 16px;
+	}
+	.landing-name-field,
+	.landing-play-button {
+		height: 64px;
+	}
+	.landing-name-row {
+		grid-template-columns: minmax(0, 1fr) 64px;
+	}
+	.landing-random-name-button {
+		width: 64px;
+		height: 64px;
+	}
+	.landing-secondary-actions button,
+	.landing-map-button {
+		height: 60px;
+	}
+}
+
+@media (max-width: 700px) {
+	.landing-header {
+		padding: 18px;
+	}
+	.landing-header > div > .btn,
+	.landing-nav button {
+		min-height: 42px;
+		font-size: 14px;
+	}
+	.landing-nav {
+		gap: 18px;
+	}
+	.landing-nav button {
+		gap: 6px;
+	}
+	.landing-nav svg {
+		width: 18px;
+		height: 18px;
+	}
+	.landing-hero {
+		justify-content: flex-start;
+		padding: 76px 18px 36px;
+	}
+	.landing-brand {
+		margin-bottom: 38px;
+	}
+	.landing-brand-mark {
+		width: 164px;
+		height: 164px;
+	}
+	.landing-brand h1 {
+		margin-top: 6px;
+		font-size: clamp(30px, 10vw, 40px);
+		letter-spacing: 0.24em;
+	}
+	.landing-tagline {
+		gap: 8px;
+		margin-top: 14px;
+		font-size: clamp(10px, 3.2vw, 13px);
+		letter-spacing: 0.14em;
+	}
+	.landing-tagline-line {
+		width: 24px;
+	}
+	.landing-tagline i {
+		width: 4px;
+		height: 4px;
+	}
+	.landing-actions {
+		gap: 16px;
+	}
+	.landing-name-field {
+		height: 60px;
+	}
+	.landing-name-row {
+		grid-template-columns: minmax(0, 1fr) 60px;
+		gap: 10px;
+	}
+	.landing-random-name-button {
+		width: 60px;
+		height: 60px;
+	}
+	.landing-name-field input {
+		padding-left: 58px;
+		font-size: 16px;
+	}
+	.landing-name-field > svg {
+		left: 19px;
+		width: 20px;
+		height: 20px;
+	}
+	.landing-play-button {
+		height: 62px;
+		font-size: 22px;
+	}
+	.landing-secondary-actions {
+		gap: 12px;
+	}
+	.landing-secondary-actions button,
+	.landing-map-button {
+		height: 58px;
+		gap: 9px;
+		font-size: 14px;
+	}
+	.landing-secondary-actions button svg,
+	.landing-map-button svg {
+		width: 21px;
+		height: 21px;
+	}
+	.landing-map-button strong {
+		margin-left: 4px;
+		padding: 4px 7px;
+		font-size: 10px;
+	}
+}
+
+@media (max-width: 420px) {
+	.landing-nav button span {
+		display: none;
+	}
+	.landing-nav {
+		gap: 10px;
+	}
+	.landing-secondary-actions {
+		grid-template-columns: 1fr;
+	}
+	.landing-brand {
+		margin-bottom: 30px;
+	}
+	.landing-brand-mark {
+		width: 150px;
+		height: 150px;
+	}
+	.landing-brand h1 {
+		font-size: 29px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.landing-page *,
+	.landing-page *::before,
+	.landing-page *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}

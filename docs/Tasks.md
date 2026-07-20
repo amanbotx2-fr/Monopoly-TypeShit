@@ -118,3 +118,16 @@
 - [ ] T9: "My Properties" section should list all properties owned by the player, and when clicked it should open the same card view as clicking on the tile.
 
     ![My properties placeholder](./tasks-media/my-properties.png)
+
+
+---
+
+- [x] T10: Refactor room connection lifecycle so `useRoom()` is mounted only once. Prevent duplicate WebSocket subscriptions, duplicate event handlers, unnecessary reconnects during Lobby ↔ Game transitions, and preserve all existing functionality without changing gameplay.
+
+
+
+---
+
+- [ ] T11: Implement end-to-end Private Rooms architecture. Extend the backend with room visibility, invite codes, authorization, and private room APIs. Update the frontend to use the new APIs, hide private rooms from the public list, and allow users to join private rooms only via valid invite codes.
+
+---

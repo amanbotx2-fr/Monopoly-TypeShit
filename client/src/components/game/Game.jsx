@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useRoom from '../../useRoom';
 import useIsMobile from '../../useIsMobile';
 import Board from './Board';
 import { DICE_TOTAL_MS } from './Dice';
@@ -19,10 +18,10 @@ import Victory from './Victory';
 import BrandLogo from '../common/BrandLogo';
 import { LogOut, Copy } from 'lucide-react';
 
-export default function Game({ userId, pushToast }) {
+export default function Game({ userId, pushToast, roomSession }) {
 	const nav = useNavigate();
 	const isMobile = useIsMobile();
-	const { roomCode, room, events, chat, connected, act, sendChat } = useRoom({ userId });
+	const { roomCode, room, events, chat, connected, act, sendChat } = roomSession;
 
 	const [diceRolling, setDiceRolling] = useState(false);
 	const processedEventCount = useRef(0);

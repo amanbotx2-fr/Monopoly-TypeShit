@@ -1,0 +1,31 @@
+.card-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 18px;
+	padding-top: 16px;
+	border-top: 1px solid color-mix(in oklch, var(--warning) 34%, var(--border));
+}
+
+.card-modal-continue.btn {
+	min-height: 38px;
+	padding: 9px 18px;
+	border-radius: var(--radius);
+	font-size: 13px;
+	font-weight: 750;
+	letter-spacing: 0.01em;
+}
+
+.card-modal-continue.btn:active:not(:disabled) {
+	transform: scale(0.97);
+}
+
+.card-modal-continue.btn:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.card-modal-continue.btn {
+		transition-duration: 0.01ms;
+	}
+}
