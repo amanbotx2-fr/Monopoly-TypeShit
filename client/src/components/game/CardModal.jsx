@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { HelpCircle, Package } from 'lucide-react';
+import './CardModal.css';
 
 // Ephemeral card draw reveal. Shows for 3s unless clicked away.
 export default function CardModal({ deck, text, onClose }) {
@@ -31,15 +32,14 @@ export default function CardModal({ deck, text, onClose }) {
 				<div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text)', minHeight: 50 }}>
 					{text}
 				</div>
-				<div
-					style={{
-						marginTop: 14,
-						fontSize: 11,
-						color: 'var(--text-4)',
-						textAlign: 'right',
-					}}
-				>
-					Click to dismiss
+				<div className="card-modal-actions">
+					<button
+						className="btn auction card-modal-continue"
+						type="button"
+						onClick={onClose}
+					>
+						Continue
+					</button>
 				</div>
 			</div>
 		</Overlay>

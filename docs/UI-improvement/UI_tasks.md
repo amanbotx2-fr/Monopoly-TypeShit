@@ -32,6 +32,8 @@
 
     ![create your own map](./media/create%20your%20own%20map%20page.png)
 
-- [ ] T7: Remake the lobby screen...
+- [x] T7: Remake the lobby screen...
 
     ![Lobby screen](./media/lobby_screenn.png)
+
+- [x] T8: make the click to dismiss button...
